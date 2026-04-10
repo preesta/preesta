@@ -14,7 +14,8 @@ namespace Bender.Data.Supplying.Convert
     {
         private readonly string _rootUri;
 
-        public IssuePackageConverter(string rootUri)
+        public IssuePackageConverter(string rootUri, string subjectPrefix = "[Jira] Unprocessed Issues ")
+            : base(subjectPrefix)
         {
             _rootUri = rootUri;
         }

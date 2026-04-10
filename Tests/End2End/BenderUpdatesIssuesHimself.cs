@@ -116,13 +116,11 @@ namespace End2End.Tests
 
             var messenger = new Mock<IMessenger>();
 
-            var pipe = new ReactionPipe<Issue>
-            {
-                PackageSupplier = jqlSupplier,
-                PackageConverter = new IssuePackageConverter("http://jira"),
-                Messenger = messenger.Object,
-                HttpHandler = svc
-            };
+            var pipe = new ReactionPipe<Issue>(
+                packageSupplier: jqlSupplier,
+                packageConverter: new IssuePackageConverter("http://jira"),
+                messenger: messenger.Object,
+                httpHandler: svc);
             pipe.Run();
             
             responseHandler
@@ -275,12 +273,10 @@ namespace End2End.Tests
             };
 
             var packageSupplier = new JqlSupplier(jiraService, rulesConfig.GetJqlRules("test"), new Mock<ILogger>().Object);
-            var pipe = new ReactionPipe<Issue>()
-                {
-                    PackageSupplier = packageSupplier,
-                    PackageConverter = new IssuePackageConverter(Empty),
-                    HttpHandler = jiraService
-                };
+            var pipe = new ReactionPipe<Issue>(
+                packageSupplier: packageSupplier,
+                packageConverter: new IssuePackageConverter(Empty),
+                httpHandler: jiraService);
 
             // Experiment
             pipe.Run();

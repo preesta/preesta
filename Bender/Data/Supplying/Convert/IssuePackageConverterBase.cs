@@ -4,11 +4,14 @@ using JiraRest;
 
 namespace Bender.Data.Supplying.Convert
 {
-    internal abstract class PackageConverterBase<TItemType> : IPackageConverter<TItemType> 
-        
+    internal abstract class PackageConverterBase<TItemType> : IPackageConverter<TItemType>
     {
-        //[Microsoft.Practices.Unity.Dependency]
-        public string SubjectPrefix { get; set; } = "[Jira] Unprocessed Issues ";
+        public string SubjectPrefix { get; }
+
+        protected PackageConverterBase(string subjectPrefix = "[Jira] Unprocessed Issues ")
+        {
+            SubjectPrefix = subjectPrefix;
+        }
 
         public Message[] ToMessages(IEnumerable<Package<BenderSendsLetter, TItemType>> packages)
         {

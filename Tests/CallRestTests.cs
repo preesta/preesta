@@ -40,12 +40,10 @@ namespace Tests
 
             var httpHandler = new Mock<IHttpHandler>();
 
-            var pipe = new ReactionPipe<Issue>
-            {
-                PackageSupplier = jqlSupplier,
-                PackageConverter = new IssuePackageConverter("http://jira"),
-                HttpHandler = httpHandler.Object
-            };
+            var pipe = new ReactionPipe<Issue>(
+                packageSupplier: jqlSupplier,
+                packageConverter: new IssuePackageConverter("http://jira"),
+                httpHandler: httpHandler.Object);
 
             // Experiment
             pipe.Run();

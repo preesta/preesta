@@ -6,11 +6,12 @@ namespace Bender.Data.Supplying
 {
     internal class IssuesInMultipleStructuresSupplier : IssueSupplier<IssueInclusionToStructRule>
     {
-        public int MaxIssueCount { get; set; } = 50;
+        public int MaxIssueCount { get; }
 
-        public IssuesInMultipleStructuresSupplier(IJiraService jiraService, IEnumerable<IssueInclusionToStructRule> rules)
+        public IssuesInMultipleStructuresSupplier(IJiraService jiraService, IEnumerable<IssueInclusionToStructRule> rules, int maxIssueCount = 50)
             : base(jiraService, rules)
         {
+            MaxIssueCount = maxIssueCount;
         }
 
         protected override Issue[] GetIssues(IssueInclusionToStructRule rule)

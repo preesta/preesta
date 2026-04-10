@@ -8,6 +8,11 @@ namespace Bender.Data.Supplying.Convert
 {
     internal class BuildPackageConverter : PackageConverterBase<Build>
     {
+        public BuildPackageConverter(string subjectPrefix = "[Jira] Unprocessed Issues ")
+            : base(subjectPrefix)
+        {
+        }
+
         public override HttpRequest[] ToHttpRequests(IEnumerable<Package<BenderMakesUpdateHimself, Build>> packages)
         {
             return new HttpRequest[]{};

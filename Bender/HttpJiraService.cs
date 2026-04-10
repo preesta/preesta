@@ -9,12 +9,13 @@ namespace Bender
 {
     public class HttpJiraService : IJiraService, IHttpHandler
     {
-        public int MaxIssueCount { get; set; } = 50;
+        public int MaxIssueCount { get; }
         internal Connection Connection { get; set; }
 
-        public HttpJiraService(string rootUri, string user, string password)
+        public HttpJiraService(string rootUri, string user, string password, int maxIssueCount = 50)
         {
             Connection = new Connection(rootUri, user, password);
+            MaxIssueCount = maxIssueCount;
         }
 
         public virtual Issue[] GetIssuesForJql(string query)
