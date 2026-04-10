@@ -6,7 +6,7 @@ namespace Bender.Data.Supplying.Convert
 {
     internal abstract class PackageConverterBase<TItemType> : IPackageConverter<TItemType>
     {
-        public string SubjectPrefix { get; }
+        public string SubjectPrefix { get; set; } = "[Jira] Unprocessed Issues ";
 
         protected PackageConverterBase(string subjectPrefix = "[Jira] Unprocessed Issues ")
         {

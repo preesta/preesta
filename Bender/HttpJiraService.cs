@@ -9,7 +9,7 @@ namespace Bender
 {
     public class HttpJiraService : IJiraService, IHttpHandler
     {
-        public int MaxIssueCount { get; }
+        public int MaxIssueCount { get; set; } = 50;
         internal Connection Connection { get; set; }
 
         public HttpJiraService(string rootUri, string user, string password, int maxIssueCount = 50)

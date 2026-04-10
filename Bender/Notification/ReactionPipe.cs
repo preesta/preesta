@@ -9,12 +9,12 @@ namespace Bender.Notification
 {
     internal class ReactionPipe<TIssueType>
     {
-        private readonly IPackageSupplier? _packageSupplier;
-        private readonly IPackageConverter<TIssueType>? _packageConverter;
-        private readonly IMessenger? _messenger;
-        private readonly IHttpHandler? _httpHandler;
-        private readonly Redirector _redirector;
-        private readonly string _logoFileName;
+        public IPackageSupplier? PackageSupplier { get; set; }
+        public IPackageConverter<TIssueType>? PackageConverter { get; set; }
+        public IMessenger? Messenger { get; set; }
+        public IHttpHandler? HttpHandler { get; set; }
+        public Redirector Redirector { get; set; } = Redirector.Empty;
+        public string LogoFileName { get; set; } = string.Empty;
 
         public ReactionPipe(
             IPackageSupplier? packageSupplier = null,
@@ -24,39 +24,39 @@ namespace Bender.Notification
             Redirector? redirector = null,
             string logoFileName = "")
         {
-            _packageSupplier = packageSupplier;
-            _packageConverter = packageConverter;
-            _messenger = messenger;
-            _httpHandler = httpHandler;
-            _redirector = redirector ?? Redirector.Empty;
-            _logoFileName = logoFileName;
+            PackageSupplier = packageSupplier;
+            PackageConverter = packageConverter;
+            Messenger = messenger;
+            HttpHandler = httpHandler;
+            Redirector = redirector ?? Redirector.Empty;
+            LogoFileName = logoFileName;
         }
 
         public void Run()
         {
-            if (_packageConverter == null || _packageSupplier == null)
+            if (PackageConverter == null || PackageSupplier == null)
             {
                 // Nothing to do
                 return;
             }
 
-            var allPackages = _packageSupplier.GetPackages();
+            var allPackages = PackageSupplier.GetPackages();
 
             var messages =
                 allPackages
                     .OfType<Package<BenderSendsLetter, TIssueType>>()
-                    .ToMessages(_packageConverter)
-                    .Redirect(_redirector)
-                    .SetLogo(_logoFileName);
+                    .ToMessages(PackageConverter)
+                    .Redirect(Redirector)
+                    .SetLogo(LogoFileName);
 
-            _messenger?.SendAll(messages);
+            Messenger?.SendAll(messages);
 
             var updatesBenderShouldMadeHimself = allPackages
                     .OfType<Package<BenderMakesUpdateHimself, TIssueType>>()
-                    .ToHttpRequests(_packageConverter)
+                    .ToHttpRequests(PackageConverter)
                 ;
 
-            _httpHandler?.HandleAll(updatesBenderShouldMadeHimself);
+            HttpHandler?.HandleAll(updatesBenderShouldMadeHimself);
         }
 
         public async Task RunAsync()
