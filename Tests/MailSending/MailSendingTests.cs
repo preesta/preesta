@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Net.Mail;
 using System.Threading;
+using MailKit.Net.Smtp;
 using Messaging;
 using Moq;
 using NUnit.Framework;
@@ -48,7 +48,7 @@ namespace Tests.MailSending
                     Debug.WriteLine(Thread.CurrentThread.ManagedThreadId);
                     count++;
                     if (count == 2)
-                        throw new SmtpException();
+                        throw new SmtpCommandException(SmtpErrorCode.MessageNotAccepted, SmtpStatusCode.TransactionFailed, "test");
                 });
 
             SmtpClient.Send(messenger.Object, Messages, TimeSpan.FromSeconds(1), 3);

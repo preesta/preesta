@@ -1,8 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Net;
-using System.Net.Mail;
 using System.Threading;
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using MimeKit;
+using MimeKit.Utils;
 using Microsoft.Extensions.Configuration;
 
 namespace Messaging
@@ -22,59 +24,53 @@ namespace Messaging
 
         public virtual void Send(Message data)
         {
-            var mailMsg = new MailMessage
-            {
-                Subject = data.Subject,
-                IsBodyHtml = data.IsBodyHtml
-            };
+            var mailMsg = new MimeMessage();
+            mailMsg.From.Add(MailboxAddress.Parse(_config["From"]));
+            mailMsg.Subject = data.Subject;
 
-            if (!string.IsNullOrWhiteSpace(data.LogoFileName) && data.IsBodyHtml)
-            {
-                var inlineLogo = new LinkedResource(data.LogoFileName)
-                    {
-                        ContentId = Guid.NewGuid().ToString()
-                    };
+            mailMsg.To.AddRange(InternetAddressList.Parse(data.To.Trim(", ".ToCharArray())));
 
-                var logoBody = $@"<img src=""cid:{inlineLogo.ContentId}"" />";
-
-                var view = AlternateView.CreateAlternateViewFromString(data.Body + logoBody, null, "text/html");
-                view.LinkedResources.Add(inlineLogo);
-                mailMsg.AlternateViews.Add(view);                
-            }
-            else
-            {
-                mailMsg.Body = data.Body;
-            }
-
-            mailMsg.To.Add(data.To.Trim(", ".ToCharArray()));
-
-            if (Enum.TryParse(data.Importance, true, out MailPriority priority))
+            if (Enum.TryParse<MessagePriority>(data.Importance, true, out var priority))
             {
                 mailMsg.Priority = priority;
             }
 
             if (!string.IsNullOrWhiteSpace(data.Cc))
             {
-                mailMsg.CC.Add(data.Cc.Trim(", ".ToCharArray()));
+                mailMsg.Cc.AddRange(InternetAddressList.Parse(data.Cc.Trim(", ".ToCharArray())));
             }
+
             if (!string.IsNullOrWhiteSpace(data.Bcc))
             {
-                mailMsg.Bcc.Add(data.Bcc.Trim(", ".ToCharArray()));
+                mailMsg.Bcc.AddRange(InternetAddressList.Parse(data.Bcc.Trim(", ".ToCharArray())));
             }
 
-            mailMsg.From = new MailAddress(_config["From"]);
+            var bodyBuilder = new BodyBuilder();
 
-            using (var client = new System.Net.Mail.SmtpClient
+            if (!string.IsNullOrWhiteSpace(data.LogoFileName) && data.IsBodyHtml)
             {
-                Host = _config["Host"],
-                Port = int.Parse(_config["Port"]),
-                UseDefaultCredentials = false,
-                Credentials = new NetworkCredential(_config["User"], _config["Password"]),
-                EnableSsl = bool.Parse(_config["EnableSsl"])
-            })
-            {
-                client.Send(mailMsg);
+                var logo = bodyBuilder.LinkedResources.Add(data.LogoFileName);
+                logo.ContentId = MimeUtils.GenerateMessageId();
+                bodyBuilder.HtmlBody = data.Body + $@"<img src=""cid:{logo.ContentId}"" />";
             }
+            else if (data.IsBodyHtml)
+            {
+                bodyBuilder.HtmlBody = data.Body;
+            }
+            else
+            {
+                bodyBuilder.TextBody = data.Body;
+            }
+
+            mailMsg.Body = bodyBuilder.ToMessageBody();
+
+            using var client = new MailKit.Net.Smtp.SmtpClient();
+            var enableSsl = bool.Parse(_config["EnableSsl"]);
+            client.Connect(_config["Host"], int.Parse(_config["Port"]),
+                enableSsl ? SecureSocketOptions.Auto : SecureSocketOptions.None);
+            client.Authenticate(_config["User"], _config["Password"]);
+            client.Send(mailMsg);
+            client.Disconnect(true);
         }
 
         public virtual void SendAll(IEnumerable<Message> messages)
@@ -87,12 +83,7 @@ namespace Messaging
             foreach (var message in messages)
             {
                 SendMessageWithRetries(messenger, message, delayInterval, retryCount);
-             }
-            //messages
-            //    .ToObservable()
-            //    .SelectMany(message => GetRetriableSendingObservable(messenger, message, delayInterval, retryCount))
-            //    .DefaultIfEmpty()
-            //    .Wait();
+            }
         }
 
         private static void SendMessageWithRetries(IMessenger messenger, Message message, TimeSpan delayInterval, int retryCount)
@@ -104,7 +95,7 @@ namespace Messaging
                     messenger.Send(message);
                     return;
                 }
-                catch (SmtpException)
+                catch (Exception e) when (e is SmtpCommandException || e is SmtpProtocolException)
                 {
                     if (i >= retryCount)
                     {
@@ -114,15 +105,5 @@ namespace Messaging
                 }
             }
         }
-
-
-        //private static IObservable<Unit> GetRetriableSendingObservable(IMessenger messenger, Message message, TimeSpan delayInterval, int retryCount) =>
-            
-        //    Observable
-        //        .Defer(() => Observable.Start(() => messenger.Send(message)))
-        //        .Catch((SmtpException ex) => Observable
-        //            .Throw<Unit>(ex)
-        //            .DelaySubscription(delayInterval))
-        //        .Retry(retryCount);
     }
 }
