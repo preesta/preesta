@@ -6,7 +6,7 @@ using Bender.Data;
 using Bender.Data.Supplying;
 using Bender.Data.Supplying.Convert;
 using NUnit.Framework;
-using Moq;
+using NSubstitute;
 using Serilog;
 
 namespace Tests
@@ -17,9 +17,9 @@ namespace Tests
         [Test]
         public void GroupBuilds()
         {
-            var jira = new Mock<Bender.IJiraService>();
+            var jira = Substitute.For<Bender.IJiraService>();
             jira
-                .Setup(j => j.GetBuilds(It.IsAny<string>()))
+                .GetBuilds(Arg.Any<string>())
                 .Returns(
                     new[]
                     {
@@ -74,7 +74,7 @@ namespace Tests
                 }
             };
 
-            var packages = new BuildSupplier(jira.Object, rules).GetPackages().Cast<Package<BenderSendsLetter, Build>>().ToArray();
+            var packages = new BuildSupplier(jira, rules).GetPackages().Cast<Package<BenderSendsLetter, Build>>().ToArray();
             Assert.AreEqual(2, packages.Count());
             Assert.AreEqual(2, packages.Single(p => p.Reaction.Subject == "Subject").Items.Count());
             var messages = new BuildPackageConverter().ToMessages(packages);
@@ -130,9 +130,9 @@ namespace Tests
         [Test]
         public void GroupIssues()
         {
-            var jira = new Mock<Bender.IJiraService>();
+            var jira = Substitute.For<Bender.IJiraService>();
             jira
-                .Setup(j => j.GetIssuesForJql(It.IsAny<string>()))
+                .GetIssuesForJql(Arg.Any<string>())
                 .Returns(
                     new[]
                     {
@@ -179,9 +179,9 @@ namespace Tests
                 }
             };
 
-            var logger = new Mock<ILogger>();
+            var logger = Substitute.For<ILogger>();
 
-            var packages = new JqlSupplier(jira.Object, rules, logger.Object)
+            var packages = new JqlSupplier(jira, rules, logger)
                 .GetPackages()
                 .Cast<Package<BenderSendsLetter, Issue>>()
                 .ToArray();

@@ -4,7 +4,7 @@ using System.Xml.Linq;
 using Messaging;
 using Bender.Configuration;
 using NUnit.Framework;
-using Moq;
+using NSubstitute;
 using Bender.Notification;
 using Serilog;
 
@@ -25,7 +25,7 @@ namespace Tests.MailSending
 </root>
 ");
 
-            var logger = new Mock<ILogger>().Object;
+            var logger = Substitute.For<ILogger>();
             var redirector = new Redirector(new XmlRulesConfig(config, logger).GetRedirectionMap(), Enumerable.Empty<string>(), Enumerable.Empty<string>());
             var initialMessage = new Message { To = "ivanov" };
             var actualizedMessage = redirector.ActualizeAddressees(initialMessage);

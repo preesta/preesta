@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Xml.Linq;
 using Bender.Configuration;
-using Moq;
+using NSubstitute;
 using NUnit.Framework;
 using Serilog;
 
@@ -22,7 +22,7 @@ namespace Tests
     </request>
 </configuration>";
 
-            var config = new XmlRulesConfig(XDocument.Parse(xml), new Mock<ILogger>().Object);
+            var config = new XmlRulesConfig(XDocument.Parse(xml), Substitute.For<ILogger>());
 
             Rule rule = config.GetJqlRules("test").Single();
             Assert.AreEqual(string.Join(",", rule.HowToNotify!.MetaAddressers), string.Join(",", "admin"));
@@ -44,7 +44,7 @@ namespace Tests
     </build>
 </configuration>";
 
-            var config = new XmlRulesConfig(XDocument.Parse(xml), new Mock<ILogger>().Object);
+            var config = new XmlRulesConfig(XDocument.Parse(xml), Substitute.For<ILogger>());
 
             var rule = config.GetBuildRules("test").Single();
             Assert.IsFalse(rule.ExpiredOnly);
@@ -69,7 +69,7 @@ namespace Tests
     </structureAmbiguityRule>
 </configuration>";
 
-            var config = new XmlRulesConfig(XDocument.Parse(xml), new Mock<ILogger>().Object);
+            var config = new XmlRulesConfig(XDocument.Parse(xml), Substitute.For<ILogger>());
 
             var rule = config.GetInStructRules("test").Single();
             Assert.AreEqual(string.Join(",", rule.Structures), "417,462,525,576");
@@ -87,7 +87,7 @@ namespace Tests
     </redirection_rules>
 </configuration>";
 
-            var config = new XmlRulesConfig(XDocument.Parse(xml), new Mock<ILogger>().Object);
+            var config = new XmlRulesConfig(XDocument.Parse(xml), Substitute.For<ILogger>());
 
             var redirectionMap = config.GetRedirectionMap();
             string? to;
@@ -111,14 +111,12 @@ namespace Tests
     </build>
 </configuration>";
 
-            var logger = new Mock<ILogger>();
-            //logger.Setup(l => l.Error(It.IsAny<Exception>()));
-                
-                
-            var config = new XmlRulesConfig(XDocument.Parse(xml), logger.Object);
+            var logger = Substitute.For<ILogger>();
+
+            var config = new XmlRulesConfig(XDocument.Parse(xml), logger);
 
             Assert.IsFalse(config.GetBuildRules("test").Any());
-            logger.Verify(l => l.Error(It.IsNotNull<Exception>(), It.IsAny<string>()), Times.Once());
+            logger.Received(1).Error(Arg.Is<Exception>(e => e != null), Arg.Any<string>());
         }
     }
 }

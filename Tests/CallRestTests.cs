@@ -7,7 +7,7 @@ using Bender.Data.Supplying;
 using Bender.Data.Supplying.Convert;
 using Bender.Notification;
 using JiraRest;
-using Moq;
+using NSubstitute;
 using NUnit.Framework;
 using Serilog;
 using System.Linq;
@@ -30,28 +30,27 @@ namespace Tests
                 }
             };
 
-            var issuesSupplier = new Mock<IJiraService>();
+            var issuesSupplier = Substitute.For<IJiraService>();
             issuesSupplier
-                .Setup(s => s.GetIssuesForJql(It.IsAny<string>()))
-                .Returns(new[] {new Issue()})
-                ;
+                .GetIssuesForJql(Arg.Any<string>())
+                .Returns(new[] {new Issue()});
 
-            var jqlSupplier = new JqlSupplier(issuesSupplier.Object, new[] { rule }, new Mock<ILogger>().Object);
+            var jqlSupplier = new JqlSupplier(issuesSupplier, new[] { rule }, Substitute.For<ILogger>());
 
-            var httpHandler = new Mock<IHttpHandler>();
+            var httpHandler = Substitute.For<IHttpHandler>();
 
             var pipe = new ReactionPipe<Issue>
             {
                 PackageSupplier = jqlSupplier,
                 PackageConverter = new IssuePackageConverter("http://jira"),
-                HttpHandler = httpHandler.Object
+                HttpHandler = httpHandler
             };
 
             // Experiment
             pipe.Run();
 
             // Check result
-            httpHandler.Verify(h => h.HandleAll(It.Is<IEnumerable<HttpRequest>>(r => r.Count() == 2)));
+            httpHandler.Received().HandleAll(Arg.Is<IEnumerable<HttpRequest>>(r => r.Count() == 2));
             
         }
     }

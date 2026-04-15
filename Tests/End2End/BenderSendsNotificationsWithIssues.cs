@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using Messaging;
 using JiraRest;
 using Bender;
@@ -14,10 +12,10 @@ using Bender.Data;
 using Bender.Data.Supplying;
 using Bender.Data.Supplying.Convert;
 using Bender.Notification;
-using Moq;
-using Moq.Protected;
+using NSubstitute;
 using NUnit.Framework;
 using Serilog;
+using Tests;
 
 using static System.String;
 
@@ -132,16 +130,11 @@ namespace End2End.Tests
 					Content = new StringContent(JsonIssueWithNullPriority)
 				};
 
-			var responseHandler = new Mock<DelegatingHandler>();
-			responseHandler
-				.Protected()
-				.Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),
-					ItExpr.IsAny<CancellationToken>())
-				.Returns(Task.FromResult(response));
+			var handler = new StubDelegatingHandler(response);
 
 			var connection = new Connection("http://jira", "any", "any")
 			{
-				Client = new HttpClient(responseHandler.Object)
+				Client = new HttpClient(handler)
 			};
 
 			var svc = new HttpJiraService("http://jira", Empty, Empty)
@@ -160,27 +153,22 @@ namespace End2End.Tests
 				}
 			};
 
-			var jqlSupplier = new JqlSupplier(svc, new[] { jqlRule }, new Mock<ILogger>().Object);
+			var jqlSupplier = new JqlSupplier(svc, new[] { jqlRule }, Substitute.For<ILogger>());
 
-			var messenger = new Mock<IMessenger>();
+			var messenger = Substitute.For<IMessenger>();
 			var pipe = new ReactionPipe<Issue>
 			{
 				PackageSupplier = jqlSupplier,
 				PackageConverter = new IssuePackageConverter("http://jira"),
-				Messenger = messenger.Object,
-				HttpHandler = new Mock<IHttpHandler>().Object
+				Messenger = messenger,
+				HttpHandler = Substitute.For<IHttpHandler>()
 			};
 			pipe.Run();
 
-			responseHandler
-				.Protected()
-				.Verify<Task<HttpResponseMessage>>("SendAsync", Times.Once(),
-					ItExpr.Is<HttpRequestMessage>(
-						r => r.RequestUri == new Uri("http://jira/rest/api/2/search?jql=any&maxResults=50")),
-					ItExpr.IsAny<CancellationToken>());
+			Assert.AreEqual(1, handler.Requests.Count(r => r.RequestUri == new Uri("http://jira/rest/api/2/search?jql=any&maxResults=50")));
 
-			 messenger.Verify(m => m.SendAll(It.Is<IEnumerable<Message>>(
-				msgs => ExpectedNotificationWithEmptyPriority.Equals(msgs.Single().Body))), Times.Once());
+			messenger.Received(1).SendAll(Arg.Is<IEnumerable<Message>>(
+				msgs => ExpectedNotificationWithEmptyPriority.Equals(msgs.Single().Body)));
 		}
 
 
@@ -193,16 +181,11 @@ namespace End2End.Tests
 					Content = new StringContent(JsonIssueWithNullFixAndAffectedVersion)
 				};
 
-			var responseHandler = new Mock<DelegatingHandler>();
-			responseHandler
-				.Protected()
-				.Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),
-					ItExpr.IsAny<CancellationToken>())
-				.Returns(Task.FromResult(response));
+			var handler = new StubDelegatingHandler(response);
 
 			var connection = new Connection("http://jira", "any", "any")
 			{
-				Client = new HttpClient(responseHandler.Object)
+				Client = new HttpClient(handler)
 			};
 
 			var svc = new HttpJiraService("http://jira", Empty, Empty)
@@ -221,25 +204,19 @@ namespace End2End.Tests
 				}
 			};
 
-			var jqlSupplier = new JqlSupplier(svc, new[] { jqlRule }, new Mock<ILogger>().Object);
+			var jqlSupplier = new JqlSupplier(svc, new[] { jqlRule }, Substitute.For<ILogger>());
 
-			var messenger = new Mock<IMessenger>();
+			var messenger = Substitute.For<IMessenger>();
 			var pipe = new ReactionPipe<Issue>
 			{
 				PackageSupplier = jqlSupplier,
 				PackageConverter = new IssuePackageConverter("http://jira"),
-				Messenger = messenger.Object,
-				HttpHandler = new Mock<IHttpHandler>().Object
+				Messenger = messenger,
+				HttpHandler = Substitute.For<IHttpHandler>()
 			};
 			pipe.Run();
 
-			responseHandler
-				.Protected()
-				.Verify<Task<HttpResponseMessage>>("SendAsync", Times.Once(),
-					ItExpr.Is<HttpRequestMessage>(
-						r => r.RequestUri == new Uri("http://jira/rest/api/2/search?jql=any&maxResults=50")),
-					ItExpr.IsAny<CancellationToken>());
-
+			Assert.AreEqual(1, handler.Requests.Count(r => r.RequestUri == new Uri("http://jira/rest/api/2/search?jql=any&maxResults=50")));
 		}
 	}
 }
