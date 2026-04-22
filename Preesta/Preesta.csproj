@@ -4,6 +4,7 @@
     <ProjectReference Include="..\Messaging\Messaging.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="NetEscapades.Configuration.Yaml" Version="3.1.0" />
     <PackageReference Include="Serilog" Version="4.3.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="3.8.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
@@ -16,14 +17,19 @@
     <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
     <PackageReference Include="Sentry.Serilog" Version="6.3.2" />
     <PackageReference Include="Serilog.Exceptions" Version="8.4.0" />
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="logo.jpg" />
+    <None Remove="rules.yaml" />
     <None Remove="rules.xml" />
     <None Remove="rules.xsd" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="logo.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="rules.yaml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="rules.xml">
@@ -61,6 +67,10 @@
   </Target>
 
   <ItemGroup>
+    <ContentWithTargetPath Include="AppConfig\appsettings.yaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>appsettings.yaml</TargetPath>
+    </ContentWithTargetPath>
     <ContentWithTargetPath Include="AppConfig\appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>appsettings.json</TargetPath>
