@@ -2,10 +2,10 @@
 using System.Linq;
 using System.Xml.Linq;
 using Messaging;
-using Bender.Configuration;
+using Preesta.Configuration;
 using NUnit.Framework;
 using NSubstitute;
-using Bender.Notification;
+using Preesta.Notification;
 using Serilog;
 
 namespace Tests.MailSending

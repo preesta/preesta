@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Xml.Linq;
-using Bender.Configuration;
+using Preesta.Configuration;
 using NSubstitute;
 using NUnit.Framework;
 using Serilog;

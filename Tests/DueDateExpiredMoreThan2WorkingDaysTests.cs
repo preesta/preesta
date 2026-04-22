@@ -1,6 +1,6 @@
 ﻿using System;
-using Bender;
-using Bender.Data;
+using Preesta;
+using Preesta.Data;
 using NUnit.Framework;
 
 namespace Tests

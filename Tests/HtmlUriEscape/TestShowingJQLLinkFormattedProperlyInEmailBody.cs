@@ -1,7 +1,7 @@
 ﻿using System.Linq;
-using Bender.Template;
-using Bender.Data;
-using Bender.Data.Supplying;
+using Preesta.Template;
+using Preesta.Data;
+using Preesta.Data.Supplying;
 using NUnit.Framework;
 
 namespace Tests.HtmlUriEscape
@@ -12,7 +12,7 @@ namespace Tests.HtmlUriEscape
         [Test]
         public void Test1()
         {
-            var pac = new Package<BenderSendsLetter, Issue>
+            var pac = new Package<SendsNotification, Issue>
             {
                 Items = Enumerable.Empty<Issue>().ToArray(),
                 Properties =
@@ -25,7 +25,7 @@ namespace Tests.HtmlUriEscape
 "
                     }
                 },
-                Reaction = new BenderSendsLetter { Subject = string.Empty }
+                Reaction = new SendsNotification { Subject = string.Empty }
             };
 
             var mailBody = new IssuePackagesTemplate(Enumerable.Repeat(pac, 1), "https://jira.example.com/").TransformText();
@@ -36,9 +36,9 @@ namespace Tests.HtmlUriEscape
         [Test]
         public void Test2()
         {
-            var pac = new Package<BenderSendsLetter, Issue>
+            var pac = new Package<SendsNotification, Issue>
             {
-                Reaction = new BenderSendsLetter {Subject = string.Empty},
+                Reaction = new SendsNotification {Subject = string.Empty},
                 Items = Enumerable.Empty<Issue>().ToArray(),
                 Properties =
                 {
@@ -58,9 +58,9 @@ namespace Tests.HtmlUriEscape
         [Test]
         public void Test3()
         {
-            var pac = new Package<BenderSendsLetter, Issue>
+            var pac = new Package<SendsNotification, Issue>
             {
-                Reaction = new BenderSendsLetter { Subject = string.Empty },
+                Reaction = new SendsNotification { Subject = string.Empty },
                 Items = Enumerable.Empty<Issue>().ToArray(),
                 Properties =
                 {

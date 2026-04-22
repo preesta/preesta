@@ -1,12 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
-using Bender.Configuration;
-using Bender.Data;
-using Bender.Data.Supplying;
-using Bender.Data.Supplying.Convert;
-using Bender.Extensions;
-using Bender.Notification;
+using Preesta.Configuration;
+using Preesta.Data;
+using Preesta.Data.Supplying;
+using Preesta.Data.Supplying.Convert;
+using Preesta.Extensions;
+using Preesta.Notification;
 using Messaging;
 using NSubstitute;
 using NUnit.Framework;
@@ -17,7 +17,7 @@ namespace Tests.MailSending
     [TestFixture]
     public class RecipientsReplacementTests
     {
-        private Bender.IJiraService? _jiraService;
+        private Preesta.IJiraService? _jiraService;
         private IRulesConfig? _rulesConfig;
         private ILogger? _logger;
 
@@ -97,7 +97,7 @@ namespace Tests.MailSending
 
             _rulesConfig = new XmlRulesConfig(xmlConfig, Substitute.For<ILogger>());
 
-            var jiraMock = Substitute.For<Bender.IJiraService>();
+            var jiraMock = Substitute.For<Preesta.IJiraService>();
             jiraMock
                 .GetIssuesForJql(Arg.Any<string>())
                 .Returns(
@@ -132,7 +132,7 @@ namespace Tests.MailSending
         {
             IPackageSupplier packageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test"), _logger!);
             var message = new IssuePackageConverter("https://jira.express.ship/jira/")
-                .ToMessages(packageSupplier.GetPackages().Cast<Package<BenderSendsLetter, Issue>>())
+                .ToMessages(packageSupplier.GetPackages().Cast<Package<SendsNotification, Issue>>())
                 .Redirect(new Redirector(_rulesConfig.GetRedirectionMap(), Enumerable.Empty<string>(), Enumerable.Empty<string>()))
                 .Single();
 
@@ -146,7 +146,7 @@ namespace Tests.MailSending
 
             IPackageSupplier packageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test-2"), _logger!);
             var message = new IssuePackageConverter("https://jira.express.ship/jira/")
-                .ToMessages(packageSupplier.GetPackages().Cast<Package<BenderSendsLetter, Issue>>())
+                .ToMessages(packageSupplier.GetPackages().Cast<Package<SendsNotification, Issue>>())
                 .Redirect(new Redirector(_rulesConfig.GetRedirectionMap(), Enumerable.Empty<string>(), Enumerable.Empty<string>()))
                 .Single();
 

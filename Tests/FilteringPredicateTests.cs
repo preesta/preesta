@@ -1,8 +1,8 @@
 ﻿using System.Linq;
-using Bender.Configuration;
-using Bender.Configuration.Action;
-using Bender.Data;
-using Bender.Data.Supplying;
+using Preesta.Configuration;
+using Preesta.Configuration.Action;
+using Preesta.Data;
+using Preesta.Data.Supplying;
 using NUnit.Framework;
 using NSubstitute;
 using Serilog;
@@ -15,7 +15,7 @@ namespace Tests
         [Test]
         public void EnsurePredicateIsCalling()
         {
-            var jira = Substitute.For<Bender.IJiraService>();
+            var jira = Substitute.For<Preesta.IJiraService>();
             jira
                 .GetIssuesForJql(Arg.Any<string>())
                 .Returns(
