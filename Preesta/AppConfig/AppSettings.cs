@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.Extensions.Configuration;
+using NetEscapades.Configuration.Yaml;
 using System.IO;
 using static System.String;
 using System.Text;
@@ -12,8 +13,12 @@ namespace Preesta.AppConfig
         //private readonly string _assemblyDir;
         //private readonly IConfigurationSection _configSection;
 
-        private readonly IConfigurationRoot _configuration = new ConfigurationBuilder()
-            .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(
+        private readonly IConfigurationRoot _configuration = BuildConfiguration();
+
+        private static IConfigurationRoot BuildConfiguration()
+        {
+            var builder = new ConfigurationBuilder()
+                .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(
 @"
 {
     ""Logger"": {
@@ -24,10 +29,24 @@ namespace Preesta.AppConfig
     }
 }
 "
-            )))
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            .AddJsonFile("secrets/appsettings.secrets.json", optional: true)
-            .Build();
+                )));
+
+            if (File.Exists("appsettings.yaml"))
+                builder.AddYamlFile("appsettings.yaml", optional: false, reloadOnChange: true);
+            else if (File.Exists("appsettings.yml"))
+                builder.AddYamlFile("appsettings.yml", optional: false, reloadOnChange: true);
+            else
+                builder.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+
+            if (File.Exists("secrets/appsettings.secrets.yaml"))
+                builder.AddYamlFile("secrets/appsettings.secrets.yaml", optional: true);
+            else if (File.Exists("secrets/appsettings.secrets.yml"))
+                builder.AddYamlFile("secrets/appsettings.secrets.yml", optional: true);
+            else
+                builder.AddJsonFile("secrets/appsettings.secrets.json", optional: true);
+
+            return builder.Build();
+        }
 
         internal void Validate()
         {

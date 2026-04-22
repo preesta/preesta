@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using System.Xml.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Messaging;
@@ -29,8 +31,8 @@ namespace Preesta.DI
 
             var messenger = new SmtpClient(appSettings.SmtpSection);
 
-            var xmlConfig = XDocument.Load(appSettings.LocalRulesFileName);
-            var rulesConfig = new XmlRulesConfig(xmlConfig, logger);
+            var rulesFileName = appSettings.LocalRulesFileName;
+            var rulesConfig = CreateRulesConfig(rulesFileName, logger);
 
             var jqlSupplier = new JqlSupplier(jiraService, rulesConfig.GetJqlRules(@group), logger);
             var structSupplier = new IssuesInMultipleStructuresSupplier(
@@ -70,6 +72,16 @@ namespace Preesta.DI
         internal void ValidateRules()
         {
             _provider.GetRequiredService<IRulesConfig>().ValidateSchema();
+        }
+
+        private static IRulesConfig CreateRulesConfig(string path, ILogger logger)
+        {
+            var ext = Path.GetExtension(path).ToLowerInvariant();
+            return ext switch
+            {
+                ".yaml" or ".yml" => YamlRulesConfig.FromFile(path, logger),
+                _ => new XmlRulesConfig(XDocument.Load(path), logger)
+            };
         }
     }
 }

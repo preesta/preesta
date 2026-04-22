@@ -1,0 +1,34 @@
+Logger:
+  Serilog:
+    MinimumLevel: Verbose
+    Using:
+      - Serilog.Sinks.Console
+      - Preesta
+      - Serilog.Enrichers.Thread
+    Enrich:
+      - WithThreadId
+    WriteTo:
+      - Name: Console
+        Args:
+          outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {NewLine}{Exception}{NewLine}{Properties:j}{NewLine}"
+          theme: "Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme::Literate, Serilog.Sinks.Console"
+
+Application:
+  rulesFileName: rules.yaml
+  maintenanceTeam: "--- set in appsettings.secrets.yaml ---"
+  supervisors: "--- set in appsettings.secrets.yaml ---"
+  subjectPrefix: "[Jira Notification] "
+
+Jira:
+  rootUri: https://example.com
+  userName: "--- set in appsettings.secrets.yaml ---"
+  password: "--- set in appsettings.secrets.yaml ---"
+  maxResults: 300
+
+Smtp:
+  Host: smtp.office365.com
+  Port: 587
+  User: "--- set in appsettings.secrets.yaml ---"
+  Password: "--- set in appsettings.secrets.yaml ---"
+  From: "--- set in appsettings.secrets.yaml ---"
+  EnableSsl: true

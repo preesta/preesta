@@ -28,58 +28,51 @@ First of all, ensure the following JQL works for you (go to your JIRA and check)
     DueDate < startOfDay() AND Resolution is EMPTY
 
 Of course, you can add a restriction on the JIRA project, issue type, and so on.
-If it works and returns non empty list, well, let's move on. We need simple rules file in xml format, place it in some directory
+If it works and returns non empty list, well, let's move on. We need a rules file — place it in some directory
 
-```xml
-<!-- /home/user/preesta-config/rules.xml file -->
-<configuration>
-    <jqlRule group="notify-all">
-        <jql><![CDATA[ DueDate < startOfDay() AND Resolution is EMPTY ]]></jql>
-        <notify 
-            mailTo="assignee"
-            cc="reporter"
-            subject="DueDate of the issue is expired"
-            recommendations="Please resolve or reschedule the issue"
-            />
-    </jqlRule>
-</configuration>
+```yaml
+# /home/user/preesta-config/rules.yaml
+rules:
+  - type: jql
+    group: notify-all
+    jql: "DueDate < startOfDay() AND Resolution is EMPTY"
+    notify:
+      subject: DueDate of the issue is expired
+      mailTo: assignee
+      cc: reporter
+      recommendations: Please resolve or reschedule the issue
 ```
 
 Adjust your JQL and let's move on.
-Next step — we should point to JIRA instance, email server to use for mailing, let's prepare appsettings.json file
+Next step — we should point to JIRA instance, email server to use for mailing, let's prepare appsettings.yaml file
 
-```json
-// /home/user/preesta-config/appsettings.json file
-{
-  "Application": {
-    "rulesFileName": "/app/rules.xml",
-    "supervisors": "enter-your@email.here"
-  },
+```yaml
+# /home/user/preesta-config/appsettings.yaml
+Application:
+  rulesFileName: /app/rules.yaml
+  supervisors: enter-your@email.here
 
-  "Jira": {
-    "rootUri": "https://your-jira.server.com",
-    "userName": "jira-user-name",
-    "password": "jira-user-password",
-    "maxResults": 300
-  },
+Jira:
+  rootUri: https://your-jira.server.com
+  userName: jira-user-name
+  password: jira-user-password
+  maxResults: 300
 
-  "Smtp": {
-    "Host": "smtp.server.com",
-    "Port": 587,
-    "User": "smtp-user-name",
-    "Password": "smtp-user-password",
-    "From": "smtp-from-address",
-    "EnableSsl": true
-  } 
-}
+Smtp:
+  Host: smtp.server.com
+  Port: 587
+  User: smtp-user-name
+  Password: smtp-user-password
+  From: smtp-from-address
+  EnableSsl: true
 ```
 
 Now we are ready to run the tool using docker or podman
 
 ```bash
 $ docker run \
-    -v /home/user/preesta-config/rules.xml:/app/rules.xml:z \
-    -v /home/user/preesta-config/appsettings.json:/app/appsettings.json:z \
+    -v /home/user/preesta-config/rules.yaml:/app/rules.yaml:z \
+    -v /home/user/preesta-config/appsettings.yaml:/app/appsettings.yaml:z \
     -it ghcr.io/preesta/preesta \
     preesta notify-all
 ```
@@ -97,46 +90,46 @@ This schedule instructs Preesta to start all rules in group="notify-all" every h
 Let's start Preesta as a daemon with the scheduled job inside
 ```bash
 $ docker run \
-    -v /home/user/preesta-config/rules.xml:/app/rules.xml:z \
-    -v /home/user/preesta-config/appsettings.json:/app/appsettings.json:z \
+    -v /home/user/preesta-config/rules.yaml:/app/rules.yaml:z \
+    -v /home/user/preesta-config/appsettings.yaml:/app/appsettings.yaml:z \
     -v /home/user/preesta-config/crontab:/app/crontab:z \
     -it ghcr.io/preesta/preesta \
     supercronic -passthrough-logs /app/crontab
 ```
 From that moment Preesta works automatically by schedule until the docker process is stopped.
 
-So far so good. Now let's suppose we want to enhance a bit some workflow process. We guess that issues with type "Support" should be assigned by authorized persons included in team named "Support-Administrators", all other personnel should not assign issues. Add new rule in our rules.xml file
+So far so good. Now let's suppose we want to enhance a bit some workflow process. We guess that issues with type "Support" should be assigned by authorized persons included in team named "Support-Administrators", all other personnel should not assign issues. Add new rule in your rules.yaml file
 
-```xml
-<!-- /home/user/preesta-config/rules.xml file -->
-<configuration>
-    ...
-    <jqlRule group="auto-processing">
-        <jql><![CDATA[ 
-            Type = "Support"
-            AND Assignee is Not Empty
-            AND (Not Assignee Changed by membersOf("Support-Administrators"))
-            AND Resolution is Empty
-            ]]>
-        </jql>
-        <callRest
-            verb="PUT"
-            urlPattern="{{@jiraRoot}}rest/api/2/issue/{{@issueKey}}">
+```yaml
+rules:
+  - type: jql
+    group: notify-all
+    jql: "DueDate < startOfDay() AND Resolution is EMPTY"
+    notify:
+      subject: DueDate of the issue is expired
+      mailTo: assignee
+      cc: reporter
+      recommendations: Please resolve or reschedule the issue
 
-            <body><![CDATA[
-                    {
-                        "update": {
-                            "assignee": [{"set": {"name": null}}],
-                            "comment": [{"add": {"body": "Dropping Assignee. Only members of Support-Administrators team may assign Support issues"}}]
-                        }
-                    }
-                ]]>
-            </body>
-        </callRest>
-     </jqlRule>
-</configuration>
+  - type: jql
+    group: auto-processing
+    jql: >
+      Type = "Support"
+      AND Assignee is Not Empty
+      AND (Not Assignee Changed by membersOf("Support-Administrators"))
+      AND Resolution is Empty
+    callRest:
+      - verb: PUT
+        urlPattern: "{{@jiraRoot}}rest/api/2/issue/{{@issueKey}}"
+        body: |
+          {
+            "update": {
+              "assignee": [{"set": {"name": null}}],
+              "comment": [{"add": {"body": "Dropping Assignee. Only members of Support-Administrators team may assign Support issues"}}]
+            }
+          }
 ```
-The rule uses `callRest` action. When called the rule is translated to REST call to the url pointed in `urlPattern` attribute. Supported verbs now are PUT and POST. Placeholder `{{@jiraRoot}}` points to property Jira.rootUri from file appsettings.json. Placeholder `{{@issueKey}}` points to Issue key found for the specified JQL expression.
+The rule uses `callRest` action. When called the rule is translated to REST call to the url pointed in `urlPattern`. Supported verbs are PUT and POST. Placeholder `{{@jiraRoot}}` points to property `Jira.rootUri` from appsettings. Placeholder `{{@issueKey}}` points to Issue key found for the specified JQL expression.
 
 Add new schedule to the crontab file to start this action automatically lets say every 10 minutes
 ```sh
@@ -150,16 +143,24 @@ $ docker run \
     ...
     supercronic -passthrough-logs /app/crontab
 ```
-## Application Configuration specification
-*TODO: /app/appsettings.json and /app/secrets/appsettings.secrets.json files.*
+
+## Configuration formats
+
+Preesta uses YAML as the primary configuration format. Legacy XML format is also supported — the parser is selected automatically by file extension (`.yaml`/`.yml` → YAML, `.xml` → XML).
+
+| File | Primary (YAML) | Legacy (XML/JSON) |
+|------|---|---|
+| Rules | `rules.yaml` | `rules.xml` |
+| App settings | `appsettings.yaml` | `appsettings.json` |
+| Secrets | `appsettings.secrets.yaml` | `appsettings.secrets.json` |
 
 ## Rules Configuration specification
-*TODO: Supported rule types are: jqlRule (rc), buildRule and structureAmbiguityRule (alpha).*
+*TODO: Supported rule types are: jql, build, and structure.*
 ### Code injection in rule body
-*TODO: C# code may be used and placed inside block `<<c#( your-code-here )#>>` in rules.xml file.*
+*TODO: C# code may be used and placed inside block `<<c#( your-code-here )#>>` in rule bodies.*
 
 ## Logging specification
-*TODO: [Serilog](https://github.com/serilog) library is used for the logging, specific configuration should be placed at `Logging` section of the appsettings.json file.*
+*TODO: [Serilog](https://github.com/serilog) library is used for the logging, specific configuration should be placed at `Logger` section of the appsettings file.*
 
 ## Run under Kubernetes, OKD, OpenShift
 Use a Helm chart to deploy under popular container orchestrators.
