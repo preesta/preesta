@@ -47,29 +47,17 @@
 - Added `StubDelegatingHandler` helper for tests that used `Moq.Protected`
 - Tests: 37/37 passed
 
-## Remaining: Technical Migration
-
-### Phase 6: Rebranding Bender → Preesta (DO NEXT)
-
-#### Directories/files to rename
+### Phase 6: Rebranding Bender → Preesta ✅
 - `Bender/` → `Preesta/`, `bender.sln` → `preesta.sln`, `bender-cron` → `preesta-cron`
-
-#### Namespaces
 - `namespace Bender` → `namespace Preesta` (all .cs files)
+- `BenderSendsLetter` → `SendsNotification`, `BenderMakesUpdateHimself` → `SelfUpdate`
+- `TBendersReaction` → `TReaction` in `Package<T,T>`
+- Embedded resource `"Bender.rules.xsd"` → `"Preesta.rules.xsd"`, Serilog config, T4 templates
+- Dockerfile, docker-publish.yml, .vscode/launch.json, README.md updated
+- JIRA issue keys `BENDER-2301` etc. and test data name "Bender" in XmlConfigTests preserved
+- Tests: 37/37 passed
 
-#### Classes
-- `BenderSendsLetter` → `SendsNotification`
-- `BenderMakesUpdateHimself` → `SelfUpdate`
-- Test classes similarly
-
-#### Config / Docker / CI
-- Embedded resource: `"Bender.rules.xsd"` → `"Preesta.rules.xsd"`
-- appsettings.json Serilog Using: `"Bender"` → `"Preesta"`
-- Dockerfile: binary paths, LABEL, cron file
-- docker-publish.yml: `IMAGE_NAME: preesta`
-
-#### Test data (LEAVE AS-IS)
-- JIRA issue keys `BENDER-2301` etc. — test fixtures, not brand
+## Remaining
 
 ## Roadmap: New Features
 

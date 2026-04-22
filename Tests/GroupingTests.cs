@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Linq;
-using Bender.Configuration;
-using Bender.Configuration.Action;
-using Bender.Data;
-using Bender.Data.Supplying;
-using Bender.Data.Supplying.Convert;
+using Preesta.Configuration;
+using Preesta.Configuration.Action;
+using Preesta.Data;
+using Preesta.Data.Supplying;
+using Preesta.Data.Supplying.Convert;
 using NUnit.Framework;
 using NSubstitute;
 using Serilog;
@@ -17,7 +17,7 @@ namespace Tests
         [Test]
         public void GroupBuilds()
         {
-            var jira = Substitute.For<Bender.IJiraService>();
+            var jira = Substitute.For<Preesta.IJiraService>();
             jira
                 .GetBuilds(Arg.Any<string>())
                 .Returns(
@@ -74,7 +74,7 @@ namespace Tests
                 }
             };
 
-            var packages = new BuildSupplier(jira, rules).GetPackages().Cast<Package<BenderSendsLetter, Build>>().ToArray();
+            var packages = new BuildSupplier(jira, rules).GetPackages().Cast<Package<SendsNotification, Build>>().ToArray();
             Assert.AreEqual(2, packages.Count());
             Assert.AreEqual(2, packages.Single(p => p.Reaction.Subject == "Subject").Items.Count());
             var messages = new BuildPackageConverter().ToMessages(packages);
@@ -130,7 +130,7 @@ namespace Tests
         [Test]
         public void GroupIssues()
         {
-            var jira = Substitute.For<Bender.IJiraService>();
+            var jira = Substitute.For<Preesta.IJiraService>();
             jira
                 .GetIssuesForJql(Arg.Any<string>())
                 .Returns(
@@ -183,7 +183,7 @@ namespace Tests
 
             var packages = new JqlSupplier(jira, rules, logger)
                 .GetPackages()
-                .Cast<Package<BenderSendsLetter, Issue>>()
+                .Cast<Package<SendsNotification, Issue>>()
                 .ToArray();
 
             Assert.AreEqual(2, packages.Count());
