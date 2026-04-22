@@ -2,8 +2,6 @@
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using Messaging;
 using JiraRest;
 using Bender;
@@ -13,11 +11,11 @@ using Bender.Data;
 using Bender.Data.Supplying;
 using Bender.Data.Supplying.Convert;
 using Bender.Notification;
-using Moq;
-using Moq.Protected;
+using NSubstitute;
 using NUnit.Framework;
 using Serilog;
 using System.Xml.Linq;
+using Tests;
 
 using static System.String;
 
@@ -64,18 +62,11 @@ namespace End2End.Tests
                 Content = new StringContent("")
             };
 
-            var responseHandler = new Mock<DelegatingHandler>();
-            responseHandler
-                .Protected()
-                .SetupSequence<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>())
-                .Returns(Task.FromResult(responseWhenGetIssues))
-                .Returns(Task.FromResult(responseWhenDoPost))
-                ;
+            var handler = new StubDelegatingHandler(responseWhenGetIssues, responseWhenDoPost);
 
             var connection = new Connection("http://jira", "any", "any")
             {
-                Client = new HttpClient(responseHandler.Object)
+                Client = new HttpClient(handler)
             };
 
             var svc = new HttpJiraService("http://jira", Empty, Empty)
@@ -86,14 +77,14 @@ namespace End2End.Tests
             var jqlRule = new JqlRule
             {
                 Jql = "any",
-                HowToUpdate = new[] 
+                HowToUpdate = new[]
                 {
                     new Update
                     {
                         Verb = "POST",
                         UrlPattern = "{{@jiraRoot}}/rest/api/2/issue/{{@issueKey}}/transitions",
                         BodyPattern = @"{
-    ""update"": 
+    ""update"":
 	{
         ""comment"": [
             {
@@ -103,7 +94,7 @@ namespace End2End.Tests
             }
         ]
     },
-  
+
     ""transition"": {
         ""id"": ""61""
     }
@@ -112,33 +103,23 @@ namespace End2End.Tests
                 }
             };
 
-            var jqlSupplier = new JqlSupplier(svc, new[] { jqlRule }, new Mock<ILogger>().Object);
+            var jqlSupplier = new JqlSupplier(svc, new[] { jqlRule }, Substitute.For<ILogger>());
 
-            var messenger = new Mock<IMessenger>();
+            var messenger = Substitute.For<IMessenger>();
 
             var pipe = new ReactionPipe<Issue>
             {
                 PackageSupplier = jqlSupplier,
                 PackageConverter = new IssuePackageConverter("http://jira"),
-                Messenger = messenger.Object,
+                Messenger = messenger,
                 HttpHandler = svc
             };
             pipe.Run();
-            
-            responseHandler
-                .Protected()
-                
-                .Verify<Task<HttpResponseMessage>>("SendAsync",
-                    Times.Once(),
-                    ItExpr.Is<HttpRequestMessage>(
-                        r => 
-                            r.RequestUri == new Uri("http://jira/rest/api/2/issue/BENDER-961/transitions")
-                             && r.Method == HttpMethod.Post
-                            && r.Content!.ReadAsStringAsync().Result.Contains("Issue BENDER-961 Closed automatically because of activity absence")
-                            
-                    ),
-                    ItExpr.IsAny<CancellationToken>());
 
+            Assert.AreEqual(1, handler.Requests.Count(r =>
+                r.RequestUri == new Uri("http://jira/rest/api/2/issue/BENDER-961/transitions")
+                && r.Method == HttpMethod.Post
+                && r.Content!.ReadAsStringAsync().Result.Contains("Issue BENDER-961 Closed automatically because of activity absence")));
         }
 
         [Test]
@@ -243,7 +224,7 @@ namespace End2End.Tests
   </jqlRule>
 </configuration>";
 
-            var rulesConfig = new XmlRulesConfig(XDocument.Parse(rule), new Mock<ILogger>().Object);
+            var rulesConfig = new XmlRulesConfig(XDocument.Parse(rule), Substitute.For<ILogger>());
 
             var responseWhenGetIssues = new HttpResponseMessage(HttpStatusCode.OK)
             {
@@ -255,18 +236,11 @@ namespace End2End.Tests
                 Content = new StringContent("")
             };
 
-            var responseHandler = new Mock<DelegatingHandler>();
-            responseHandler
-                .Protected()
-                .SetupSequence<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>())
-                .Returns(Task.FromResult(responseWhenGetIssues))
-                .Returns(Task.FromResult(responseWhenDoPut))
-                ;
+            var handler = new StubDelegatingHandler(responseWhenGetIssues, responseWhenDoPut);
 
             var connection = new Connection("http://jira", Empty, Empty)
             {
-                Client = new HttpClient(responseHandler.Object)
+                Client = new HttpClient(handler)
             };
 
             var jiraService = new HttpJiraService("http://jira", Empty, Empty)
@@ -274,7 +248,7 @@ namespace End2End.Tests
                 Connection = connection
             };
 
-            var packageSupplier = new JqlSupplier(jiraService, rulesConfig.GetJqlRules("test"), new Mock<ILogger>().Object);
+            var packageSupplier = new JqlSupplier(jiraService, rulesConfig.GetJqlRules("test"), Substitute.For<ILogger>());
             var pipe = new ReactionPipe<Issue>()
                 {
                     PackageSupplier = packageSupplier,
@@ -286,18 +260,11 @@ namespace End2End.Tests
             pipe.Run();
 
             // Check results
-            responseHandler
-                .Protected()
-                .Verify<Task<HttpResponseMessage>>("SendAsync",
-                    Times.Once(),
-                    ItExpr.Is<HttpRequestMessage>(
-                        r => 
-                            r.RequestUri == new Uri("https://jira.example.com/swap-assignee-and-reporter-where/?assignee=alice&reporter=bob")
-                                && r.Method == HttpMethod.Put
-                                && r.Content!.ReadAsStringAsync().Result.Contains(@"""assignee"": [{""set"": {""name"": ""bob""}}]")
-                                && r.Content!.ReadAsStringAsync().Result.Contains(@"""reporter"": [{""set"": {""name"": ""alice""}}]")
-                    ),
-                    ItExpr.IsAny<CancellationToken>());
+            Assert.AreEqual(1, handler.Requests.Count(r =>
+                r.RequestUri == new Uri("https://jira.example.com/swap-assignee-and-reporter-where/?assignee=alice&reporter=bob")
+                && r.Method == HttpMethod.Put
+                && r.Content!.ReadAsStringAsync().Result.Contains(@"""assignee"": [{""set"": {""name"": ""bob""}}]")
+                && r.Content!.ReadAsStringAsync().Result.Contains(@"""reporter"": [{""set"": {""name"": ""alice""}}]")));
         }
 
        [Test]

@@ -1,119 +1,129 @@
-# Bender → Preesta: Migration Plan
+# Bender → Preesta: Migration & Roadmap
 
 ## Branding
 
 - **New name:** Preesta
 - **GitHub org:** `github.com/preesta` (created 2026-04-10)
 - **Domain:** `preesta.dev` (free, not yet purchased)
-- **Tagline:** "Pre-established rules for your Jira"
+- **Tagline:** "Pre-established rules for your issue tracker"
 - **Folk-etymology:** "pre-established" (no Russian/Slavic backstory in public materials)
-- **Old repo** `ValentinLevitov/bender` — оставляем как есть, потом архивируем или добавим "moved to preesta/preesta"
+- **Old repo** `ValentinLevitov/bender` — оставляем, потом архивируем
 - **Plan:** работаем локально, первый push в `preesta/preesta` когда будет готово
 
 ## Completed
 
 ### Phase 1: .NET 5 → .NET 8 ✅
 - 4 `.csproj`: `net5.0` → `net8.0`, `LangVersion` removed (C# 12 default)
-- `Microsoft.Extensions.*`: 5.0.0 → 8.0.0
-- `System.CodeDom`: 5.0.0 → 8.0.0
+- `Microsoft.Extensions.*` 5.0.0 → 8.0.0, `System.CodeDom` 5.0.0 → 8.0.0
 - Dockerfile: SDK/runtime images 5.0 → 8.0
 - CI workflows: checkout v2→v4, setup-dotnet v1→v4, dotnet 5.0.x→8.0.x
-- `.vscode/launch.json`: path updated
-- Build: 0 errors, 8 nullable warnings (pre-existing)
 - Tests: 37/37 passed
-- **Key finding:** Unity 5.11 works on .NET 8 — phases 1 and 2 can be done separately
 
-## Remaining Phases
+### Phase 2: Unity DI → Microsoft.Extensions.DependencyInjection ✅
+- Removed Unity 5.11.10 + Unity.Interception 5.11.1
+- Added M.E.DI 8.0.0 with .NET 8 keyed services for named registrations
+- Rewrote `DependencyContainer.cs` (192 → ~60 lines)
+- Deleted `SeriloggingBehavior.cs`
+- Added constructors to `ReactionPipe<T>`, `HttpJiraService`, `IssuesInMultipleStructuresSupplier`, `PackageConverterBase<T>` (kept `{ get; set; }` properties intact)
+- Tests: 37/37 passed
 
-### Phase 2: Unity DI → Microsoft.Extensions.DependencyInjection (HIGH complexity)
-- Remove: `Unity` 5.11.10, `Unity.Interception` 5.11.1
-- Add: `Microsoft.Extensions.DependencyInjection` 8.0.x
-- **Critical file:** `Bender/DI/DependencyContainer.cs` (192 lines) — full rewrite
-- Convert `ReactionPipe<T>` from property injection to constructor injection (6 properties → ctor params)
-- Replace `SeriloggingBehavior` (Unity.Interception) with decorator pattern
-- Use .NET 8 keyed services for named registrations (`"Jql"`, `"Structure"`)
-- Update all tests that construct `ReactionPipe<T>`
+### Phase 3: SmtpClient → MailKit ✅
+- Replaced deprecated `System.Net.Mail.SmtpClient` with MailKit 4.8.0
+- `MailMessage` → `MimeMessage` + `BodyBuilder`, `LinkedResource` → `BodyBuilder.LinkedResources`
+- Removed unused `System.Reactive.Linq`
+- Tests: 37/37 passed
 
-### Phase 3: SmtpClient → MailKit (MEDIUM complexity, independent)
-- **Critical file:** `Messaging/SmtpClient.cs`
-- Replace `System.Net.Mail.SmtpClient` (deprecated) with `MailKit.Net.Smtp.SmtpClient`
-- Replace `MailMessage` → `MimeMessage`, `LinkedResource`/`AlternateView` → `BodyBuilder`
-- Update exception handling in tests (`SmtpException` → MailKit exceptions)
-- Remove unused `System.Reactive.Linq` from `Messaging.csproj`
+### Phase 4: Serilog packages ✅
+- Serilog 2.10→4.3, Settings.Configuration 3.1→8.0, Sinks.Console 3.1→6.1
+- Enrichers.Environment 2.1→3.0, Enrichers.Thread 3.1→4.0
+- Sentry.Serilog 3.0→6.3, Exceptions 6.0→8.4
+- Removed deprecated `Serilog.Sinks.ColoredConsole` → Console sink with Literate ANSI theme
+- Tests: 37/37 passed
 
-### Phase 4: Update Serilog packages (LOW complexity, independent)
-- `Serilog` 2.10.0 → 4.x
-- `Serilog.Settings.Configuration` 3.1.0 → 8.x
-- `Serilog.Sinks.Console` 3.1.1 → 6.x
-- `Serilog.Enrichers.Environment` 2.1.3 → latest
-- `Serilog.Enrichers.Thread` 3.1.0 → latest
-- `Sentry.Serilog` 3.0.7 → 4.x
-- `Serilog.Exceptions` 6.0.0 → 8.x
-- **Remove** `Serilog.Sinks.ColoredConsole` (deprecated) → use Console sink with theme
-- Update `appsettings.json`: remove ColoredConsole, update assembly refs
+### Phase 5: Test packages ✅
+- NUnit 3.12→4.3 (via `GlobalUsings.cs` ClassicAssert alias — zero assertion rewrites)
+- NUnit3TestAdapter 3.16→4.6, Microsoft.NET.Test.Sdk 16.5→17.11
+- Replaced Moq 4.16 with NSubstitute 5.3 (9 test files migrated)
+- Added `StubDelegatingHandler` helper for tests that used `Moq.Protected`
+- Tests: 37/37 passed
 
-### Phase 5: Update test packages (LOW complexity, independent)
-- `NUnit` 3.12.0 → 4.x (rewrite assertions: `Assert.AreEqual` → `Assert.That`)
-- `NUnit3TestAdapter` → NUnit4 adapter
-- `Microsoft.NET.Test.Sdk` 16.5.0 → 17.x
-- **Replace** `Moq` 4.16.0 → `NSubstitute` (decision confirmed by user)
+## Remaining: Technical Migration
 
-### Phase 6: Rebranding Bender → Preesta (MEDIUM complexity, DO LAST)
+### Phase 6: Rebranding Bender → Preesta (DO NEXT)
 
-#### Directories to rename
-- `Bender/` → `Preesta/`
+#### Directories/files to rename
+- `Bender/` → `Preesta/`, `bender.sln` → `preesta.sln`, `bender-cron` → `preesta-cron`
 
-#### Files to rename
-- `bender.sln` → `preesta.sln`
-- `Bender/Bender.csproj` → `Preesta/Preesta.csproj`
-- `bender-cron` → `preesta-cron`
-- `BenderMakeUpdateHimself.cs` → consider `SelfUpdate.cs`
-- `BenderSendsNotificationsWithIssues.cs` → rename
-- `BenderUpdatesIssuesHimself.cs` → rename
-
-#### Namespaces (all .cs files)
-- `namespace Bender` → `namespace Preesta` (and all `using Bender.` → `using Preesta.`)
+#### Namespaces
+- `namespace Bender` → `namespace Preesta` (all .cs files)
 
 #### Classes
-- `BenderSendsLetter` → `PreestaSendsLetter` or `SendsNotification`
+- `BenderSendsLetter` → `SendsNotification`
 - `BenderMakesUpdateHimself` → `SelfUpdate`
 - Test classes similarly
 
-#### String literals / config
-- `Program.cs`: help text "Bender must always be run..."
-- `XmlRulesConfig.cs`: `GetManifestResourceStream("Bender.rules.xsd")` → `"Preesta.rules.xsd"`
-- `appsettings.json`: Serilog `Using` array `"Bender"` → `"Preesta"`
-- `AssemblyInfo.cs`: comment about "Bender.ILogger"
-
-#### Docker / CI
-- `Dockerfile`: all `/app/Bender`, `/usr/local/bin/bender`, `bender-cron` refs
-- `docker-publish.yml`: `IMAGE_NAME: bender` → `preesta`
-- `LABEL org.opencontainers.image.source` → update to new repo URL
-- `preesta-cron`: update `/app/Bender` → `/app/Preesta`
+#### Config / Docker / CI
+- Embedded resource: `"Bender.rules.xsd"` → `"Preesta.rules.xsd"`
+- appsettings.json Serilog Using: `"Bender"` → `"Preesta"`
+- Dockerfile: binary paths, LABEL, cron file
+- docker-publish.yml: `IMAGE_NAME: preesta`
 
 #### Test data (LEAVE AS-IS)
-- JIRA issue keys like `BENDER-2301` in JSON test fixtures — these are test data, not brand
-- JQL strings `project=BENDER` in tests — same
-- Redirection rule `from="Bender"` in XmlConfigTests — test data
+- JIRA issue keys `BENDER-2301` etc. — test fixtures, not brand
 
-### Phase 7 (OPTIONAL): Newtonsoft.Json → System.Text.Json
-- **Decision: NOT doing this.** Newtonsoft works fine, entire Jira REST client is built on `dynamic` deserialization. Rewriting would be massive with no practical benefit.
+## Roadmap: New Features
 
-## Dependency Order
+### Phase 7: Output — Telegram + Slack notifications
+- `IMessenger` already exists — add `TelegramMessenger` (Bot API) and `SlackMessenger` (webhook)
+- New XML syntax: `<notify via="telegram" chatId="..." />`, `<notify via="slack" channel="..." />`
+- Config: Telegram bot token and Slack webhook URL in `appsettings.json`
 
-```
-Phase 1 ✅
-  ↓
-Phase 2 (Unity → M.E.DI) — depends on Phase 1
-  ↓
-Phases 3, 4, 5 — independent of each other, can run in parallel
-  ↓
-Phase 6 (Rebranding) — LAST
-```
+### Phase 8: Email redesign
+- Replace T4-generated HTML tables with modern responsive email templates (MJML → HTML)
+- Remove Bender logo (`logo.jpg`)
+- Clean, minimal Preesta branding or no logo at all
 
-## Other Notes
+### Phase 9: Input — Linear + GitHub Issues
+Linear and GitHub Issues are the primary targets — both popular, both lack built-in rule-engine automation.
 
-- `Nito.AsyncEx` — used only for `.WaitAndUnwrapException()` in `Connection.cs`. Ideally replace with proper async/await throughout, but this is a significant refactor. Defer.
-- T4 templates — work on .NET 8, tooling is aging. Consider Razor/Source Generators in future. Not urgent.
-- supercronic in Dockerfile — v0.1.12, consider updating to v0.2.x
-- Bender history mention in future README: "Preesta started in 2019 as 'Bender'. In 2026 it was rebuilt on .NET 8 and renamed."
+| Tracker | Built-in automation | Preesta value |
+|---|---|---|
+| **Linear** | Basic (auto-archive, status transitions). No rule engine. | High — GraphQL API, no JQL-like queries+actions |
+| **GitHub Issues** | Only via Actions (CI, not issue management) | High — search syntax as JQL analog |
+| **GitLab Issues** | Limited | Good |
+| **Plane** | OSS Linear alternative, minimal automation | Good |
+| **Shortcut** | Minimal | Good |
+
+Architecture: abstract `IIssueSource` interface (replaces current Jira-specific `IJiraService`), with implementations per tracker. Rules reference a source by name in config.
+
+Trackers NOT worth targeting (strong built-in automation): Jira Cloud, Azure DevOps, Monday.com, Asana.
+
+### Phase 10: REST API
+- ASP.NET Minimal API alongside the CLI
+- Endpoints: list rules, trigger rule group, get last run status/results, health check
+- Config stays in files (GitOps principle — API is for operations, not configuration)
+- Prometheus `/metrics` endpoint: rules executed, issues matched, errors
+
+### Phase 11: Web dashboard (read-only)
+- Blazor or static SPA
+- Shows: rule run history, matched issues, notification log, system health
+- NOT a config editor — config lives in git
+- Light enough to embed in the same Docker container
+
+### Phase 12: Integration testing infrastructure
+- **WireMock.Net** — mock any HTTP API (Jira, Linear, GitHub, Slack, Telegram) in-process
+- **Testcontainers** + **MailHog** — real SMTP in Docker, verify sent emails via MailHog API
+- Test topology:
+  ```
+  [Preesta] → WireMock (pretends to be Linear/Jira/GitHub API) → returns test issues
+  [Preesta] → MailHog container (pretends to be SMTP) → verify email content
+  [Preesta] → WireMock (pretends to be Slack/Telegram webhook) → verify payload
+  ```
+
+## Decisions Log
+
+- **Newtonsoft.Json:** keeping as-is. Entire Jira REST client uses `dynamic` deserialization. No benefit to migrating to System.Text.Json.
+- **Nito.AsyncEx:** keeping. Used for `.WaitAndUnwrapException()` in `Connection.cs`. Proper async/await refactor deferred.
+- **T4 templates:** keeping for now. Work on .NET 8, but tooling is aging. Consider Razor or Source Generators after Phase 8 (email redesign).
+- **supercronic:** update to v0.2.x during Phase 6 Docker cleanup.
+- **Bender lineage:** README origin section: "Preesta started in 2019 as 'Bender'. In 2026 it was rebuilt on .NET 8 and renamed."

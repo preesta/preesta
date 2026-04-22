@@ -4,7 +4,7 @@ using Bender.Configuration.Action;
 using Bender.Data;
 using Bender.Data.Supplying;
 using NUnit.Framework;
-using Moq;
+using NSubstitute;
 using Serilog;
 
 namespace Tests
@@ -15,9 +15,9 @@ namespace Tests
         [Test]
         public void EnsurePredicateIsCalling()
         {
-            var jira = new Mock<Bender.IJiraService>();
+            var jira = Substitute.For<Bender.IJiraService>();
             jira
-                .Setup(j => j.GetIssuesForJql(It.IsAny<string>()))
+                .GetIssuesForJql(Arg.Any<string>())
                 .Returns(
                     new[]
                         {
@@ -27,7 +27,7 @@ namespace Tests
                                 BuildFound = new string[] {},
                                 Staff = new IssueStaff()
                             }
-                        }                    
+                        }
                 );
 
             var rules = 
@@ -46,8 +46,8 @@ namespace Tests
                         }
                     };
 
-            var logger = new Mock<ILogger>();
-            var packages = new JqlSupplier(jira.Object, rules, logger.Object).GetPackages();
+            var logger = Substitute.For<ILogger>();
+            var packages = new JqlSupplier(jira, rules, logger).GetPackages();
             Assert.IsFalse(packages.Any());
         }
    }

@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Threading;
 using MailKit.Net.Smtp;
 using Messaging;
-using Moq;
+using NSubstitute;
 using NUnit.Framework;
 using SmtpClient = Messaging.SmtpClient;
 
@@ -27,23 +27,23 @@ namespace Tests.MailSending
         [Test]
         public void TestEachMessageIsSent()
         {
-            var messenger = new Mock<IMessenger>();
+            var messenger = Substitute.For<IMessenger>();
 
-            SmtpClient.Send(messenger.Object, Messages, TimeSpan.FromSeconds(3), 2);
+            SmtpClient.Send(messenger, Messages, TimeSpan.FromSeconds(3), 2);
 
-            messenger.Verify(m => m.Send(It.Is<Message>(s => s.Subject == "m1")), Times.Once);
-            messenger.Verify(m => m.Send(It.Is<Message>(s => s.Subject == "m2")), Times.Once);
-            messenger.Verify(m => m.Send(It.Is<Message>(s => s.Subject == "m3")), Times.Once);
+            messenger.Received(1).Send(Arg.Is<Message>(s => s.Subject == "m1"));
+            messenger.Received(1).Send(Arg.Is<Message>(s => s.Subject == "m2"));
+            messenger.Received(1).Send(Arg.Is<Message>(s => s.Subject == "m3"));
         }
 
         [Test]
         public void TestRetryWorks()
         {
             var count = 0;
-            var messenger = new Mock<IMessenger>();
-            messenger.Setup(a => a.Send(It.IsAny<Message>()))
-                
-                .Callback(() =>
+            var messenger = Substitute.For<IMessenger>();
+            messenger
+                .When(a => a.Send(Arg.Any<Message>()))
+                .Do(_ =>
                 {
                     Debug.WriteLine(Thread.CurrentThread.ManagedThreadId);
                     count++;
@@ -51,14 +51,13 @@ namespace Tests.MailSending
                         throw new SmtpCommandException(SmtpErrorCode.MessageNotAccepted, SmtpStatusCode.TransactionFailed, "test");
                 });
 
-            SmtpClient.Send(messenger.Object, Messages, TimeSpan.FromSeconds(1), 3);
+            SmtpClient.Send(messenger, Messages, TimeSpan.FromSeconds(1), 3);
 
-            messenger.Verify(m => m.Send(It.IsAny<Message>()), Times.Exactly(4));
+            messenger.Received(4).Send(Arg.Any<Message>());
 
-            messenger.Verify(m => m.Send(It.Is<Message>(s => s.Subject == "m1")), Times.AtLeastOnce());
-            messenger.Verify(m => m.Send(It.Is<Message>(s => s.Subject == "m2")), Times.AtLeastOnce());
-            messenger.Verify(m => m.Send(It.Is<Message>(s => s.Subject == "m3")), Times.AtLeastOnce());
-
+            messenger.Received().Send(Arg.Is<Message>(s => s.Subject == "m1"));
+            messenger.Received().Send(Arg.Is<Message>(s => s.Subject == "m2"));
+            messenger.Received().Send(Arg.Is<Message>(s => s.Subject == "m3"));
         }
 
     }

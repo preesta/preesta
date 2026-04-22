@@ -8,7 +8,7 @@ using Bender.Data.Supplying.Convert;
 using Bender.Extensions;
 using Bender.Notification;
 using Messaging;
-using Moq;
+using NSubstitute;
 using NUnit.Framework;
 using Serilog;
 
@@ -95,11 +95,11 @@ namespace Tests.MailSending
 "
             );
 
-            _rulesConfig = new XmlRulesConfig(xmlConfig, new Mock<ILogger>().Object);
-           
-            var jiraMock = new Mock<Bender.IJiraService>();
+            _rulesConfig = new XmlRulesConfig(xmlConfig, Substitute.For<ILogger>());
+
+            var jiraMock = Substitute.For<Bender.IJiraService>();
             jiraMock
-                .Setup(j => j.GetIssuesForJql(It.IsAny<string>()))
+                .GetIssuesForJql(Arg.Any<string>())
                 .Returns(
                     new[]
                     {
@@ -117,17 +117,12 @@ namespace Tests.MailSending
                     }
                 );
 
-            jiraMock
-                .Setup(j => j.GetBuilds(It.IsAny<string>()))
-                .Returns(new Build[] { });
-        
-            jiraMock
-                .Setup(j => j.GetIssueById(It.IsAny<string>()))
-                .Returns(new Issue());
+            jiraMock.GetBuilds(Arg.Any<string>()).Returns(new Build[] { });
+            jiraMock.GetIssueById(Arg.Any<string>()).Returns(new Issue());
 
-            _jiraService = jiraMock.Object;
+            _jiraService = jiraMock;
 
-            _logger = new Mock<ILogger>().Object;
+            _logger = Substitute.For<ILogger>();
         }
 
 
@@ -162,17 +157,15 @@ namespace Tests.MailSending
         public void CheckThatSupervisorIsNotReplacedEvenIfSheIsInRedirectionMap()
         {
             Message? message = null;
-            var messenger = new Mock<IMessenger>();
-            messenger
-                .Setup(m => m.SendAll(It.IsAny<IEnumerable<Message>>()))
-                .Callback<IEnumerable<Message>>(m => message = m.Single());
+            var messenger = Substitute.For<IMessenger>();
+            messenger.SendAll(Arg.Do<IEnumerable<Message>>(m => message = m.Single()));
             
             var pipe = new ReactionPipe<Issue>()
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test-for-faired-supervisor"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
                 Redirector = new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "faired_supervisor" }, Enumerable.Empty<string>()),
-                Messenger = messenger.Object
+                Messenger = messenger
                     
             };
 
@@ -186,17 +179,15 @@ namespace Tests.MailSending
         public void CheckThatSupervisorIsNotDuplicatedInCcIfSheIsInTo()
         {
             Message? message = null;
-            var messenger = new Mock<IMessenger>();
-            messenger
-                .Setup(m => m.SendAll(It.IsAny<IEnumerable<Message>>()))
-                .Callback<IEnumerable<Message>>(m => message = m.Single());
+            var messenger = Substitute.For<IMessenger>();
+            messenger.SendAll(Arg.Do<IEnumerable<Message>>(m => message = m.Single()));
 
             var pipe = new ReactionPipe<Issue>()
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("supervisor-in-To"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
                 Redirector = new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "supervisor" }, Enumerable.Empty<string>()),
-                Messenger = messenger.Object
+                Messenger = messenger
             };
 
             pipe.Run();
@@ -209,17 +200,15 @@ namespace Tests.MailSending
         public void CheckThatSupervisorInCcIsNotDuplicated()
         {
             Message? message = null;
-            var messenger = new Mock<IMessenger>();
-            messenger
-                .Setup(m => m.SendAll(It.IsAny<IEnumerable<Message>>()))
-                .Callback<IEnumerable<Message>>(m => message = m.Single());
+            var messenger = Substitute.For<IMessenger>();
+            messenger.SendAll(Arg.Do<IEnumerable<Message>>(m => message = m.Single()));
 
             var pipe = new ReactionPipe<Issue>()
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("supervisor-in-Cc"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
                 Redirector = new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "supervisor" }, Enumerable.Empty<string>()),
-                Messenger = messenger.Object
+                Messenger = messenger
             };
 
             pipe.Run();
@@ -232,17 +221,15 @@ namespace Tests.MailSending
         public void CheckThatSupervisorIsInToFieldWhenThereAreNoOtherAddressees()
         {
             Message? message = null;
-            var messenger = new Mock<IMessenger>();
-            messenger
-                .Setup(m => m.SendAll(It.IsAny<IEnumerable<Message>>()))
-                .Callback<IEnumerable<Message>>(m => message = m.Single());
+            var messenger = Substitute.For<IMessenger>();
+            messenger.SendAll(Arg.Do<IEnumerable<Message>>(m => message = m.Single()));
 
             var pipe = new ReactionPipe<Issue>()
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test-for-empty-addressers"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
                 Redirector = new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "supervisor" }, Enumerable.Empty<string>()),
-                Messenger = messenger.Object
+                Messenger = messenger
             };
 
             pipe.Run();
@@ -256,17 +243,15 @@ namespace Tests.MailSending
         public void CheckThatMessagesSentToMaintainerWhenSupervisorIsAbsent()
         {
             Message? message = null;
-            var messenger = new Mock<IMessenger>();
-            messenger
-                .Setup(m => m.SendAll(It.IsAny<IEnumerable<Message>>()))
-                .Callback<IEnumerable<Message>>(m => message = m.Single());
+            var messenger = Substitute.For<IMessenger>();
+            messenger.SendAll(Arg.Do<IEnumerable<Message>>(m => message = m.Single()));
 
             var pipe = new ReactionPipe<Issue>()
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test-for-empty-addressers"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
                 Redirector = new Redirector(_rulesConfig.GetRedirectionMap(), Enumerable.Empty<string>(), new[] { "maintainer" }),
-                Messenger = messenger.Object
+                Messenger = messenger
             };
 
             pipe.Run();
@@ -279,17 +264,15 @@ namespace Tests.MailSending
         public void FairedSupervisorInAddressees()
         {
             Message? message = null;
-            var messenger = new Mock<IMessenger>();
-            messenger
-                .Setup(m => m.SendAll(It.IsAny<IEnumerable<Message>>()))
-                .Callback<IEnumerable<Message>>(m => message = m.Single());
+            var messenger = Substitute.For<IMessenger>();
+            messenger.SendAll(Arg.Do<IEnumerable<Message>>(m => message = m.Single()));
 
             var pipe = new ReactionPipe<Issue>()
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("faired-suprevisor-in-addressees"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
                 Redirector = new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "faired_supervisor" }, Enumerable.Empty<string>()),
-                Messenger = messenger.Object
+                Messenger = messenger
             };
 
             pipe.Run();
