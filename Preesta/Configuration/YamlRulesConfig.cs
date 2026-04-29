@@ -85,6 +85,12 @@ namespace Preesta.Configuration
                 _config.RedirectionRules ?? new Dictionary<string, string>());
         }
 
+        public IReadOnlyDictionary<string, string> GetTelegramUserMap()
+        {
+            return new ReadOnlyDictionary<string, string>(
+                _config.TelegramUsers ?? new Dictionary<string, string>());
+        }
+
         private TRule[] GetRules<TRule>(string group, string type, Func<YamlRuleEntry, TRule> converter) where TRule : Rule
         {
             if (_config.Rules == null)
@@ -131,7 +137,10 @@ namespace Preesta.Configuration
                     MetaAddressers = (entry.Notify.MailTo ?? string.Empty).ToLower()
                         .Split(',', StringSplitOptions.RemoveEmptyEntries),
                     MetaCarbonCopy = (entry.Notify.Cc ?? string.Empty).ToLower()
-                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries),
+                    TelegramChatIds = (entry.Notify.TelegramChatId ?? string.Empty)
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries),
+                    Columns = entry.Notify.Columns?.ToArray()
                 };
             }
 
@@ -153,6 +162,7 @@ namespace Preesta.Configuration
     {
         public List<YamlRuleEntry>? Rules { get; set; }
         public Dictionary<string, string>? RedirectionRules { get; set; }
+        public Dictionary<string, string>? TelegramUsers { get; set; }
     }
 
     internal class YamlRuleEntry
@@ -185,6 +195,8 @@ namespace Preesta.Configuration
         public string? MailTo { get; set; }
         public string? Cc { get; set; }
         public string? Recommendations { get; set; }
+        public string? TelegramChatId { get; set; }
+        public List<string>? Columns { get; set; }
     }
 
     internal class YamlCallRestEntry

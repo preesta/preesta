@@ -9,6 +9,7 @@ namespace Messaging
         public string Bcc { get; set; } = Empty;
         public string Subject { get; set; } = Empty;
         public string Body { get; set; } = Empty;
+        public string TextBody { get; set; } = Empty;
         public string Importance { get; set; } = Empty;
         public bool IsBodyHtml { get; set; }
         public string LogoFileName { get; set; } = Empty;

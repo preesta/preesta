@@ -149,7 +149,8 @@ namespace End2End.Tests
 				{
 					Subject = "subject",
 					MetaAddressers = new[] { "assignee" },
-					MetaCarbonCopy = new string[] { }
+					MetaCarbonCopy = new string[] { },
+					Columns = new[] { "Type", "Key", "Summary", "Assignee", "Reporter", "Status", "Created" }
 				}
 			};
 
@@ -168,7 +169,11 @@ namespace End2End.Tests
 			Assert.AreEqual(1, handler.Requests.Count(r => r.RequestUri == new Uri("http://jira/rest/api/2/search?jql=any&maxResults=50")));
 
 			messenger.Received(1).SendAll(Arg.Is<IEnumerable<Message>>(
-				msgs => ExpectedNotificationWithEmptyPriority.Equals(msgs.Single().Body)));
+				msgs => msgs.Single().Subject.Contains("subject")
+				     && msgs.Single().Body.Contains("BENDER-2301")
+				     && msgs.Single().Body.Contains("UNASSIGNED")
+				     && msgs.Single().Body.Contains("John DiMaggio")
+				     && msgs.Single().Body.Contains("08.02.2017")));
 		}
 
 

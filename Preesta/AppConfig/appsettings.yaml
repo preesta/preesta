@@ -15,20 +15,24 @@ Logger:
 
 Application:
   rulesFileName: rules.yaml
-  maintenanceTeam: "--- set in appsettings.secrets.yaml ---"
-  supervisors: "--- set in appsettings.secrets.yaml ---"
-  subjectPrefix: "[Jira Notification] "
+  maintenanceTeam: ""
+  supervisors: ""
+  subjectPrefix: ""
 
 Jira:
-  rootUri: https://example.com
+  rootUri: https://valevitov.atlassian.net
   userName: "--- set in appsettings.secrets.yaml ---"
   password: "--- set in appsettings.secrets.yaml ---"
+  apiToken: "--- set in appsettings.secrets.yaml ---"
   maxResults: 300
 
 Smtp:
-  Host: smtp.office365.com
-  Port: 587
+  Host: smtp.gmail.com
+  Port: 465
   User: "--- set in appsettings.secrets.yaml ---"
   Password: "--- set in appsettings.secrets.yaml ---"
   From: "--- set in appsettings.secrets.yaml ---"
   EnableSsl: true
+
+Telegram:
+  botToken: "--- set in appsettings.secrets.yaml ---"

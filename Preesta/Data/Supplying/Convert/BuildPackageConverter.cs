@@ -1,7 +1,5 @@
-﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using Preesta.Template;
+using Preesta.Formatting;
 using JiraRest;
 
 namespace Preesta.Data.Supplying.Convert
@@ -18,9 +16,14 @@ namespace Preesta.Data.Supplying.Convert
             return new HttpRequest[]{};
         }
 
-        protected internal override string StickThemesToSingleHtml(IEnumerable<Package<SendsNotification, Build>> packages)
+        protected internal override string FormatHtml(IEnumerable<Package<SendsNotification, Build>> packages)
         {
-            return new BuildPackagesTemplate(packages).TransformText();
+            return BuildFormatter.ToHtml(packages);
+        }
+
+        protected internal override string FormatText(IEnumerable<Package<SendsNotification, Build>> packages)
+        {
+            return BuildFormatter.ToText(packages);
         }
     }
 }

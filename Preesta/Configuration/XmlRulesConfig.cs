@@ -65,6 +65,14 @@ namespace Preesta.Configuration
                 ;
         }
 
+        public IReadOnlyDictionary<string, string> GetTelegramUserMap()
+        {
+            return new ReadOnlyDictionary<string, string>(
+                (_config.Root!.Element("telegram_users") ?? new XElement("telegram_users"))
+                .Elements("user")
+                .ToDictionary(r => r.Attribute("email")!.Value, r => r.Attribute("chatId")!.Value));
+        }
+
         private TRule[] GetRules<TRule>(string periodType, IEnumerable<string> rulesTypes, Func<XElement, TRule> converter) where TRule : Rule
         {
             var foundRules =

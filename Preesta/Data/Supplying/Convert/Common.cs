@@ -1,15 +1,18 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Messaging;
+using Preesta.Notification;
 using static System.String;
 
 namespace Preesta.Data.Supplying.Convert
 {
     internal static class Common<TIssueType>
     {
-        public static Message[] ToMessage(IEnumerable<Package<SendsNotification, TIssueType>> packages, 
-            Func<IEnumerable<Package<SendsNotification, TIssueType>>, string> toHtml, string subjectPrefix)
+        public static Message[] ToMessage(IEnumerable<Package<SendsNotification, TIssueType>> packages,
+            Func<IEnumerable<Package<SendsNotification, TIssueType>>, string> toHtml,
+            Func<IEnumerable<Package<SendsNotification, TIssueType>>, string> toText,
+            string subjectPrefix)
         {
             string ToOrderedString(IEnumerable<string> a) => Join(",", a.OrderBy(c => c).ToArray());
             return (from package in packages
@@ -28,8 +31,44 @@ namespace Preesta.Data.Supplying.Convert
                                Subject = $"{subjectPrefix}{ag.Key.Subject}",
 
                                IsBodyHtml = true,
-                               Body = toHtml(ag)
+                               Body = toHtml(ag),
+                               TextBody = toText(ag)
                            }).ToArray();
+        }
+
+        public static Message[] ToTelegramMessages(IEnumerable<Package<SendsNotification, TIssueType>> packages,
+            Func<IEnumerable<Package<SendsNotification, TIssueType>>, string> toText,
+            string subjectPrefix,
+            Redirector redirector,
+            IReadOnlyDictionary<string, string> telegramUserMap)
+        {
+            var userMap = new Dictionary<string, string>(telegramUserMap, StringComparer.OrdinalIgnoreCase);
+            var packagesArr = packages.ToArray();
+            if (packagesArr.Length == 0)
+                return System.Array.Empty<Message>();
+
+            var packageChatIds =
+                from p in packagesArr
+                let resolvedEmails = redirector.ResolveRecipients(
+                    p.Reaction.Addressees.To.Concat(p.Reaction.Addressees.Cc))
+                let mappedChatIds = resolvedEmails
+                    .Where(userMap.ContainsKey)
+                    .Select(e => userMap[e])
+                let allChatIds = mappedChatIds
+                    .Concat(p.Reaction.TelegramChatIds)
+                    .Distinct()
+                from chatId in allChatIds
+                select new { Package = p, ChatId = chatId };
+
+            return (from pwc in packageChatIds
+                    group pwc.Package by pwc.ChatId into g
+                    let subject = g.First().Reaction.Subject
+                    select new Message
+                    {
+                        To = g.Key,
+                        Subject = $"{subjectPrefix}{subject}",
+                        TextBody = toText(g)
+                    }).ToArray();
         }
     }
 }

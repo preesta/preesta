@@ -38,6 +38,14 @@ namespace Preesta.Notification
             // TODO: Implement redirection by regex
         }
 
+        public IEnumerable<string> ResolveRecipients(IEnumerable<string> recipients, char separator = ',')
+        {
+            return recipients
+                .Where(r => !string.IsNullOrWhiteSpace(r))
+                .SelectMany(r => GetActualAddressee(r).Split(separator, StringSplitOptions.RemoveEmptyEntries))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+
         public Message ActualizeAddressees(Message initial, char separator = ',')
         {
             var destination = initial;

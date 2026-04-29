@@ -8,7 +8,7 @@ using Nito.AsyncEx.Synchronous;
 
 namespace JiraRest
 {
-    public class Connection : IDisposable
+    public class Connection : IJiraGateway, IDisposable
     {
         public ISerializer Serializer { get; set; } = new NewtownsoftSerializer();
 
@@ -23,6 +23,13 @@ namespace JiraRest
             var cred = Encoding.UTF8.GetBytes($"{user}:{password}");
             Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
                 "Basic", Convert.ToBase64String(cred));
+        }
+
+        public Connection(string rootUri, string bearerToken)
+        {
+            RootUri = new Uri($"{rootUri}{(rootUri.EndsWith("/") ? string.Empty : "/")}");
+            Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+                "Bearer", bearerToken);
         }
 
         public dynamic GetIssuesFromJql(string query, int? maxResults, bool includeHistory = false)

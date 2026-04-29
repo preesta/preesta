@@ -61,7 +61,7 @@ namespace Preesta.AppConfig
             }
         }
 
-        public string LogoFileName => _configuration["Application:logoFileName"] ?? "logo.jpg";
+        public string LogoFileName => _configuration["Application:logoFileName"] ?? Empty;
 
         public string LocalRulesFileName => _configuration["Application:rulesFileName"] ?? "rules.xml";
 
@@ -78,6 +78,10 @@ namespace Preesta.AppConfig
         public int MaxResults => _configuration.GetValue<int?>("Jira:maxResults") ?? 50;
 
         public string SubjectPrefix => _configuration["Application:subjectPrefix"] ?? Empty;
+
+        public string? ApiToken => _configuration["Jira:apiToken"];
+
+        public string? TelegramBotToken => _configuration["Telegram:botToken"];
 
         public IConfigurationSection SmtpSection => _configuration.GetSection("Smtp");
 

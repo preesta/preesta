@@ -8,6 +8,7 @@ namespace Preesta.Configuration
         BuildRule[] GetBuildRules(string @group);
         IssueInclusionToStructRule[] GetInStructRules(string @group);
         IReadOnlyDictionary<string, string> GetRedirectionMap();
+        IReadOnlyDictionary<string, string> GetTelegramUserMap();
         void ValidateSchema();
     }
 }
