@@ -26,10 +26,16 @@ namespace Preesta.DI
                 .ReadFrom.Configuration(appSettings.LoggerSection)
                 .CreateLogger();
 
-            var jiraService = new HttpJiraService(
-                appSettings.JiraRootUri, appSettings.UserName, appSettings.Password, appSettings.MaxResults);
+            var jiraService = !string.IsNullOrEmpty(appSettings.ApiToken)
+                ? new HttpJiraService(appSettings.JiraRootUri, appSettings.ApiToken, appSettings.MaxResults)
+                : new HttpJiraService(appSettings.JiraRootUri, appSettings.UserName, appSettings.Password, appSettings.MaxResults);
 
             var messenger = new SmtpClient(appSettings.SmtpSection);
+
+            IMessenger? telegramMessenger = null;
+            var telegramToken = appSettings.TelegramBotToken;
+            if (!string.IsNullOrEmpty(telegramToken))
+                telegramMessenger = new TelegramMessenger(telegramToken);
 
             var rulesFileName = appSettings.LocalRulesFileName;
             var rulesConfig = CreateRulesConfig(rulesFileName, logger);
@@ -44,6 +50,7 @@ namespace Preesta.DI
 
             var redirector = new Redirector(
                 rulesConfig.GetRedirectionMap(), appSettings.Supervisors, appSettings.Maintainers);
+            var telegramUserMap = rulesConfig.GetTelegramUserMap();
 
             var logoFileName = appSettings.LogoFileName;
 
@@ -51,13 +58,13 @@ namespace Preesta.DI
             services.AddSingleton<IRulesConfig>(rulesConfig);
 
             services.AddKeyedSingleton("Jql", new ReactionPipe<Issue>(
-                jqlSupplier, issueConverter, messenger, jiraService, redirector, logoFileName));
+                jqlSupplier, issueConverter, messenger, jiraService, redirector, logoFileName, telegramMessenger, telegramUserMap));
 
             services.AddKeyedSingleton("Structure", new ReactionPipe<Issue>(
-                structSupplier, issueConverter, messenger, jiraService, redirector, logoFileName));
+                structSupplier, issueConverter, messenger, jiraService, redirector, logoFileName, telegramMessenger, telegramUserMap));
 
             services.AddSingleton(new ReactionPipe<Build>(
-                buildSupplier, buildConverter, messenger, jiraService, redirector, logoFileName));
+                buildSupplier, buildConverter, messenger, jiraService, redirector, logoFileName, telegramMessenger, telegramUserMap));
 
             _provider = services.BuildServiceProvider();
         }

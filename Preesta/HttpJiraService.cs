@@ -10,12 +10,25 @@ namespace Preesta
     public class HttpJiraService : IJiraService, IHttpHandler
     {
         public int MaxIssueCount { get; set; } = 50;
-        internal Connection Connection { get; set; }
+        internal IJiraGateway Connection { get; set; }
 
         public HttpJiraService(string rootUri, string user, string password, int maxIssueCount = 50)
         {
-            Connection = new Connection(rootUri, user, password);
+            Connection = IsCloudUri(rootUri)
+                ? (IJiraGateway)new CloudConnection(rootUri, user, password)
+                : new Connection(rootUri, user, password);
             MaxIssueCount = maxIssueCount;
+        }
+
+        public HttpJiraService(string rootUri, string bearerToken, int maxIssueCount = 50)
+        {
+            Connection = new Connection(rootUri, bearerToken);
+            MaxIssueCount = maxIssueCount;
+        }
+
+        private static bool IsCloudUri(string rootUri)
+        {
+            return rootUri.Contains("atlassian.net", StringComparison.OrdinalIgnoreCase);
         }
 
         public virtual Issue[] GetIssuesForJql(string query)
@@ -67,13 +80,9 @@ namespace Preesta
                 );
         }
 
-        private T CallFuncInConnectionContext<T>(Func<Connection, T> func)
+        private T CallFuncInConnectionContext<T>(Func<IJiraGateway, T> func)
         {
             return func(Connection);
-            //using (var jira = new Connection(_rootUri, _user, _password))
-            //{
-            //    return func(jira);
-            //}
         }
 
         public virtual void HandleAll(IEnumerable<HttpRequest> requests)

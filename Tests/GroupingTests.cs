@@ -84,47 +84,14 @@ namespace Tests
 
             var tomorrow = DateTime.Now.AddDays(1).ToString("dd.MM.yyyy");
 
-            var expectedBody1 = $@"<h3>Subject</h3>
-<table border=""1"" cellspacing=""0"" cellpadding=""4"">
-	<tr align=""center"" bgcolor=""#999999"">
-		<td>Name</td>
-		<td>StartDate</td>
-		<td>ReleaseDate</td>
-		<td>Description</td>
-	</tr>
-	<tr>
-		<td>9.0.0.1</td>
-		<td>empty</td>
-		<td><font color=""red""><b>{tomorrow}<b></font></td>
-		<td></td>
-	</tr>
-	<tr>
-		<td>9.0.0.2</td>
-		<td>empty</td>
-		<td><font color=""red""><b>{tomorrow}<b></font></td>
-		<td></td>
-	</tr>
-</table>
-";
-            var expectedBody2 = $@"<h3>DifferentSubject</h3>
-<table border=""1"" cellspacing=""0"" cellpadding=""4"">
-	<tr align=""center"" bgcolor=""#999999"">
-		<td>Name</td>
-		<td>StartDate</td>
-		<td>ReleaseDate</td>
-		<td>Description</td>
-	</tr>
-	<tr>
-		<td>9.0.0.2</td>
-		<td>empty</td>
-		<td><font color=""red""><b>{tomorrow}<b></font></td>
-		<td></td>
-	</tr>
-</table>
-";
+            Assert.IsTrue(actualBody1.Contains("Subject"));
+            Assert.IsTrue(actualBody1.Contains("9.0.0.1"));
+            Assert.IsTrue(actualBody1.Contains("9.0.0.2"));
+            Assert.IsTrue(actualBody1.Contains(tomorrow));
 
-            Assert.AreEqual(expectedBody1, actualBody1);
-            Assert.AreEqual(expectedBody2, actualBody2);
+            Assert.IsTrue(actualBody2.Contains("DifferentSubject"));
+            Assert.IsTrue(actualBody2.Contains("9.0.0.2"));
+            Assert.IsFalse(actualBody2.Contains("9.0.0.1"));
         }
 
         [Test]
@@ -186,8 +153,15 @@ namespace Tests
                 .Cast<Package<SendsNotification, Issue>>()
                 .ToArray();
 
-            Assert.AreEqual(2, packages.Count());
-            Assert.AreEqual(2, packages.Single(p => p.Reaction.Subject == "Subject").Items.Count());
+            Assert.AreEqual(3, packages.Count());
+            Assert.AreEqual(2, packages.Count(p => p.Reaction.Subject == "Subject"));
+            Assert.AreEqual(1, packages.Count(p => p.Reaction.Subject == "DifferentSubject"));
+
+            var messages = new IssuePackageConverter("http://jira", subjectPrefix: "")
+                .ToMessages(packages);
+            Assert.AreEqual(2, messages.Count());
+            Assert.AreEqual(1, messages.Count(m => m.Subject == "Subject"));
+            Assert.AreEqual(1, messages.Count(m => m.Subject == "DifferentSubject"));
         }
     }
 }

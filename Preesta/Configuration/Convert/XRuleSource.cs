@@ -58,6 +58,10 @@ namespace Preesta.Configuration.Convert
 
                     MetaCarbonCopy = (notify.Attribute("cc")?.Value ?? string.Empty).ToLower()
                         .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                        .ToArray(),
+
+                    TelegramChatIds = (notify.Attribute("telegramChatId")?.Value ?? string.Empty)
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
                         .ToArray()
                 };
             }

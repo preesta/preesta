@@ -1,15 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Preesta.Template;
+using Preesta.Formatting;
 using JiraRest;
 using Preesta.Extensions;
 
 namespace Preesta.Data.Supplying.Convert
 {
-    /// <summary>
-    /// Converts Package to Mail body
-    /// </summary>
     internal class IssuePackageConverter : PackageConverterBase<Issue>
     {
         private readonly string _rootUri;
@@ -38,7 +35,7 @@ namespace Preesta.Data.Supplying.Convert
         private string? ReplaceKnownMarkers(string? template, Issue issue)
         {
             return template == null ? null
-            : template 
+            : template
                 .Replace("{{@jiraRoot}}", _rootUri)
                 .Replace("{{@issueKey}}", issue.Key)
                 .Replace("{{@assignee.email}}", issue.Staff.Assignee?.Email)
@@ -57,9 +54,14 @@ namespace Preesta.Data.Supplying.Convert
                 ;
         }
 
-        protected internal override string StickThemesToSingleHtml(IEnumerable<Package<SendsNotification, Issue>> packages)
+        protected internal override string FormatHtml(IEnumerable<Package<SendsNotification, Issue>> packages)
         {
-            return new IssuePackagesTemplate(packages, _rootUri).TransformText();
+            return IssueFormatter.ToHtml(packages, _rootUri);
+        }
+
+        protected internal override string FormatText(IEnumerable<Package<SendsNotification, Issue>> packages)
+        {
+            return IssueFormatter.ToText(packages, _rootUri);
         }
     }
 }

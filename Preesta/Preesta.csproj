@@ -36,31 +36,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  <ItemGroup>
-    <None Update="Template\BuildPackagesTemplate.tt">
-      <LastGenOutput>BuildPackagesTemplate.cs</LastGenOutput>
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-      <CustomToolNamespace />
-    </None>
-    <None Update="Template\IssuePackagesTemplate.tt">
-      <LastGenOutput>IssuePackagesTemplate.cs</LastGenOutput>
-      <Generator>TextTemplatingFilePreprocessor</Generator>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Update="Template\BuildPackagesTemplate.m.cs">
-      <DependentUpon>BuildPackagesTemplate.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Template\IssuePackagesTemplate.m.cs">
-      <DependentUpon>IssuePackagesTemplate.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Template\BuildPackagesTemplate.cs">
-      <DependentUpon>BuildPackagesTemplate.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Template\IssuePackagesTemplate.cs">
-      <DependentUpon>IssuePackagesTemplate.tt</DependentUpon>
-    </Compile>
-  </ItemGroup>
 
   <Target Name="T2" BeforeTargets="BeforeBuild">
     <WriteLinesToFile File="AppConfig\appsettings.secrets.json" Lines="{}" Overwrite="True" Condition="!Exists('AppConfig\appsettings.secrets.json')" />
@@ -78,6 +53,10 @@
     <ContentWithTargetPath Include="AppConfig\appsettings.secrets.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>secrets/appsettings.secrets.json</TargetPath>
+    </ContentWithTargetPath>
+    <ContentWithTargetPath Include="secrets\appsettings.secrets.yaml" Condition="Exists('secrets\appsettings.secrets.yaml')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>secrets/appsettings.secrets.yaml</TargetPath>
     </ContentWithTargetPath>
   </ItemGroup>
   <ItemGroup>

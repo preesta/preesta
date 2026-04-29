@@ -1,0 +1,180 @@
+using System.Linq;
+using Preesta;
+using Preesta.Configuration;
+using Preesta.Configuration.Action;
+using Preesta.Data;
+using Preesta.Data.Supplying;
+using NSubstitute;
+using NUnit.Framework;
+using Serilog;
+
+namespace Tests
+{
+    [TestFixture]
+    public class PerIssueSplittingTests
+    {
+        private static IJiraService JiraReturning(params Issue[] issues)
+        {
+            var jira = Substitute.For<IJiraService>();
+            jira.GetIssuesForJql(Arg.Any<string>()).Returns(issues);
+            return jira;
+        }
+
+        [Test]
+        public void AssigneeMarkerSplitsIssuesByAssigneeIntoSeparatePackages()
+        {
+            var rule = new JqlRule
+            {
+                Jql = "DueDate < startOfDay() AND Resolution is EMPTY",
+                HowToNotify = new Notify
+                {
+                    Subject = "DueDate expired",
+                    MetaAddressers = new[] { "assignee" },
+                    MetaCarbonCopy = new string[] { }
+                }
+            };
+
+            var supplier = new JqlSupplier(JiraReturning(
+                new Issue { Key = "T-1", Staff = new IssueStaff { Assignee = new User { Email = "ivanov@x" } } },
+                new Issue { Key = "T-2", Staff = new IssueStaff { Assignee = new User { Email = "sidorov@x" } } },
+                new Issue { Key = "T-3", Staff = new IssueStaff { Assignee = new User { Email = "ivanov@x" } } }
+            ), new[] { rule }, Substitute.For<ILogger>());
+
+            var packages = supplier.GetPackages()
+                .Cast<Package<SendsNotification, Issue>>()
+                .ToArray();
+
+            Assert.AreEqual(2, packages.Length);
+
+            var ivanov = packages.Single(p => p.Reaction.Addressees.To.Contains("ivanov@x"));
+            var sidorov = packages.Single(p => p.Reaction.Addressees.To.Contains("sidorov@x"));
+
+            CollectionAssert.AreEquivalent(new[] { "T-1", "T-3" }, ivanov.Items.Select(i => i.Key));
+            CollectionAssert.AreEquivalent(new[] { "T-2" }, sidorov.Items.Select(i => i.Key));
+        }
+
+        [Test]
+        public void ReporterMarkerInCcSplitsByReporter()
+        {
+            var rule = new JqlRule
+            {
+                Jql = "any",
+                HowToNotify = new Notify
+                {
+                    Subject = "S",
+                    MetaAddressers = new[] { "assignee" },
+                    MetaCarbonCopy = new[] { "reporter" }
+                }
+            };
+
+            var supplier = new JqlSupplier(JiraReturning(
+                new Issue
+                {
+                    Key = "T-1",
+                    Staff = new IssueStaff
+                    {
+                        Assignee = new User { Email = "a@x" },
+                        Reporter = new User { Email = "p1@x" }
+                    }
+                },
+                new Issue
+                {
+                    Key = "T-2",
+                    Staff = new IssueStaff
+                    {
+                        Assignee = new User { Email = "a@x" },
+                        Reporter = new User { Email = "p2@x" }
+                    }
+                }
+            ), new[] { rule }, Substitute.For<ILogger>());
+
+            var packages = supplier.GetPackages()
+                .Cast<Package<SendsNotification, Issue>>()
+                .ToArray();
+
+            Assert.AreEqual(2, packages.Length);
+
+            var p1 = packages.Single(p => p.Reaction.Addressees.Cc.Contains("p1@x"));
+            var p2 = packages.Single(p => p.Reaction.Addressees.Cc.Contains("p2@x"));
+
+            CollectionAssert.AreEquivalent(new[] { "T-1" }, p1.Items.Select(i => i.Key));
+            CollectionAssert.AreEquivalent(new[] { "T-2" }, p2.Items.Select(i => i.Key));
+        }
+
+        [Test]
+        public void StaticAddresseesNextToMarkerArePreserved()
+        {
+            var rule = new JqlRule
+            {
+                Jql = "any",
+                HowToNotify = new Notify
+                {
+                    Subject = "S",
+                    MetaAddressers = new[] { "assignee" },
+                    MetaCarbonCopy = new[] { "reporter", "managers" }
+                }
+            };
+
+            var supplier = new JqlSupplier(JiraReturning(
+                new Issue
+                {
+                    Key = "T-1",
+                    Staff = new IssueStaff
+                    {
+                        Assignee = new User { Email = "a@x" },
+                        Reporter = new User { Email = "p@x" }
+                    }
+                }
+            ), new[] { rule }, Substitute.For<ILogger>());
+
+            var package = supplier.GetPackages()
+                .Cast<Package<SendsNotification, Issue>>()
+                .Single();
+
+            CollectionAssert.AreEquivalent(new[] { "a@x" }, package.Reaction.Addressees.To);
+            CollectionAssert.AreEquivalent(new[] { "managers", "p@x" }, package.Reaction.Addressees.Cc);
+        }
+
+        [Test]
+        public void IssuesWithSameAssigneeButDifferentReporterEndUpInDifferentPackages()
+        {
+            var rule = new JqlRule
+            {
+                Jql = "any",
+                HowToNotify = new Notify
+                {
+                    Subject = "S",
+                    MetaAddressers = new[] { "assignee", "reporter" },
+                    MetaCarbonCopy = new string[] { }
+                }
+            };
+
+            var supplier = new JqlSupplier(JiraReturning(
+                new Issue
+                {
+                    Key = "T-1",
+                    Staff = new IssueStaff
+                    {
+                        Assignee = new User { Email = "a@x" },
+                        Reporter = new User { Email = "p1@x" }
+                    }
+                },
+                new Issue
+                {
+                    Key = "T-2",
+                    Staff = new IssueStaff
+                    {
+                        Assignee = new User { Email = "a@x" },
+                        Reporter = new User { Email = "p2@x" }
+                    }
+                }
+            ), new[] { rule }, Substitute.For<ILogger>());
+
+            var packages = supplier.GetPackages()
+                .Cast<Package<SendsNotification, Issue>>()
+                .ToArray();
+
+            Assert.AreEqual(2, packages.Length);
+        }
+    }
+}

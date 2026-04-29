@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Messaging;
@@ -12,8 +13,10 @@ namespace Preesta.Notification
         public IPackageSupplier? PackageSupplier { get; set; }
         public IPackageConverter<TIssueType>? PackageConverter { get; set; }
         public IMessenger? Messenger { get; set; }
+        public IMessenger? TelegramMessenger { get; set; }
         public IHttpHandler? HttpHandler { get; set; }
         public Redirector Redirector { get; set; } = Redirector.Empty;
+        public IReadOnlyDictionary<string, string> TelegramUserMap { get; set; } = new Dictionary<string, string>();
         public string LogoFileName { get; set; } = string.Empty;
 
         public ReactionPipe(
@@ -22,7 +25,9 @@ namespace Preesta.Notification
             IMessenger? messenger = null,
             IHttpHandler? httpHandler = null,
             Redirector? redirector = null,
-            string logoFileName = "")
+            string logoFileName = "",
+            IMessenger? telegramMessenger = null,
+            IReadOnlyDictionary<string, string>? telegramUserMap = null)
         {
             PackageSupplier = packageSupplier;
             PackageConverter = packageConverter;
@@ -30,27 +35,40 @@ namespace Preesta.Notification
             HttpHandler = httpHandler;
             Redirector = redirector ?? Redirector.Empty;
             LogoFileName = logoFileName;
+            TelegramMessenger = telegramMessenger;
+            TelegramUserMap = telegramUserMap ?? new Dictionary<string, string>();
         }
 
         public void Run()
         {
             if (PackageConverter == null || PackageSupplier == null)
             {
-                // Nothing to do
                 return;
             }
 
             var allPackages = PackageSupplier.GetPackages();
 
-            var messages =
-                allPackages
-                    .OfType<Package<SendsNotification, TIssueType>>()
-                    .ToMessages(PackageConverter)
-                    .Redirect(Redirector)
-                    .SetLogo(LogoFileName);
+            var notificationPackages = allPackages
+                .OfType<Package<SendsNotification, TIssueType>>()
+                .ToArray();
 
-            Messenger?.SendAll(messages);
+            // Email
+            var emailMessages = notificationPackages
+                .ToMessages(PackageConverter)
+                .Redirect(Redirector)
+                .SetLogo(LogoFileName);
 
+            Messenger?.SendAll(emailMessages);
+
+            // Telegram
+            if (TelegramMessenger != null)
+            {
+                var telegramMessages = notificationPackages
+                    .ToTelegramMessages(PackageConverter, Redirector, TelegramUserMap);
+                TelegramMessenger.SendAll(telegramMessages);
+            }
+
+            // Self-updates (REST calls)
             var selfUpdates = allPackages
                     .OfType<Package<SelfUpdate, TIssueType>>()
                     .ToHttpRequests(PackageConverter)

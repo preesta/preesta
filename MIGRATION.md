@@ -57,21 +57,31 @@
 - JIRA issue keys `BENDER-2301` etc. and test data name "Bender" in XmlConfigTests preserved
 - Tests: 37/37 passed
 
+### Phase 7: Telegram + Formatting Refactor ✅
+- Added `TelegramMessenger` — sends via Bot API (`/bot{token}/sendMessage`, HTML parse_mode)
+- Replaced T4 templates with C# `IssueFormatter` and `BuildFormatter` (StringBuilder-based)
+- Dual output: styled HTML tables for email, Telegram-compatible HTML for chat
+- `Notify.TelegramChatIds` in rules config (XML `telegramChatId` attribute, YAML `telegramChatId` field)
+- `Telegram:botToken` in `appsettings.yaml` / `appsettings.secrets.yaml`
+- `ReactionPipe<T>` runs email + Telegram flows in parallel
+- `Message.TextBody` property for plain/Telegram text alongside HTML `Body`
+- Deleted T4 template files (`Preesta/Template/` directory removed)
+- Tests: 50/50 passed (4 new Telegram tests)
+
 ## Remaining
 
 ## Roadmap: New Features
 
-### Phase 7: Output — Telegram + Slack notifications
-- `IMessenger` already exists — add `TelegramMessenger` (Bot API) and `SlackMessenger` (webhook)
-- New XML syntax: `<notify via="telegram" chatId="..." />`, `<notify via="slack" channel="..." />`
-- Config: Telegram bot token and Slack webhook URL in `appsettings.json`
+### Phase 8: Slack notifications
+- `SlackMessenger` (incoming webhook)
+- New XML/YAML syntax for Slack channel targeting
 
-### Phase 8: Email redesign
-- Replace T4-generated HTML tables with modern responsive email templates (MJML → HTML)
-- Remove Bender logo (`logo.jpg`)
-- Clean, minimal Preesta branding or no logo at all
+### Phase 9: MS Teams notifications
+- `TeamsMessenger` via Incoming Webhook connector (POST JSON with Adaptive Card)
+- Adaptive Card format for rich issue tables (natively rendered in Teams)
+- Config: `Teams:webhookUrl` in appsettings, `teamsWebhookUrl` per rule in rules config
 
-### Phase 9: Input — Linear + GitHub Issues
+### Phase 10: Input — Linear + GitHub Issues
 Linear and GitHub Issues are the primary targets — both popular, both lack built-in rule-engine automation.
 
 | Tracker | Built-in automation | Preesta value |
@@ -86,19 +96,19 @@ Architecture: abstract `IIssueSource` interface (replaces current Jira-specific 
 
 Trackers NOT worth targeting (strong built-in automation): Jira Cloud, Azure DevOps, Monday.com, Asana.
 
-### Phase 10: REST API
+### Phase 11: REST API
 - ASP.NET Minimal API alongside the CLI
 - Endpoints: list rules, trigger rule group, get last run status/results, health check
 - Config stays in files (GitOps principle — API is for operations, not configuration)
 - Prometheus `/metrics` endpoint: rules executed, issues matched, errors
 
-### Phase 11: Web dashboard (read-only)
+### Phase 12: Web dashboard (read-only)
 - Blazor or static SPA
 - Shows: rule run history, matched issues, notification log, system health
 - NOT a config editor — config lives in git
 - Light enough to embed in the same Docker container
 
-### Phase 12: Integration testing infrastructure
+### Phase 13: Integration testing infrastructure
 - **WireMock.Net** — mock any HTTP API (Jira, Linear, GitHub, Slack, Telegram) in-process
 - **Testcontainers** + **MailHog** — real SMTP in Docker, verify sent emails via MailHog API
 - Test topology:
@@ -112,6 +122,6 @@ Trackers NOT worth targeting (strong built-in automation): Jira Cloud, Azure Dev
 
 - **Newtonsoft.Json:** keeping as-is. Entire Jira REST client uses `dynamic` deserialization. No benefit to migrating to System.Text.Json.
 - **Nito.AsyncEx:** keeping. Used for `.WaitAndUnwrapException()` in `Connection.cs`. Proper async/await refactor deferred.
-- **T4 templates:** keeping for now. Work on .NET 8, but tooling is aging. Consider Razor or Source Generators after Phase 8 (email redesign).
+- **T4 templates:** removed in Phase 7. Replaced with C# StringBuilder-based formatters in `Preesta/Formatting/`.
 - **supercronic:** update to v0.2.x during Phase 6 Docker cleanup.
 - **Bender lineage:** README origin section: "Preesta started in 2019 as 'Bender'. In 2026 it was rebuilt on .NET 8 and renamed."

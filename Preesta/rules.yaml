@@ -1,32 +1,30 @@
 # Preesta rules configuration (YAML format)
-# To use: set "rulesFileName": "rules.yaml" in appsettings.json (or appsettings.yaml)
 
 rules:
   - type: jql
-    group: daily
-    jql: "DueDate < startOfDay() AND Resolution is EMPTY"
+    group: e2etest
+    jql: "assignee = currentUser() AND resolution is EMPTY ORDER BY priority DESC, created ASC"
     notify:
-      subject: DueDate of the issue is expired
-      mailTo: assignee
-      cc: reporter,managers
-      recommendations: Please resolve or reschedule the issue
+      subject: "Daily Jira digest"
+      recommendations: "Tickets assigned to you — move blockers to In Progress before standup."
+      mailTo: you@example.com
+      cc: ""
+      telegramChatId: "12345678"
 
   - type: jql
-    group: hourly
-    jql: >
-      Project = SUPP AND Type = "Support Request"
-      AND Resolution is EMPTY AND DueDate is EMPTY
-    callRest:
-      - verb: PUT
-        urlPattern: "{{@jiraRoot}}rest/api/2/issue/{{@issueKey}}"
-        body: |
-          {
-            "update": {
-              "duedate": [{"set": "<<c# System.DateTime.Today.ToString(\"yyyy-MM-dd\") #>>"}],
-              "comment": [{"add": {"body": "Approximate date of Support Request review"}}]
-            }
-          }
+    group: e2etest
+    jql: "reporter = currentUser() AND resolution is EMPTY ORDER BY created ASC"
+    notify:
+      subject: "Daily Jira digest"
+      recommendations: "Tickets you reported that are still open."
+      mailTo: you@example.com
+      cc: ""
+      telegramChatId: "12345678"
+      columns:
+        - Key
+        - Summary
+        - Assignee
+        - Status
 
 # Email alias mappings
-redirectionRules:
-  managers: "super_boss@example.com,super_boss2@example.com"
+redirectionRules: {}

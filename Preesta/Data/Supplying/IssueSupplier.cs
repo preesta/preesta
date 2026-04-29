@@ -77,7 +77,8 @@ namespace Preesta.Data.Supplying
                     {
                         To = ReplaceMarkersByRealAddresses(set.rule.HowToNotify!.MetaAddressers, issue.Staff),
                         Cc = ReplaceMarkersByRealAddresses(set.rule.HowToNotify.MetaCarbonCopy, issue.Staff),
-                        set.rule.HowToNotify.Subject
+                        set.rule.HowToNotify.Subject,
+                        Rule = set.rule
                     }
                     into ag
                     let basePackage = new Package<SendsNotification, Issue>
@@ -91,7 +92,9 @@ namespace Preesta.Data.Supplying
                                 Cc = ag.Key.Cc.Split(',')
                             },
                             Subject = ag.Key.Subject,
-                            Recommendations = ag.First().rule.HowToNotify!.Recommendations
+                            Recommendations = ag.First().rule.HowToNotify!.Recommendations,
+                            TelegramChatIds = ag.First().rule.HowToNotify!.TelegramChatIds,
+                            Columns = ag.First().rule.HowToNotify!.Columns
                         }
                     }
                     select Enrich(basePackage, ag.First().rule)

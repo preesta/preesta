@@ -8,6 +8,7 @@ namespace Preesta.Configuration.Action
         public string? Recommendations { get; set; }
         public string[] MetaAddressers { get; set; } = new string[]{};
         public string[] MetaCarbonCopy { get; set; } = new string[]{};
-
+        public string[] TelegramChatIds { get; set; } = new string[]{};
+        public string[]? Columns { get; set; }
     }
 }
