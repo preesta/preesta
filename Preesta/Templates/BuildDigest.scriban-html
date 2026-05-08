@@ -1,0 +1,42 @@
+<style>
+.preesta-builds { border-collapse: collapse; font-size: 13px; color: #172B4D; width: 100%; }
+.preesta-builds th { padding: 10px 8px; border-bottom: 2px solid #DFE1E6; background: #F4F5F7; font-weight: 600; text-align: left; }
+.preesta-builds td { padding: 8px; border-bottom: 1px solid #EBECF0; vertical-align: top; }
+@media only screen and (max-width: 480px) {
+  .preesta-builds thead { display: none; }
+  .preesta-builds tr { display: block; padding: 12px 0; border-bottom: 1px solid #DFE1E6; }
+  .preesta-builds td { display: block; border: none; padding: 3px 0; }
+  .preesta-builds td:before {
+    content: attr(data-label) ":\00a0";
+    font-weight: 600;
+    color: #5E6C84;
+    display: inline-block;
+    min-width: 96px;
+  }
+}
+</style>
+<div style="max-width:640px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+{{~ for section in sections ~}}
+{{~ if !for.first ~}}
+<div style="margin-top:48px"></div>
+{{~ end ~}}
+<h3 style="color:#172B4D;margin:24px 0 8px">{{ section.subject | html.escape }}</h3>
+{{~ if section.recommendations ~}}
+<div style="border-left:3px solid #0052CC;background:#F4F5F7;padding:10px 14px;margin:0 0 12px;color:#172B4D;border-radius:0 4px 4px 0">{{ section.recommendations | html.escape }}</div>
+{{~ end ~}}
+<table class="preesta-builds">
+  <thead>
+    <tr><th>Build</th><th>Release date</th></tr>
+  </thead>
+  <tbody>
+    {{~ for build in section.builds ~}}
+    <tr>
+      <td data-label="Build">{{ build.name | html.escape }}</td>
+      <td data-label="Release date">{{ build.release_date }}{{ if build.expired }} <span style="color:#DE350B">(expired)</span>{{ end }}</td>
+    </tr>
+    {{~ end ~}}
+  </tbody>
+</table>
+{{~ end ~}}
+<p style="color:#97A0AF;font-size:11px;margin-top:24px;text-align:center">Sent by Preesta</p>
+</div>

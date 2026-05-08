@@ -39,10 +39,10 @@ namespace Preesta.Data.Convert
                 Key = (string)issue.key,
                 Summary = (string)issue.fields.summary,
 
-                BuildFixed = issue.fields.fixVersions == null ? new string[] { } :
+                FixVersions = issue.fields.fixVersions == null ? new string[] { } :
                     ((IEnumerable<dynamic>)issue.fields.fixVersions).Select(v => (string)v.name).ToArray(),
 
-                BuildFound = issue.fields.versions == null ? new string[] { } :
+                AffectsVersions = issue.fields.versions == null ? new string[] { } :
                     ((IEnumerable<dynamic>)issue.fields.versions).Select(v => (string)v.name).ToArray(),
 
                 Components = string.Join(", ", ((IEnumerable<dynamic>)issue.fields.components ??
@@ -66,8 +66,18 @@ namespace Preesta.Data.Convert
                 TimeSpent = TimeSpan.FromSeconds(((double?)issue.fields.timespent) ?? 0),
                 Type = issue.fields.issuetype.name,
                 DueDate = (DateTime?)issue.fields.duedate,
-                CreatedDate = (DateTime)issue.fields.created
+                CreatedDate = (DateTime)issue.fields.created,
+                UpdatedDate = (DateTime?)((Newtonsoft.Json.Linq.JObject)issue.fields)["updated"],
+                Resolution = NestedString((Newtonsoft.Json.Linq.JObject)issue.fields, "resolution", "name"),
+                ProjectKey = NestedString((Newtonsoft.Json.Linq.JObject)issue.fields, "project", "key")
             };
+        }
+
+        private static string? NestedString(Newtonsoft.Json.Linq.JObject obj, string field, string nested)
+        {
+            var token = obj[field];
+            if (token is not Newtonsoft.Json.Linq.JObject inner) return null;
+            return (string?)inner[nested];
         }
 
         public static Attachment ToAttachment(dynamic attachment)

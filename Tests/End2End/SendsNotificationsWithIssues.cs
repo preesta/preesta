@@ -75,8 +75,8 @@ namespace End2End.Tests
 		<td>Components</td>
 		<td>Labels</td>
 		<td>Time Spent (hrs)</td>
-		<td>Build Found</td>
-		<td>Build Fixed</td>
+		<td>Affects Versions</td>
+		<td>Fix Versions</td>
 		<td>Due Date</td>
 		<td>Created</td>
 	</tr>

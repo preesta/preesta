@@ -105,8 +105,8 @@ namespace Tests.MailSending
                     {
                         new Issue
                         {
-                            BuildFixed = new[] {"1"},
-                            BuildFound = new string[] {},
+                            FixVersions = new[] {"1"},
+                            AffectsVersions = new string[] {},
                             Staff = new IssueStaff
                                     {
                                         Assignee = new User {Email = "assignee@express.ship"},

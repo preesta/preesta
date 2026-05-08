@@ -105,8 +105,8 @@ namespace Tests
                     {
                         new Issue
                         {
-                            BuildFixed = new[] {"1"},
-                            BuildFound = new string[] {},
+                            FixVersions = new[] {"1"},
+                            AffectsVersions = new string[] {},
                             Staff = new IssueStaff
                                     {
                                         Assignee = null
