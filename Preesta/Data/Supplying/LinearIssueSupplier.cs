@@ -39,5 +39,32 @@ namespace Preesta.Data.Supplying
                 return Array.Empty<Issue>();
             }
         }
+
+        /// <summary>
+        /// Mirrors <see cref="JqlSupplier.Enrich"/>: stashes the rule's filter-mode info on
+        /// <see cref="PackageBase.Properties"/> so the formatter can render a "what produced
+        /// this list" line in the digest. Linear's UI doesn't encode filter state in the
+        /// URL (verified live — only saved views have a permanent shareable URL), so we
+        /// only set <c>LinearViewName</c>+<c>LinearViewId</c> for the viewId mode; the
+        /// other modes get the raw prompt or filter JSON to show, with no link.
+        /// </summary>
+        protected internal override PackageBase Enrich(PackageBase basePackage, LinearRule rule)
+        {
+            if (!string.IsNullOrEmpty(rule.Filter))
+                basePackage.Properties["LinearFilter"] = rule.Filter!;
+            if (rule.FilterRaw != null)
+                basePackage.Properties["LinearFilterRaw"] = rule.FilterRaw.ToString(Newtonsoft.Json.Formatting.None);
+            if (!string.IsNullOrEmpty(rule.ViewId))
+            {
+                basePackage.Properties["LinearViewId"] = rule.ViewId!;
+                // Best-effort lookup of the human-readable view name. We piggyback on the
+                // same `customView(id:){ name issues { ... } }` request that
+                // LinearIssueSource.GetIssues already issues for viewId rules; if the
+                // request hasn't been made yet (or failed), we fall back to the id below.
+                var viewName = _source.GetCachedViewName(rule.ViewId!);
+                basePackage.Properties["LinearViewName"] = viewName ?? rule.ViewId!;
+            }
+            return basePackage;
+        }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -40,11 +41,18 @@ namespace Preesta
             "query($filter: IssueFilter!) { issues(filter: $filter) { nodes { " + IssueFields + " } } }";
 
         // Saved-view path — Linear evaluates the view server-side; we just unwrap nodes.
+        // We also pull `name` so the digest header can show "View: My Sprint Blockers"
+        // instead of the opaque UUID.
         private static readonly string CustomViewQuery =
-            "query($id: String!) { customView(id: $id) { issues { nodes { " + IssueFields + " } } } }";
+            "query($id: String!) { customView(id: $id) { name issues { nodes { " + IssueFields + " } } } }";
 
         private readonly ILinearGateway _gateway;
         private readonly ILogger? _logger;
+
+        // Populated by GetByViewId on each successful customView fetch. Cleared per
+        // process — there's no TTL because the supplier reads it inside the same
+        // GetPackages() pass that triggers the fetch.
+        private readonly ConcurrentDictionary<string, string> _viewNamesById = new();
 
         public LinearIssueSource(ILinearGateway gateway, ILogger? logger = null)
         {
@@ -116,9 +124,25 @@ namespace Preesta
             if (HasErrors(response, "customView"))
                 return Array.Empty<Issue>();
 
+            var name = (string?)response.SelectToken("data.customView.name");
+            if (!string.IsNullOrEmpty(name))
+                _viewNamesById[viewId] = name!;
+
             var nodes = response.SelectToken("data.customView.issues.nodes") as JArray;
             if (nodes == null) return Array.Empty<Issue>();
             return nodes.OfType<JObject>().Select(MapNode).ToArray();
+        }
+
+        /// <summary>
+        /// Returns the human-readable name of the given saved view if a previous
+        /// <c>GetIssues(rule)</c> call (in this process) successfully resolved it,
+        /// otherwise <c>null</c>. Used by <c>LinearIssueSupplier.Enrich</c> to put the
+        /// name on the package for the formatter; if missing, the supplier falls back
+        /// to the id.
+        /// </summary>
+        public virtual string? GetCachedViewName(string viewId)
+        {
+            return _viewNamesById.TryGetValue(viewId, out var name) ? name : null;
         }
 
         private bool HasErrors(JObject response, string context)
