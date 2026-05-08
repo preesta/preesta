@@ -64,5 +64,31 @@ rules:
       telegramChatId: "12345678"
       columns: [Status, Priority, Updated]
 
+  - type: linear
+    group: morning-standup
+    filterRaw:
+      and:
+        - assignee:
+            isMe:
+              eq: true
+        - cycle:
+            isActive:
+              eq: true
+        - state:
+            type:
+              neq: completed
+        - or:
+            - hasBlockedByRelations:
+                eq: false
+            - dueDate:
+                lte: P0D
+    notify:
+      subject: "Morning standup"
+      recommendations: "Tickets in the active cycle that are on you today — focus list."
+      mailTo: you@example.com
+      cc: ""
+      telegramChatId: "12345678"
+      columns: [Status, Priority, DueDate, Updated]
+
 # Email alias mappings
 redirectionRules: {}
