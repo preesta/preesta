@@ -15,6 +15,7 @@ namespace Preesta.Notification
         public IMessenger? Messenger { get; set; }
         public IMessenger? TelegramMessenger { get; set; }
         public IHttpHandler? HttpHandler { get; set; }
+        public ILinearMutationHandler? LinearMutationHandler { get; set; }
         public Redirector Redirector { get; set; } = Redirector.Empty;
         public IReadOnlyDictionary<string, string> TelegramUserMap { get; set; } = new Dictionary<string, string>();
         public string LogoFileName { get; set; } = string.Empty;
@@ -27,12 +28,14 @@ namespace Preesta.Notification
             Redirector? redirector = null,
             string logoFileName = "",
             IMessenger? telegramMessenger = null,
-            IReadOnlyDictionary<string, string>? telegramUserMap = null)
+            IReadOnlyDictionary<string, string>? telegramUserMap = null,
+            ILinearMutationHandler? linearMutationHandler = null)
         {
             PackageSupplier = packageSupplier;
             PackageConverter = packageConverter;
             Messenger = messenger;
             HttpHandler = httpHandler;
+            LinearMutationHandler = linearMutationHandler;
             Redirector = redirector ?? Redirector.Empty;
             LogoFileName = logoFileName;
             TelegramMessenger = telegramMessenger;
@@ -75,6 +78,14 @@ namespace Preesta.Notification
                 ;
 
             HttpHandler?.HandleAll(selfUpdates);
+
+            // GraphQL mutations (Linear)
+            var graphQLBodies = allPackages
+                    .OfType<Package<GraphQLMutation, TIssueType>>()
+                    .ToGraphQLMutationBodies(PackageConverter)
+                ;
+
+            LinearMutationHandler?.HandleAll(graphQLBodies);
         }
 
         public async Task RunAsync()

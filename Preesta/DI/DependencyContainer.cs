@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Xml.Linq;
+using LinearGraphQL;
 using Microsoft.Extensions.DependencyInjection;
 using Messaging;
 using Preesta.AppConfig;
@@ -66,9 +67,14 @@ namespace Preesta.DI
             // skipped silently when Linear isn't configured.
             if (!string.IsNullOrEmpty(appSettings.LinearApiKey))
             {
-                var linearSource = new LinearIssueSource(appSettings.LinearApiKey!, httpClient: null, logger);
+                // One LinearConnection (= ILinearGateway) shared between the read path
+                // (LinearIssueSource) and the write path (LinearMutationExecutor) — same
+                // HttpClient, same auth header, no duplicate setup.
+                var linearConnection = new LinearConnection(appSettings.LinearApiKey!);
+                var linearSource = new LinearIssueSource(linearConnection, logger);
                 var linearSupplier = new LinearIssueSupplier(
                     linearSource, jiraService, rulesConfig.GetLinearRules(@group), logger);
+                var linearMutationExecutor = new LinearMutationExecutor(linearConnection, logger);
 
                 // IssuePackageConverter is reused as-is. For Linear issues, Issue.Url is
                 // populated by LinearIssueSource and the formatter prefers it over the
@@ -82,7 +88,7 @@ namespace Preesta.DI
 
                 services.AddKeyedSingleton("Linear", new ReactionPipeline<Issue>(
                     linearSupplier, linearConverter, messenger, jiraService, redirector,
-                    logoFileName, telegramMessenger, telegramUserMap));
+                    logoFileName, telegramMessenger, telegramUserMap, linearMutationExecutor));
             }
 
             _provider = services.BuildServiceProvider();

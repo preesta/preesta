@@ -29,6 +29,10 @@ namespace Preesta.Data.Supplying.Convert
         public abstract HttpRequest[] ToHttpRequests(
             IEnumerable<Package<SelfUpdate, TItemType>> packages);
 
+        public virtual string[] ToGraphQLMutationBodies(
+            IEnumerable<Package<GraphQLMutation, TItemType>> packages) =>
+            new string[] { };
+
         protected internal abstract string FormatHtml(IEnumerable<Package<NotificationReaction, TItemType>> packages);
         protected internal abstract string FormatText(IEnumerable<Package<NotificationReaction, TItemType>> packages);
     }

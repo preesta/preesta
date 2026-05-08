@@ -38,6 +38,16 @@ namespace Preesta.Data.Supplying.Convert
             ).ToArray();
         }
 
+        public override string[] ToGraphQLMutationBodies(IEnumerable<Package<GraphQLMutation, Issue>> packages)
+        {
+            return
+            (
+                from package in packages
+                from issue in package.Items
+                select ReplaceKnownMarkers(package.Reaction.MutationBody, issue, _rootUri) ?? string.Empty
+            ).ToArray();
+        }
+
         internal static string? ReplaceKnownMarkers(string? template, Issue issue, string rootUri)
         {
             return template == null ? null

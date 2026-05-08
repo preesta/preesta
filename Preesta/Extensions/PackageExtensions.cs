@@ -28,5 +28,11 @@ namespace Preesta.Extensions
         {
             return converter.ToHttpRequests(packages);
         }
+
+        public static IEnumerable<string> ToGraphQLMutationBodies<TIssueType>(this IEnumerable<Package<GraphQLMutation, TIssueType>> packages,
+            IPackageConverter<TIssueType> converter)
+        {
+            return converter.ToGraphQLMutationBodies(packages);
+        }
     }
 }

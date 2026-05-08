@@ -12,5 +12,6 @@ namespace Preesta.Data.Supplying.Convert
             Redirector redirector,
             IReadOnlyDictionary<string, string> telegramUserMap);
         HttpRequest[] ToHttpRequests(IEnumerable<Package<SelfUpdate, TIssueType>> packages);
+        string[] ToGraphQLMutationBodies(IEnumerable<Package<GraphQLMutation, TIssueType>> packages);
     }
 }
