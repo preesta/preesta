@@ -31,13 +31,13 @@ namespace Preesta.Formatting
         private static readonly Lazy<Template> TextTemplate =
             new(() => LoadTemplate("IssueDigest.scriban-text"));
 
-        public static string ToHtml(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri) =>
-            Render(HtmlTemplate.Value, BuildModel(packages, rootUri, htmlMode: true));
+        public static string ToHtml(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri, string? linearWorkspace = null) =>
+            Render(HtmlTemplate.Value, BuildModel(packages, rootUri, linearWorkspace, htmlMode: true));
 
-        public static string ToText(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri) =>
-            Render(TextTemplate.Value, BuildModel(packages, rootUri, htmlMode: false));
+        public static string ToText(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri, string? linearWorkspace = null) =>
+            Render(TextTemplate.Value, BuildModel(packages, rootUri, linearWorkspace, htmlMode: false));
 
-        private static DigestModel BuildModel(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri, bool htmlMode)
+        private static DigestModel BuildModel(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri, string? linearWorkspace, bool htmlMode)
         {
             var sections = packages.Select(package =>
             {
@@ -74,6 +74,8 @@ namespace Preesta.Formatting
                 {
                     Recommendations = package.Reaction.Recommendations,
                     JqlUri = JqlUriOrNull(package, rootUri),
+                    LinearViewUri = LinearViewUriOrNull(package, linearWorkspace),
+                    FilterDescription = LinearFilterDescriptionOrNull(package),
                     Items = items
                 };
             }).ToList();
@@ -209,6 +211,58 @@ namespace Preesta.Formatting
                 .Build()
                 .ToString()
                 .Replace("\"", "%22");
+        }
+
+        // Linear (Phase 12.2): only viewId-mode rules have a canonical shareable URL —
+        // the AI-prompt and raw-filter modes don't, because Linear stores filter state
+        // in localStorage. We deliberately return null for those modes; the template
+        // skips the "Open in Linear" link entirely (no fallback to "My Issues").
+        private static string? LinearViewUriOrNull(Package<NotificationReaction, Issue> package, string? linearWorkspace)
+        {
+            if (string.IsNullOrEmpty(linearWorkspace)) return null;
+            if (!package.Properties.TryGetValue("LinearViewId", out var viewIdObj)) return null;
+            var viewId = viewIdObj?.ToString();
+            if (string.IsNullOrEmpty(viewId)) return null;
+            return $"https://linear.app/{linearWorkspace}/view/{viewId}";
+        }
+
+        // Linear (Phase 12.2): renders a one-line, human-readable description of what
+        // produced this list — shown under the recommendations in the digest header.
+        // Null when no Linear filter property is set (Jira sections, mostly).
+        private static string? LinearFilterDescriptionOrNull(Package<NotificationReaction, Issue> package)
+        {
+            if (package.Properties.TryGetValue("LinearFilter", out var filter))
+            {
+                var s = filter?.ToString();
+                if (!string.IsNullOrEmpty(s))
+                    return $"AI filter: «{s}»";
+            }
+            if (package.Properties.TryGetValue("LinearFilterRaw", out var raw))
+            {
+                var s = raw?.ToString();
+                if (!string.IsNullOrEmpty(s))
+                {
+                    // Truncate to keep digest headers readable. Raw filters can nest
+                    // arbitrarily deep; the prompt never needs truncation by spec.
+                    if (s!.Length > 200) s = s.Substring(0, 197) + "…";
+                    return $"Filter: {s}";
+                }
+            }
+            if (package.Properties.TryGetValue("LinearViewName", out var name))
+            {
+                var s = name?.ToString();
+                if (!string.IsNullOrEmpty(s))
+                    return $"View: {s}";
+            }
+            // Fallback if Enrich somehow set LinearViewId without a name (e.g. the
+            // GraphQL fetch failed before populating the cache).
+            if (package.Properties.TryGetValue("LinearViewId", out var id))
+            {
+                var s = id?.ToString();
+                if (!string.IsNullOrEmpty(s))
+                    return $"View: {s}";
+            }
+            return null;
         }
 
         private static bool IsHeaderColumn(string column) =>
