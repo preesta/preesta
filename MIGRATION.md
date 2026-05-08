@@ -111,6 +111,15 @@
 - The hardcoded `viewer.assignedIssues` MVP query is gone; `ILinearGateway` exposes a generic `Query(string, object?)`
 - Tests: 71 → 82 (8 `LinearIssueSourceTests` covering all three modes + 5 `YamlConfigTests` for filter-mode validation)
 
+### Phase 12.2: Linear filter transparency in digest ✅
+- Each Linear section header now shows what produced its issue list — mirror of Jira's "Open in Jira →" pattern
+  - `filter:` mode → `AI filter: «<prompt>»` (text only — Linear has no URL-encoded filter state)
+  - `filterRaw:` mode → `Filter: <compact JSON>` (truncated to 200 chars)
+  - `viewId:` mode → `View: <name>` + clickable **Open in Linear →** link to `linear.app/{workspace}/view/{id}`
+- `customView` GraphQL projection now also fetches `name` in the same hop — no extra request
+- Linear UI does **not** encode filter state in URL (verified live: query params/hash are ignored, state lives in localStorage). Only saved views have a permanent shareable URL. Hence no fallback link for AI/raw modes — we deliberately don't lie to the user about which Linear page reproduces the rule
+- Tests: 82 → 92 (LinearTransparencyTests + LinearIssueSourceTests projection assertions)
+
 ## Remaining
 
 ## Roadmap: New Features
