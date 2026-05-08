@@ -26,5 +26,32 @@ rules:
         - Assignee
         - Status
 
+  - type: jql
+    group: e2etest
+    jql: "project = SCRUM AND resolved >= -7d ORDER BY resolved DESC"
+    notify:
+      subject: "Daily Jira digest"
+      recommendations: "Recently resolved — review and close the loop with stakeholders."
+      mailTo: you@example.com
+      cc: ""
+      telegramChatId: "12345678"
+      columns:
+        - Status
+        - Resolution
+        - Assignee
+        - Updated
+
+  - type: jql
+    group: e2etest
+    jql: "key = SCRUM-7"
+    notify:
+      subject: "Daily Jira digest"
+      recommendations: "Full field showcase — every populated field on a single ticket."
+      mailTo: you@example.com
+      cc: ""
+      telegramChatId: "12345678"
+      columns:
+        - all-non-empty
+
 # Email alias mappings
 redirectionRules: {}

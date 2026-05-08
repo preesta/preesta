@@ -1,0 +1,19 @@
+{{~ for section in sections ~}}
+{{~ if !for.first ~}}
+———
+{{~ end ~}}
+{{~ if section.recommendations ~}}
+<i>{{ section.recommendations | html.escape }}</i>
+{{~ end ~}}
+{{~ if section.jql_uri ~}}
+<a href="{{ section.jql_uri }}">Open in Jira</a>
+{{~ end ~}}
+
+{{~ for item in section.items ~}}
+<a href="{{ item.browse_uri }}">{{ item.key | html.escape }}</a> · {{ item.summary | html.escape }}
+{{~ if item.meta_text != "" ~}}
+  {{ item.meta_text }}
+{{~ end ~}}
+
+{{~ end ~}}
+{{~ end ~}}

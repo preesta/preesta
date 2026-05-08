@@ -1,0 +1,14 @@
+{{~ for section in sections ~}}
+{{~ if !for.first ~}}
+———
+{{~ end ~}}
+<b>{{ section.subject | html.escape }}</b>
+{{~ if section.recommendations ~}}
+<i>{{ section.recommendations | html.escape }}</i>
+{{~ end ~}}
+
+{{~ for build in section.builds ~}}
+• {{ build.name | html.escape }} — {{ build.release_date }}{{ if build.expired }} (expired){{ end }}
+{{~ end ~}}
+
+{{~ end ~}}

@@ -14,9 +14,12 @@ namespace Preesta.Data
         public string? Components { get; set; }
         public string Labels { get; set; } = Empty;
         public TimeSpan TimeSpent { get; set; }
-        public string[]? BuildFound { get; set; }
-        public string[]? BuildFixed { get; set; }
+        public string[]? AffectsVersions { get; set; }
+        public string[]? FixVersions { get; set; }
         public DateTime? DueDate { get; set; }
         public DateTime CreatedDate { get; set; }
+        public DateTime? UpdatedDate { get; set; }
+        public string? Resolution { get; set; }
+        public string? ProjectKey { get; set; }
     }
 }

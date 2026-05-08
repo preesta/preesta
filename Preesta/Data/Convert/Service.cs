@@ -17,8 +17,8 @@ namespace Preesta.Data.Convert
             {
                 Key = issue.key,
                 Summary = issue.fields.summary,
-                BuildFixed = issue.fields.fixVersions.Select(v => v.name).ToArray(),
-                BuildFound = issue.fields.versions.Select(v => v.name).ToArray(),
+                FixVersions = issue.fields.fixVersions.Select(v => v.name).ToArray(),
+                AffectsVersions = issue.fields.versions.Select(v => v.name).ToArray(),
                 Components = string.Join(", ", issue.fields.components.Select(c => c.name)),
                 Labels = string.Join(", ", issue.fields.labels),
                 Priority = issue.fields.priority.name,

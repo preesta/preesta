@@ -1,65 +1,59 @@
+using System;
 using System.Collections.Generic;
-using System.Text;
+using System.IO;
+using System.Linq;
 using Preesta.Data;
 using Preesta.Data.Supplying;
+using Scriban;
+using Scriban.Runtime;
 
 namespace Preesta.Formatting
 {
     internal static class BuildFormatter
     {
-        public static string ToHtml(IEnumerable<Package<SendsNotification, Build>> packages)
+        private static readonly Lazy<Template> HtmlTemplate =
+            new(() => LoadTemplate("BuildDigest.scriban-html"));
+
+        private static readonly Lazy<Template> TextTemplate =
+            new(() => LoadTemplate("BuildDigest.scriban-text"));
+
+        public static string ToHtml(IEnumerable<Package<SendsNotification, Build>> packages) =>
+            Render(HtmlTemplate.Value, BuildModel(packages));
+
+        public static string ToText(IEnumerable<Package<SendsNotification, Build>> packages) =>
+            Render(TextTemplate.Value, BuildModel(packages));
+
+        private static BuildDigestModel BuildModel(IEnumerable<Package<SendsNotification, Build>> packages)
         {
-            var sb = new StringBuilder();
-            foreach (var package in packages)
+            var today = DateTime.Now.Date;
+            var sections = packages.Select(package => new BuildDigestSection
             {
-                sb.Append($"<h3 style=\"font-family:sans-serif;color:#333\">{package.Reaction.Subject}</h3>\n");
-                if (!string.IsNullOrEmpty(package.Reaction.Recommendations))
-                    sb.Append($"<p style=\"font-family:sans-serif;color:#666;font-style:italic\">{package.Reaction.Recommendations}</p>\n");
-
-                sb.Append("<table style=\"border-collapse:collapse;font-family:sans-serif;font-size:13px\">\n");
-                sb.Append("<tr style=\"background:#f4f5f7;font-weight:bold\">\n");
-                foreach (var h in new[] { "Name", "Start Date", "Release Date", "Description" })
-                    sb.Append($"  <td style=\"padding:8px 6px;border:1px solid #dfe1e6\">{h}</td>\n");
-                sb.Append("</tr>\n");
-
-                foreach (var build in package.Items)
+                Subject = package.Reaction.Subject,
+                Recommendations = package.Reaction.Recommendations,
+                Builds = package.Items.Select(b => new BuildRow
                 {
-                    sb.Append("<tr>\n");
-                    sb.Append($"  <td style=\"padding:6px;border:1px solid #dfe1e6\">{build.Name ?? ""}</td>\n");
-                    sb.Append($"  <td style=\"padding:6px;border:1px solid #dfe1e6\">{build.StartDate?.ToString("dd.MM.yyyy") ?? ""}</td>\n");
-                    sb.Append($"  <td style=\"padding:6px;border:1px solid #dfe1e6;color:#de350b;font-weight:bold\">{build.ReleaseDate?.ToString("dd.MM.yyyy") ?? ""}</td>\n");
-                    sb.Append($"  <td style=\"padding:6px;border:1px solid #dfe1e6\">{build.Description ?? ""}</td>\n");
-                    sb.Append("</tr>\n");
-                }
-                sb.Append("</table>\n");
-            }
-            return sb.ToString();
+                    Name = b.Name ?? "",
+                    ReleaseDate = b.ReleaseDate?.ToString("dd.MM.yyyy") ?? "",
+                    Expired = b.ReleaseDate != null && b.ReleaseDate.Value.Date < today
+                }).ToList()
+            }).ToList();
+
+            return new BuildDigestModel { Sections = sections };
         }
 
-        public static string ToText(IEnumerable<Package<SendsNotification, Build>> packages)
+        private static Template LoadTemplate(string name)
         {
-            var sb = new StringBuilder();
-            foreach (var package in packages)
-            {
-                sb.AppendLine($"<b>{package.Reaction.Subject}</b>");
-                if (!string.IsNullOrEmpty(package.Reaction.Recommendations))
-                    sb.AppendLine($"<i>{package.Reaction.Recommendations}</i>");
-                sb.AppendLine();
+            var path = Path.Combine(AppContext.BaseDirectory, "Templates", name);
+            return Template.Parse(File.ReadAllText(path));
+        }
 
-                foreach (var build in package.Items)
-                {
-                    sb.AppendLine($"<b>{build.Name}</b>");
-                    if (build.StartDate != null)
-                        sb.Append($"  Start: {build.StartDate:dd.MM.yyyy}");
-                    if (build.ReleaseDate != null)
-                        sb.Append($"  Release: {build.ReleaseDate:dd.MM.yyyy}");
-                    sb.AppendLine();
-                    if (!string.IsNullOrEmpty(build.Description))
-                        sb.AppendLine($"  {build.Description}");
-                    sb.AppendLine();
-                }
-            }
-            return sb.ToString().TrimEnd();
+        private static string Render(Template template, object model)
+        {
+            var ctx = new TemplateContext();
+            var script = new ScriptObject();
+            script.Import(model, renamer: m => StandardMemberRenamer.Default(m));
+            ctx.PushGlobal(script);
+            return template.Render(ctx);
         }
     }
 }

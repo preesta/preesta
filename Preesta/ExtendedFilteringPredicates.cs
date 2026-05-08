@@ -9,7 +9,7 @@ namespace Preesta
     {
         internal static bool MoreThanOneFixVersion(IJiraService? jira, Issue issue)
         {
-            return issue.BuildFixed!.Count() > 1;
+            return issue.FixVersions!.Count() > 1;
         }
 
         internal static bool DueDateExpiredMoreThan2WorkingDays(IJiraService? jira, Issue issue)

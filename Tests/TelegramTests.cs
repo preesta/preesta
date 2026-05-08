@@ -134,9 +134,9 @@ namespace Tests
 
             var messages = converter.ToMessages(packages);
             Assert.AreEqual(1, messages.Length);
-            Assert.IsTrue(messages[0].Body.Contains("<table"));
+            Assert.IsTrue(messages[0].Body.Contains("max-width:640px"));
             Assert.IsTrue(messages[0].TextBody.Contains("T-1"));
-            Assert.IsFalse(messages[0].TextBody.Contains("<table"));
+            Assert.IsFalse(messages[0].TextBody.Contains("max-width:640px"));
         }
 
         [Test]
