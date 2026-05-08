@@ -71,6 +71,10 @@ namespace Preesta.Configuration
                 .ToDictionary(r => r.Attribute("email")!.Value, r => r.Attribute("chatId")!.Value));
         }
 
+        // XML rules format is legacy; Slack users are YAML-only.
+        public IReadOnlyDictionary<string, string> GetSlackUserMap() =>
+            new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
+
         private TRule[] GetRules<TRule>(string periodType, IEnumerable<string> rulesTypes, Func<XElement, TRule> converter) where TRule : Rule
         {
             var foundRules =

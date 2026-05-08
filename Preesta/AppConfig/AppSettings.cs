@@ -83,6 +83,8 @@ namespace Preesta.AppConfig
 
         public string? TelegramBotToken => _configuration["Telegram:botToken"];
 
+        public string? SlackBotToken => _configuration["Slack:botToken"];
+
         public string? LinearApiKey => _configuration["Linear:apiKey"];
 
         public string? LinearWorkspace => _configuration["Linear:workspace"];

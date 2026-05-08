@@ -8,6 +8,7 @@ namespace Preesta.Data.Supplying
         public string Subject { get; set; } = Empty;
         public string? Recommendations { get; set; }
         public string[] TelegramChatIds { get; set; } = new string[]{};
+        public string[] SlackUserIds { get; set; } = new string[]{};
         public string[]? Columns { get; set; }
     }
 }

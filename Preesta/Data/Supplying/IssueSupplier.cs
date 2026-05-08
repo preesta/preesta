@@ -93,6 +93,7 @@ namespace Preesta.Data.Supplying
                             Subject = ag.Key.Subject,
                             Recommendations = ag.First().rule.Notification!.Recommendations,
                             TelegramChatIds = ag.First().rule.Notification!.TelegramChatIds,
+                            SlackUserIds = ag.First().rule.Notification!.SlackUserIds,
                             Columns = ag.First().rule.Notification!.Columns
                         }
                     }
