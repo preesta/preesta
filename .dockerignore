@@ -1,1 +1,12 @@
+**/bin
+**/obj
+**/.vs
+**/.vscode
+**/.idea
+**/*.user
 **/*secret*
+.git
+.github
+.gitignore
+.gitattributes
+*.md

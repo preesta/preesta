@@ -1,5 +1,9 @@
 # Preesta
 
+[![CI](https://github.com/ValentinLevitov/preesta/actions/workflows/ci.yml/badge.svg)](https://github.com/ValentinLevitov/preesta/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/)
+
 > Pre-established rules for your issue tracker
 
 Preesta helps monitor basic tracking and reporting rules for your team in JIRA. For example —
@@ -155,7 +159,9 @@ Preesta uses YAML as the primary configuration format. Legacy XML format is also
 | Secrets | `appsettings.secrets.yaml` | `appsettings.secrets.json` |
 
 ## Rules Configuration specification
-*TODO: Supported rule types are: jql, build, and structure.*
+Supported rule types: `jql` (JQL-based filter) and `build` (release/version monitoring).
+See [`Preesta/rules.yaml`](Preesta/rules.yaml) for a full example with `notify` (mailTo / cc / telegramChatId / columns / recommendations) and `callRest` (self-update via REST) actions.
+
 ### Code injection in rule body
 *TODO: C# code may be used and placed inside block `<<c#( your-code-here )#>>` in rule bodies.*
 
