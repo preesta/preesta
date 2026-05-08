@@ -32,7 +32,6 @@ namespace Preesta.Data.Supplying
                               {"reporter", staff.Reporter},
                               {"creator", staff.Creator}
                           };
-                          //.ToCaseInsensitiveDictionary();
 
             var defaultUser = new User();
             

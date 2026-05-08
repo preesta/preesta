@@ -77,10 +77,10 @@ namespace Tests.MailSending
         <jql/>
     </jqlRule>
 
-    <jqlRule group=""faired-suprevisor-in-addressees"">
+    <jqlRule group=""expired-supervisor-in-addressees"">
         <notify 
-            subject=""faired_supervisor""
-            mailTo=""faired_supervisor""
+            subject=""expired_supervisor""
+            mailTo=""expired_supervisor""
             comment=""When neither To nor Cc attributes are set, the message should be send to supervisor""
             />            
         <jql/>
@@ -89,7 +89,7 @@ namespace Tests.MailSending
     <redirection_rules>
         <rule from=""admin"" to=""administrator""/>
         <rule from=""TEAM_CLAIM"" to=""Zoldberg@express.ship,Amy_Wong@express.ship""/>
-        <rule from=""faired_supervisor"" to=""Hubert_Farnsworth@express.ship""/>
+        <rule from=""expired_supervisor"" to=""Hubert_Farnsworth@express.ship""/>
     </redirection_rules>
 </configuration>
 "
@@ -164,7 +164,7 @@ namespace Tests.MailSending
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test-for-faired-supervisor"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
-                Redirector = new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "faired_supervisor" }, Enumerable.Empty<string>()),
+                Redirector = new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "expired_supervisor" }, Enumerable.Empty<string>()),
                 Messenger = messenger
                     
             };
@@ -172,7 +172,7 @@ namespace Tests.MailSending
             pipe.Run();
 
             Assert.AreEqual("anybody", message?.To);
-            Assert.AreEqual("faired_supervisor", message?.Cc);
+            Assert.AreEqual("expired_supervisor", message?.Cc);
         }
 
         [Test]
@@ -261,7 +261,7 @@ namespace Tests.MailSending
         }
 
         [Test]
-        public void FairedSupervisorInAddressees()
+        public void ExpiredSupervisorInAddressees()
         {
             Message? message = null;
             var messenger = Substitute.For<IMessenger>();
@@ -269,16 +269,16 @@ namespace Tests.MailSending
 
             var pipe = new ReactionPipe<Issue>()
             {
-                PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("faired-suprevisor-in-addressees"), _logger!),
+                PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("expired-supervisor-in-addressees"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
-                Redirector = new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "faired_supervisor" }, Enumerable.Empty<string>()),
+                Redirector = new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "expired_supervisor" }, Enumerable.Empty<string>()),
                 Messenger = messenger
             };
 
             pipe.Run();
 
             Assert.AreEqual("Hubert_Farnsworth@express.ship", message!.To);
-            Assert.AreEqual("faired_supervisor", message!.Cc);
+            Assert.AreEqual("expired_supervisor", message!.Cc);
         }
     }
 }

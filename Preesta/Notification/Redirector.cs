@@ -34,8 +34,6 @@ namespace Preesta.Notification
             return string.IsNullOrWhiteSpace(recipient) ? string.Join(',', Supervisors)
                 : redirectionMap.TryGetValue(recipient, out redirectTo) ? redirectTo
                 : recipient;
-            
-            // TODO: Implement redirection by regex
         }
 
         public IEnumerable<string> ResolveRecipients(IEnumerable<string> recipients, char separator = ',')

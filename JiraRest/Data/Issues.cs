@@ -60,13 +60,6 @@ namespace JiraRest.Data
         public double percent { get; set; }
     }
 
-    public class SimpleCustomField
-    {
-        public string self { get; set; }
-        public string value { get; set; }
-        public int id { get; set; }
-    }
-
     public class Version
     {
         public string self { get; set; }
@@ -97,7 +90,7 @@ namespace JiraRest.Data
     public class Status
     {
         public string self { get; set; }
-        public string desription { get; set; }
+        public string description { get; set; }
         public string iconUrl { get; set; }
         public string name { get; set; }
         public int id { get; set; }

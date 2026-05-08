@@ -90,7 +90,7 @@ namespace Preesta.Configuration
                    .ToArray();
             
             _logger?.Information("{Count} rules of type {@rulesTypes} found in schedule group '{PeriodType}'", foundRules.Count(), rulesTypes, periodType);
-            _logger?.Verbose("Found rules: {@FoundRueles}", foundRules);
+            _logger?.Verbose("Found rules: {@FoundRules}", foundRules);
 
             return foundRules;
         }
@@ -104,7 +104,7 @@ namespace Preesta.Configuration
             }
             catch (Exception e)
             {
-                _logger.Error(e, "Rule convertion failed");
+                _logger.Error(e, "Rule conversion failed");
             }
             return rule;
         }

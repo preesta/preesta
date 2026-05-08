@@ -10,7 +10,7 @@ namespace JiraRest
 {
     public class Connection : IJiraGateway, IDisposable
     {
-        public ISerializer Serializer { get; set; } = new NewtownsoftSerializer();
+        public ISerializer Serializer { get; set; } = new NewtonsoftSerializer();
 
         // how to mock HttpClient: http://stackoverflow.com/questions/22223223/how-to-pass-in-a-mocked-httpclient-in-a-net-test
         internal HttpClient Client { get; set; } = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
