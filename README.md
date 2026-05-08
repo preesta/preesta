@@ -159,8 +159,31 @@ Preesta uses YAML as the primary configuration format. Legacy XML format is also
 | Secrets | `appsettings.secrets.yaml` | `appsettings.secrets.json` |
 
 ## Rules Configuration specification
-Supported rule types: `jql` (JQL-based filter) and `build` (release/version monitoring).
-See [`Preesta/rules.yaml`](Preesta/rules.yaml) for a full example with `notify` (mailTo / cc / telegramChatId / columns / recommendations) and `mutations` (Jira REST self-update / Linear GraphQL — see rule type) actions.
+Supported rule types: `jql` (Jira JQL-based filter), `build` (Jira release/version monitoring), and `linear` (Linear issue tracker via GraphQL).
+See [`Preesta/rules.yaml`](Preesta/rules.yaml) for a full example with `notify` (mailTo / cc / telegramChatId / columns / recommendations) and `mutations` actions.
+
+### Linear self-update via GraphQL mutations (advanced)
+
+Power-user hook: a `linear` rule can carry a `mutations:` list of raw GraphQL mutation strings, executed against `https://api.linear.app/graphql` for each matched issue. No DSL — write the full `mutation { ... }` body, place markers (`{{@issueId}}`, `{{@assignee.email}}`, etc.) where Preesta should substitute issue context.
+
+```yaml
+- type: linear
+  filter: "issues in 'Done' with no assignee"
+  mutations:
+    - mutation: |
+        mutation {
+          commentCreate(input: {
+            issueId: "{{@issueId}}",
+            body: "Auto-closed without owner — please add resolution notes"
+          }) { success }
+        }
+    - mutation: |
+        mutation {
+          issueUpdate(id: "{{@issueId}}", input: { assigneeId: null }) { success }
+        }
+```
+
+Per-mutation failures (HTTP error or GraphQL `errors` envelope) are logged and skipped — one bad mutation does not stop the others. State / label / user IDs are not resolved by Preesta — bring your own (Linear's GraphQL schema offers `team.states`, `team.labels`, `users(filter:)` queries to look them up).
 
 ### Code injection in rule body
 *TODO: C# code may be used and placed inside block `<<c#( your-code-here )#>>` in rule bodies.*
