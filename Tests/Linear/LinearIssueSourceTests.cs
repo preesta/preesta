@@ -2,9 +2,11 @@ using System;
 using System.Linq;
 using System.Net.Http;
 using LinearGraphQL;
+using Newtonsoft.Json.Linq;
 using NSubstitute;
 using NUnit.Framework;
 using Preesta;
+using Preesta.Configuration.Action;
 using Serilog;
 using Tests.Mocks;
 
@@ -13,94 +15,94 @@ namespace Tests.Linear
     [TestFixture]
     public class LinearIssueSourceTests
     {
+        // Existing happy-path response — adjusted to the post-Phase-12.1 shape
+        // (issues.nodes instead of viewer.assignedIssues.nodes).
         private const string FiveIssuesResponse = @"{
   ""data"": {
-    ""viewer"": {
-      ""assignedIssues"": {
-        ""nodes"": [
-          {
-            ""identifier"": ""PRE-1"",
-            ""title"": ""Set up CI"",
-            ""url"": ""https://linear.app/preesta-dev/issue/PRE-1"",
-            ""state"": { ""name"": ""In Progress"", ""type"": ""started"" },
-            ""priority"": 1,
-            ""priorityLabel"": ""Urgent"",
-            ""assignee"": { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
-            ""creator"":  { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
-            ""project"":  { ""id"": ""p1"", ""name"": ""Platform"" },
-            ""labels"":   { ""nodes"": [ { ""name"": ""infra"" }, { ""name"": ""ci"" } ] },
-            ""dueDate"":   ""2026-06-01"",
-            ""createdAt"": ""2026-05-01T10:00:00.000Z"",
-            ""updatedAt"": ""2026-05-08T12:00:00.000Z""
-          },
-          {
-            ""identifier"": ""PRE-2"",
-            ""title"": ""Triage backlog"",
-            ""url"": ""https://linear.app/preesta-dev/issue/PRE-2"",
-            ""state"": { ""name"": ""Todo"", ""type"": ""unstarted"" },
-            ""priority"": 2,
-            ""priorityLabel"": ""High"",
-            ""assignee"": { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
-            ""creator"":  { ""id"": ""u2"", ""name"": ""Other"",     ""email"": ""other@example.com"" },
-            ""project"":  null,
-            ""labels"":   { ""nodes"": [] },
-            ""dueDate"":   null,
-            ""createdAt"": ""2026-04-20T09:00:00.000Z"",
-            ""updatedAt"": ""2026-05-07T08:00:00.000Z""
-          },
-          {
-            ""identifier"": ""PRE-3"",
-            ""title"": ""Write docs"",
-            ""url"": ""https://linear.app/preesta-dev/issue/PRE-3"",
-            ""state"": { ""name"": ""Todo"", ""type"": ""unstarted"" },
-            ""priority"": 3,
-            ""priorityLabel"": ""Medium"",
-            ""assignee"": { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
-            ""creator"":  { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
-            ""project"":  { ""id"": ""p1"", ""name"": ""Platform"" },
-            ""labels"":   { ""nodes"": [ { ""name"": ""docs"" } ] },
-            ""dueDate"":   null,
-            ""createdAt"": ""2026-04-25T09:00:00.000Z"",
-            ""updatedAt"": ""2026-05-06T11:00:00.000Z""
-          },
-          {
-            ""identifier"": ""PRE-4"",
-            ""title"": ""Reproduce bug"",
-            ""url"": ""https://linear.app/preesta-dev/issue/PRE-4"",
-            ""state"": { ""name"": ""In Review"", ""type"": ""started"" },
-            ""priority"": 2,
-            ""priorityLabel"": ""High"",
-            ""assignee"": { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
-            ""creator"":  { ""id"": ""u2"", ""name"": ""Other"",     ""email"": ""other@example.com"" },
-            ""project"":  { ""id"": ""p2"", ""name"": ""Bugs"" },
-            ""labels"":   { ""nodes"": [] },
-            ""dueDate"":   null,
-            ""createdAt"": ""2026-05-03T09:00:00.000Z"",
-            ""updatedAt"": ""2026-05-08T10:00:00.000Z""
-          },
-          {
-            ""identifier"": ""PRE-5"",
-            ""title"": ""Plan Q3"",
-            ""url"": ""https://linear.app/preesta-dev/issue/PRE-5"",
-            ""state"": { ""name"": ""Todo"", ""type"": ""unstarted"" },
-            ""priority"": 4,
-            ""priorityLabel"": ""Low"",
-            ""assignee"": { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
-            ""creator"":  { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
-            ""project"":  null,
-            ""labels"":   { ""nodes"": [] },
-            ""dueDate"":   null,
-            ""createdAt"": ""2026-05-04T09:00:00.000Z"",
-            ""updatedAt"": ""2026-05-05T11:00:00.000Z""
-          }
-        ]
-      }
+    ""issues"": {
+      ""nodes"": [
+        {
+          ""identifier"": ""PRE-1"",
+          ""title"": ""Set up CI"",
+          ""url"": ""https://linear.app/preesta-dev/issue/PRE-1"",
+          ""state"": { ""name"": ""In Progress"", ""type"": ""started"" },
+          ""priority"": 1,
+          ""priorityLabel"": ""Urgent"",
+          ""assignee"": { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
+          ""creator"":  { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
+          ""project"":  { ""id"": ""p1"", ""name"": ""Platform"" },
+          ""labels"":   { ""nodes"": [ { ""name"": ""infra"" }, { ""name"": ""ci"" } ] },
+          ""dueDate"":   ""2026-06-01"",
+          ""createdAt"": ""2026-05-01T10:00:00.000Z"",
+          ""updatedAt"": ""2026-05-08T12:00:00.000Z""
+        },
+        {
+          ""identifier"": ""PRE-2"",
+          ""title"": ""Triage backlog"",
+          ""url"": ""https://linear.app/preesta-dev/issue/PRE-2"",
+          ""state"": { ""name"": ""Todo"", ""type"": ""unstarted"" },
+          ""priority"": 2,
+          ""priorityLabel"": ""High"",
+          ""assignee"": { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
+          ""creator"":  { ""id"": ""u2"", ""name"": ""Other"",     ""email"": ""other@example.com"" },
+          ""project"":  null,
+          ""labels"":   { ""nodes"": [] },
+          ""dueDate"":   null,
+          ""createdAt"": ""2026-04-20T09:00:00.000Z"",
+          ""updatedAt"": ""2026-05-07T08:00:00.000Z""
+        },
+        {
+          ""identifier"": ""PRE-3"",
+          ""title"": ""Write docs"",
+          ""url"": ""https://linear.app/preesta-dev/issue/PRE-3"",
+          ""state"": { ""name"": ""Todo"", ""type"": ""unstarted"" },
+          ""priority"": 3,
+          ""priorityLabel"": ""Medium"",
+          ""assignee"": { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
+          ""creator"":  { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
+          ""project"":  { ""id"": ""p1"", ""name"": ""Platform"" },
+          ""labels"":   { ""nodes"": [ { ""name"": ""docs"" } ] },
+          ""dueDate"":   null,
+          ""createdAt"": ""2026-04-25T09:00:00.000Z"",
+          ""updatedAt"": ""2026-05-06T11:00:00.000Z""
+        },
+        {
+          ""identifier"": ""PRE-4"",
+          ""title"": ""Reproduce bug"",
+          ""url"": ""https://linear.app/preesta-dev/issue/PRE-4"",
+          ""state"": { ""name"": ""In Review"", ""type"": ""started"" },
+          ""priority"": 2,
+          ""priorityLabel"": ""High"",
+          ""assignee"": { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
+          ""creator"":  { ""id"": ""u2"", ""name"": ""Other"",     ""email"": ""other@example.com"" },
+          ""project"":  { ""id"": ""p2"", ""name"": ""Bugs"" },
+          ""labels"":   { ""nodes"": [] },
+          ""dueDate"":   null,
+          ""createdAt"": ""2026-05-03T09:00:00.000Z"",
+          ""updatedAt"": ""2026-05-08T10:00:00.000Z""
+        },
+        {
+          ""identifier"": ""PRE-5"",
+          ""title"": ""Plan Q3"",
+          ""url"": ""https://linear.app/preesta-dev/issue/PRE-5"",
+          ""state"": { ""name"": ""Todo"", ""type"": ""unstarted"" },
+          ""priority"": 4,
+          ""priorityLabel"": ""Low"",
+          ""assignee"": { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
+          ""creator"":  { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
+          ""project"":  null,
+          ""labels"":   { ""nodes"": [] },
+          ""dueDate"":   null,
+          ""createdAt"": ""2026-05-04T09:00:00.000Z"",
+          ""updatedAt"": ""2026-05-05T11:00:00.000Z""
+        }
+      ]
     }
   }
 }";
 
         private const string EmptyResponse = @"{
-  ""data"": { ""viewer"": { ""assignedIssues"": { ""nodes"": [] } } }
+  ""data"": { ""issues"": { ""nodes"": [] } }
 }";
 
         private const string ErrorResponse = @"{
@@ -111,6 +113,12 @@ namespace Tests.Linear
 
         private const string FakeApiKey = "lin_api_FAKE_TEST_KEY";
 
+        private static LinearRule RawFilterRule() => new LinearRule
+        {
+            // The raw value is opaque to MockLinearServer (which doesn't body-match on it).
+            FilterRaw = JObject.Parse(@"{ ""state"": { ""type"": { ""neq"": ""completed"" } } }")
+        };
+
         [Test]
         public void HappyPath_MapsAllFields()
         {
@@ -120,7 +128,7 @@ namespace Tests.Linear
             var connection = new LinearConnection(FakeApiKey, server.GraphQlUrl);
             var source = new LinearIssueSource(connection);
 
-            var issues = source.GetAssignedIssues();
+            var issues = source.GetIssues(RawFilterRule());
 
             Assert.AreEqual(5, issues.Length);
 
@@ -152,7 +160,7 @@ namespace Tests.Linear
             var connection = new LinearConnection(FakeApiKey, server.GraphQlUrl);
             var source = new LinearIssueSource(connection);
 
-            var issues = source.GetAssignedIssues();
+            var issues = source.GetIssues(RawFilterRule());
 
             Assert.IsNotNull(issues);
             Assert.AreEqual(0, issues.Length);
@@ -168,15 +176,9 @@ namespace Tests.Linear
             var logger = Substitute.For<ILogger>();
             var source = new LinearIssueSource(connection, logger);
 
-            var issues = source.GetAssignedIssues();
+            var issues = source.GetIssues(RawFilterRule());
 
             Assert.AreEqual(0, issues.Length);
-            // The exact Serilog overload signature varies by argument count; just
-            // assert that *some* Error call was made.
-            logger.ReceivedCalls()
-                .Where(c => c.GetMethodInfo().Name == "Error")
-                .ToList(); // materialise
-
             Assert.IsTrue(
                 logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"),
                 "Expected ILogger.Error to be called when GraphQL response contains an errors array");

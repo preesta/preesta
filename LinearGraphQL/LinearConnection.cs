@@ -37,13 +37,11 @@ namespace LinearGraphQL
             Client.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", apiKey);
         }
 
-        public JObject Query(string graphqlQuery) => Query(graphqlQuery, variables: null);
-
-        public JObject Query(string query, object? variables)
+        public JObject Query(string graphqlQuery, object? variables = null)
         {
             var bodyObj = variables == null
-                ? (object)new { query }
-                : new { query, variables };
+                ? (object)new { query = graphqlQuery }
+                : new { query = graphqlQuery, variables };
             var bodyJson = JsonConvert.SerializeObject(bodyObj);
             var content = new StringContent(bodyJson, Encoding.UTF8, "application/json");
 
@@ -62,18 +60,9 @@ namespace LinearGraphQL
             return JObject.Parse(text);
         }
 
-        public JObject GetAssignedIssues() => Query(LinearQueries.AssignedIssues);
-
         public void Dispose()
         {
             Client.Dispose();
         }
-    }
-
-    internal static class LinearQueries
-    {
-        // MVP filter: assignee = viewer (implicit via "viewer.assignedIssues") and state.type != completed.
-        public const string AssignedIssues =
-            "{ viewer { assignedIssues(filter: { state: { type: { neq: \"completed\" } } }) { nodes { identifier title url state { name type } priority priorityLabel assignee { id name email } creator { id name email } project { id name } labels { nodes { name } } dueDate createdAt updatedAt } } } }";
     }
 }
