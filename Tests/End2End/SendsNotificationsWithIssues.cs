@@ -1,8 +1,5 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using Messaging;
 using JiraRest;
 using Preesta;
@@ -15,7 +12,7 @@ using Preesta.Notification;
 using NSubstitute;
 using NUnit.Framework;
 using Serilog;
-using Tests;
+using Tests.Mocks;
 
 using static System.String;
 
@@ -124,20 +121,12 @@ namespace End2End.Tests
         [Test]
 		public void IssueWithEmptyPriorityHandledWithoutException()
 		{
-			var response =
-				new HttpResponseMessage(HttpStatusCode.OK)
-				{
-					Content = new StringContent(JsonIssueWithNullPriority)
-				};
+			using var server = new MockJiraServer();
+			server.StubGetIssuesByJql("any", JsonIssueWithNullPriority);
 
-			var handler = new StubDelegatingHandler(response);
+			var connection = new Connection(server.Url, "any", "any");
 
-			var connection = new Connection("http://jira", "any", "any")
-			{
-				Client = new HttpClient(handler)
-			};
-
-			var svc = new HttpJiraService("http://jira", Empty, Empty)
+			var svc = new HttpJiraService(server.Url, Empty, Empty)
 			{
 				Connection = connection
 			};
@@ -166,7 +155,7 @@ namespace End2End.Tests
 			};
 			pipe.Run();
 
-			Assert.AreEqual(1, handler.Requests.Count(r => r.RequestUri == new Uri("http://jira/rest/api/2/search?jql=any&maxResults=50")));
+			Assert.AreEqual(1, server.CountRequests("GET", $"{server.Url}/rest/api/2/search?jql=any&maxResults=50"));
 
 			messenger.Received(1).SendAll(Arg.Is<IEnumerable<Message>>(
 				msgs => msgs.Single().Subject.Contains("subject")
@@ -180,20 +169,12 @@ namespace End2End.Tests
 		[Test]
 		public void IssueWithAbsentFixAndAffectedVersionHandledWithoutException()
 		{
-			var response =
-				new HttpResponseMessage(HttpStatusCode.OK)
-				{
-					Content = new StringContent(JsonIssueWithNullFixAndAffectedVersion)
-				};
+			using var server = new MockJiraServer();
+			server.StubGetIssuesByJql("any", JsonIssueWithNullFixAndAffectedVersion);
 
-			var handler = new StubDelegatingHandler(response);
+			var connection = new Connection(server.Url, "any", "any");
 
-			var connection = new Connection("http://jira", "any", "any")
-			{
-				Client = new HttpClient(handler)
-			};
-
-			var svc = new HttpJiraService("http://jira", Empty, Empty)
+			var svc = new HttpJiraService(server.Url, Empty, Empty)
 			{
 				Connection = connection
 			};
@@ -221,7 +202,7 @@ namespace End2End.Tests
 			};
 			pipe.Run();
 
-			Assert.AreEqual(1, handler.Requests.Count(r => r.RequestUri == new Uri("http://jira/rest/api/2/search?jql=any&maxResults=50")));
+			Assert.AreEqual(1, server.CountRequests("GET", $"{server.Url}/rest/api/2/search?jql=any&maxResults=50"));
 		}
 	}
 }

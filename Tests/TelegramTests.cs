@@ -1,7 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using Messaging;
 using Preesta;
 using Preesta.Configuration.Action;
@@ -12,7 +10,7 @@ using Preesta.Notification;
 using NSubstitute;
 using NUnit.Framework;
 using Serilog;
-using Tests;
+using Tests.Mocks;
 
 namespace Tests
 {
@@ -25,9 +23,7 @@ namespace Tests
         [Test]
         public void TelegramMessagesCreatedForRulesWithChatId()
         {
-            var response = new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(@"{
+            const string issuesJson = @"{
                     ""issues"": [{
                         ""key"": ""TEST-1"",
                         ""fields"": {
@@ -37,15 +33,13 @@ namespace Tests
                             ""summary"": ""Test issue""
                         }
                     }]
-                }")
-            };
+                }";
 
-            var handler = new StubDelegatingHandler(response);
-            var connection = new JiraRest.Connection("http://jira", "any", "any")
-            {
-                Client = new HttpClient(handler)
-            };
-            var svc = new HttpJiraService("http://jira", string.Empty, string.Empty)
+            using var server = new MockJiraServer();
+            server.StubGetIssuesByJql("any", issuesJson);
+
+            var connection = new JiraRest.Connection(server.Url, "any", "any");
+            var svc = new HttpJiraService(server.Url, string.Empty, string.Empty)
             {
                 Connection = connection
             };
