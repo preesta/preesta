@@ -6,7 +6,6 @@ namespace Preesta.Configuration
     {
         JqlRule[] GetJqlRules(string @group);
         ReleaseRule[] GetReleaseRules(string @group);
-        StructureAmbiguityRule[] GetStructureAmbiguityRules(string @group);
         IReadOnlyDictionary<string, string> GetRedirectionMap();
         IReadOnlyDictionary<string, string> GetTelegramUserMap();
         void ValidateSchema();

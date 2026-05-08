@@ -44,11 +44,6 @@ namespace Preesta
                 );
         }
 
-        public virtual string[] GetIssuesInStructure(string structId)
-        {
-            return CallFuncInConnectionContext(jira => jira.GetIssuesInStructure(structId));
-        }
-
         public virtual Issue GetIssueById(string issueId)
         {
             return CallFuncInConnectionContext(jira => JToken.ToIssue(jira.GetIssue(issueId)));

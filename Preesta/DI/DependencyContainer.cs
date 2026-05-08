@@ -41,8 +41,6 @@ namespace Preesta.DI
             var rulesConfig = CreateRulesConfig(rulesFileName, logger);
 
             var jqlSupplier = new JqlSupplier(jiraService, rulesConfig.GetJqlRules(@group), logger);
-            var structSupplier = new StructureAmbiguitySupplier(
-                jiraService, rulesConfig.GetStructureAmbiguityRules(@group), appSettings.MaxResults);
             var buildSupplier = new ReleaseSupplier(jiraService, rulesConfig.GetReleaseRules(@group));
 
             var issueConverter = new IssuePackageConverter(appSettings.JiraRootUri, appSettings.SubjectPrefix);
@@ -59,9 +57,6 @@ namespace Preesta.DI
 
             services.AddKeyedSingleton("Jql", new ReactionPipeline<Issue>(
                 jqlSupplier, issueConverter, messenger, jiraService, redirector, logoFileName, telegramMessenger, telegramUserMap));
-
-            services.AddKeyedSingleton("Structure", new ReactionPipeline<Issue>(
-                structSupplier, issueConverter, messenger, jiraService, redirector, logoFileName, telegramMessenger, telegramUserMap));
 
             services.AddSingleton(new ReactionPipeline<Release>(
                 buildSupplier, buildConverter, messenger, jiraService, redirector, logoFileName, telegramMessenger, telegramUserMap));
