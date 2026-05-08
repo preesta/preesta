@@ -120,6 +120,17 @@
 - Linear UI does **not** encode filter state in URL (verified live: query params/hash are ignored, state lives in localStorage). Only saved views have a permanent shareable URL. Hence no fallback link for AI/raw modes — we deliberately don't lie to the user about which Linear page reproduces the rule
 - Tests: 82 → 92 (LinearTransparencyTests + LinearIssueSourceTests projection assertions)
 
+### Phase 12.3: Linear self-update via raw GraphQL mutations ✅
+- Linear rules can now carry `mutations:` — list of raw GraphQL `mutation { ... }` strings, mirror of Jira's `callRest`/`mutations` REST hook
+- No DSL — power-user surface. The first attempt at a high-level `do:` DSL (`addComment` / `setState` / etc.) was rejected and reverted: this is a power-user feature, the right abstraction level is GraphQL itself
+- Same `mutations:` YAML key as jql rules; entry shape diverges by rule type (REST verb/url/body for jql, single `mutation:` string for linear)
+- Marker substitution unified: `{{@issueKey}}`, `{{@issueId}}` (new — Linear UUID), `{{@title}}` (new — issue summary), `{{@assignee.email}}` etc., plus `<<c# ... #>>` script injection. Marker replacer extracted to `internal static IssuePackageConverter.ReplaceKnownMarkers`
+- Architecture: `GraphQLMutation` reaction wrapper parallel to `SelfUpdate`; `IssueSupplier.GetMutationPackages` hook (default REST, override produces GraphQL); `ILinearMutationHandler` parallel to `IHttpHandler`; `LinearMutationExecutor` reuses the read-side `LinearConnection` (one HttpClient, one auth header)
+- DI: registers Linear pipeline with both read source and write executor when `Linear:apiKey` is set; Jira pipeline byte-identical
+- Per-mutation failures (HTTP error, GraphQL `errors` envelope) logged at Error and swallowed — one bad mutation does not abort the rule
+- Renamed for symmetry: `SelfUpdateSpec` → `RestMutationSpec`, `Rule.Updates` → `Rule.Mutations`, YAML key `callRest:` → `mutations:` (XML format keeps legacy `callRest` element)
+- Tests: 92 → 100 (LinearMutationExecutorTests + LinearGraphQLMutations YAML parsing + IssuePackageConverter normalisation)
+
 ## Remaining
 
 ## Roadmap: New Features
