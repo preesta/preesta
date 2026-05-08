@@ -57,7 +57,7 @@ Application:
   supervisors: enter-your@email.here
 
 Jira:
-  rootUri: https://your-jira.server.com
+  rootUri: https://your-jira.server.com/
   userName: jira-user-name
   password: jira-user-password
   maxResults: 300

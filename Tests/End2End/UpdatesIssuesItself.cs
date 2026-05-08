@@ -68,7 +68,7 @@ namespace End2End.Tests
                     new SelfUpdateSpec
                     {
                         Verb = "POST",
-                        UrlPattern = "{{@jiraRoot}}/rest/api/2/issue/{{@issueKey}}/transitions",
+                        UrlPattern = "{{@jiraRoot}}rest/api/2/issue/{{@issueKey}}/transitions",
                         BodyPattern = @"{
     ""update"":
 	{
@@ -122,7 +122,7 @@ namespace End2End.Tests
 				},
 				Reaction = new SelfUpdate
 				{
-					UrlPattern = "{{@jiraRoot}}/rest/api/<<c# \"{{@jiraRoot}}\".Contains(\"jiraeu\") ? \"2\" : \"1\" #>>/issue/{{@issueKey}}/transitions",
+					UrlPattern = "{{@jiraRoot}}rest/api/<<c# \"{{@jiraRoot}}\".Contains(\"jiraeu\") ? \"2\" : \"1\" #>>/issue/{{@issueKey}}/transitions",
 					BodyPattern = "datetime: \"<<c# new System.DateTime(2019, 03, 18).ToString(\"yyyy-MM-dd\") #>>\""
 				}
 
@@ -265,7 +265,7 @@ $@"<configuration>
 
                 Reaction = new SelfUpdate
                 {
-                    UrlPattern = "{{@jiraRoot}}/rest/api/2/issue/{{@issueKey}}",
+                    UrlPattern = "{{@jiraRoot}}rest/api/2/issue/{{@issueKey}}",
                     BodyPattern = @"
 {
     ""update"": {

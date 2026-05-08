@@ -19,7 +19,7 @@ namespace Preesta.Data.Supplying.Convert
         public IssuePackageConverter(string rootUri, string subjectPrefix = "[Jira] Unprocessed Issues ", string? linearWorkspace = null)
             : base(subjectPrefix)
         {
-            _rootUri = rootUri;
+            _rootUri = string.IsNullOrEmpty(rootUri) || rootUri.EndsWith("/") ? rootUri : rootUri + "/";
             _linearWorkspace = linearWorkspace;
         }
 

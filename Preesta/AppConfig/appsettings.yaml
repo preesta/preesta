@@ -20,7 +20,7 @@ Application:
   subjectPrefix: ""
 
 Jira:
-  rootUri: https://valevitov.atlassian.net
+  rootUri: https://valevitov.atlassian.net/
   userName: "--- set in appsettings.secrets.yaml ---"
   password: "--- set in appsettings.secrets.yaml ---"
   apiToken: "--- set in appsettings.secrets.yaml ---"
