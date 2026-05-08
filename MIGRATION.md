@@ -130,6 +130,9 @@
 - Per-mutation failures (HTTP error, GraphQL `errors` envelope) logged at Error and swallowed — one bad mutation does not abort the rule
 - Renamed for symmetry: `SelfUpdateSpec` → `RestMutationSpec`, `Rule.Updates` → `Rule.Mutations`, YAML key `callRest:` → `mutations:` (XML format keeps legacy `callRest` element)
 - Tests: 92 → 100 (LinearMutationExecutorTests + LinearGraphQLMutations YAML parsing + IssuePackageConverter normalisation)
+- Live-validated: `commentCreate` mutation against PRE-9 in workspace `preesta-dev` — comment appeared in Linear with correct timestamp + marker-substituted body
+
+**Known issue (not blocking power users):** `filterRaw:` numeric values lose their type through the YAML→JSON round-trip in `ConvertFilterRaw` — Linear rejects `number: { eq: 9 }` with `"Float cannot represent non numeric value: \"9\""`. Workaround: use string-typed fields (`id: { eq: "uuid" }`) or AI prompt mode. Fix candidate: walk the YAMLDotNet tree, preserve numeric scalars when serialising to JSON.
 
 ## Remaining
 
