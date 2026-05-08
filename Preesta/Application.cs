@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Preesta.Data;
 using Preesta.DI;
@@ -12,10 +13,19 @@ namespace Preesta
         {
             var container = new DependencyContainer(args[0]);
             container.ValidateRules();
-            Task.WaitAll(
+
+            var tasks = new List<Task>
+            {
                 container.ResolveNotificationPipe<Issue>("Jql").RunAsync(),
                 container.ResolveNotificationPipe<Release>().RunAsync()
-            );
+            };
+
+            // Linear pipeline runs only when registered (i.e. Linear:apiKey is set).
+            var linearPipe = container.TryResolveNotificationPipe<Issue>("Linear");
+            if (linearPipe != null)
+                tasks.Add(linearPipe.RunAsync());
+
+            Task.WaitAll(tasks.ToArray());
         }
     }
 }
