@@ -124,6 +124,24 @@ namespace Tests.Mocks
                     .WithBody(jsonResponse));
         }
 
+        /// <summary>
+        /// Matches any request body containing a substring (e.g. a mutation name or a
+        /// marker like <c>"PRE-7"</c>) and returns the supplied JSON response. Used by
+        /// LinearMutationExecutor tests to assert that the right mutation was POSTed.
+        /// </summary>
+        public void StubMutation(string bodySubstring, string jsonResponse)
+        {
+            _server
+                .Given(Request.Create()
+                    .WithPath("/graphql")
+                    .UsingPost()
+                    .WithBody(new RegexMatcher(System.Text.RegularExpressions.Regex.Escape(bodySubstring))))
+                .RespondWith(Response.Create()
+                    .WithStatusCode(HttpStatusCode.OK)
+                    .WithHeader("Content-Type", "application/json")
+                    .WithBody(jsonResponse));
+        }
+
         public void Dispose()
         {
             _server.Stop();
