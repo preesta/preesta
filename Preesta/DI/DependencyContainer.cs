@@ -78,7 +78,7 @@ namespace Preesta.DI
                 var linearRootUri = string.IsNullOrEmpty(linearWorkspace)
                     ? "https://linear.app/"
                     : $"https://linear.app/{linearWorkspace}/";
-                var linearConverter = new IssuePackageConverter(linearRootUri, appSettings.SubjectPrefix);
+                var linearConverter = new IssuePackageConverter(linearRootUri, appSettings.SubjectPrefix, linearWorkspace);
 
                 services.AddKeyedSingleton("Linear", new ReactionPipeline<Issue>(
                     linearSupplier, linearConverter, messenger, jiraService, redirector,

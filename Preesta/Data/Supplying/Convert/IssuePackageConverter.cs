@@ -10,11 +10,17 @@ namespace Preesta.Data.Supplying.Convert
     internal class IssuePackageConverter : PackageConverterBase<Issue>
     {
         private readonly string _rootUri;
+        // Linear workspace slug (e.g. "preesta-dev"), used by IssueFormatter to build
+        // a "View: My Sprint Blockers" → linear.app/{workspace}/view/{viewId} link
+        // for viewId-mode rules. Null when this converter wraps a Jira pipeline or
+        // when Linear:workspace isn't configured.
+        private readonly string? _linearWorkspace;
 
-        public IssuePackageConverter(string rootUri, string subjectPrefix = "[Jira] Unprocessed Issues ")
+        public IssuePackageConverter(string rootUri, string subjectPrefix = "[Jira] Unprocessed Issues ", string? linearWorkspace = null)
             : base(subjectPrefix)
         {
             _rootUri = rootUri;
+            _linearWorkspace = linearWorkspace;
         }
 
         public override HttpRequest[] ToHttpRequests(IEnumerable<Package<SelfUpdate, Issue>> packages)
@@ -56,12 +62,12 @@ namespace Preesta.Data.Supplying.Convert
 
         protected internal override string FormatHtml(IEnumerable<Package<NotificationReaction, Issue>> packages)
         {
-            return IssueFormatter.ToHtml(packages, _rootUri);
+            return IssueFormatter.ToHtml(packages, _rootUri, _linearWorkspace);
         }
 
         protected internal override string FormatText(IEnumerable<Package<NotificationReaction, Issue>> packages)
         {
-            return IssueFormatter.ToText(packages, _rootUri);
+            return IssueFormatter.ToText(packages, _rootUri, _linearWorkspace);
         }
     }
 }

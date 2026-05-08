@@ -5,8 +5,14 @@
 {{~ if section.recommendations ~}}
 <i>{{ section.recommendations | html.escape }}</i>
 {{~ end ~}}
+{{~ if section.filter_description ~}}
+<i>{{ section.filter_description | html.escape }}</i>
+{{~ end ~}}
 {{~ if section.jql_uri ~}}
 <a href="{{ section.jql_uri }}">Open in Jira</a>
+{{~ end ~}}
+{{~ if section.linear_view_uri ~}}
+<a href="{{ section.linear_view_uri }}">Open in Linear</a>
 {{~ end ~}}
 
 {{~ for item in section.items ~}}

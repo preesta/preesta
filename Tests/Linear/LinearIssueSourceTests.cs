@@ -113,6 +113,7 @@ namespace Tests.Linear
         private const string CustomViewTwoIssuesResponse = @"{
   ""data"": {
     ""customView"": {
+      ""name"": ""My Sprint Blockers"",
       ""issues"": {
         ""nodes"": [
           {
@@ -314,6 +315,41 @@ namespace Tests.Linear
             Assert.AreEqual("View issue A", issues[0].Summary);
             // PRE-11 has state.type == completed, so Resolution should be set.
             Assert.AreEqual("Done", issues[1].Resolution);
+        }
+
+        [Test]
+        public void ViewId_HappyPath_RequestsViewName_AndCachesIt()
+        {
+            // Phase 12.2: GetByViewId pulls customView.name in the same hop so the
+            // digest header can show "View: My Sprint Blockers" without an extra
+            // request. The query string we issue must include `name`, and the source
+            // must cache the resolved name keyed by viewId.
+            using var server = new MockLinearServer();
+            const string viewId = "0e8a3b41-1234-4321-aaaa-bbbbbbbbbbbb";
+            server.StubCustomViewQuery(viewId, CustomViewTwoIssuesResponse);
+
+            var connection = new LinearConnection(FakeApiKey, server.GraphQlUrl);
+            var source = new LinearIssueSource(connection);
+            source.GetIssues(ViewIdRule(viewId));
+
+            // Assert GraphQL projection asks for `name` in the customView selection.
+            var sentBodies = server.LogEntries
+                .Select(e => e.RequestMessage?.Body ?? "")
+                .ToArray();
+            Assert.IsTrue(
+                sentBodies.Any(b => b.Contains("customView") && b.Contains("name")),
+                "Expected the customView GraphQL request to project `name`");
+
+            // Cache must be populated for the supplier's Enrich() to read.
+            Assert.AreEqual("My Sprint Blockers", source.GetCachedViewName(viewId));
+        }
+
+        [Test]
+        public void ViewId_GetCachedViewName_ReturnsNullBeforeAnyFetch()
+        {
+            var gateway = Substitute.For<ILinearGateway>();
+            var source = new LinearIssueSource(gateway);
+            Assert.IsNull(source.GetCachedViewName("never-fetched"));
         }
 
         [Test]
