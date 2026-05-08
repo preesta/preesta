@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Net.Http;
 using LinearGraphQL;
 using Newtonsoft.Json.Linq;
 using NSubstitute;
@@ -15,8 +14,8 @@ namespace Tests.Linear
     [TestFixture]
     public class LinearIssueSourceTests
     {
-        // Existing happy-path response — adjusted to the post-Phase-12.1 shape
-        // (issues.nodes instead of viewer.assignedIssues.nodes).
+        // Issues-shape response — used by both raw-filter and (post-suggestion) AI-prompt
+        // tests. data.issues.nodes matches what `issues(filter: $filter)` returns.
         private const string FiveIssuesResponse = @"{
   ""data"": {
     ""issues"": {
@@ -101,7 +100,7 @@ namespace Tests.Linear
   }
 }";
 
-        private const string EmptyResponse = @"{
+        private const string EmptyIssuesResponse = @"{
   ""data"": { ""issues"": { ""nodes"": [] } }
 }";
 
@@ -111,19 +110,70 @@ namespace Tests.Linear
   ]
 }";
 
+        private const string CustomViewTwoIssuesResponse = @"{
+  ""data"": {
+    ""customView"": {
+      ""issues"": {
+        ""nodes"": [
+          {
+            ""identifier"": ""PRE-10"",
+            ""title"": ""View issue A"",
+            ""url"": ""https://linear.app/preesta-dev/issue/PRE-10"",
+            ""state"": { ""name"": ""Todo"", ""type"": ""unstarted"" },
+            ""priority"": 2,
+            ""priorityLabel"": ""High"",
+            ""assignee"": null,
+            ""creator"":  { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
+            ""project"":  null,
+            ""labels"":   { ""nodes"": [] },
+            ""dueDate"":   null,
+            ""createdAt"": ""2026-05-01T10:00:00.000Z"",
+            ""updatedAt"": ""2026-05-08T12:00:00.000Z""
+          },
+          {
+            ""identifier"": ""PRE-11"",
+            ""title"": ""View issue B"",
+            ""url"": ""https://linear.app/preesta-dev/issue/PRE-11"",
+            ""state"": { ""name"": ""Done"", ""type"": ""completed"" },
+            ""priority"": 3,
+            ""priorityLabel"": ""Medium"",
+            ""assignee"": { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
+            ""creator"":  { ""id"": ""u1"", ""name"": ""Valentin"", ""email"": ""valentin@example.com"" },
+            ""project"":  null,
+            ""labels"":   { ""nodes"": [] },
+            ""dueDate"":   null,
+            ""createdAt"": ""2026-04-20T09:00:00.000Z"",
+            ""updatedAt"": ""2026-05-07T08:00:00.000Z""
+          }
+        ]
+      }
+    }
+  }
+}";
+
         private const string FakeApiKey = "lin_api_FAKE_TEST_KEY";
+
+        private static JObject SuggestedFilter() =>
+            JObject.Parse(@"{ ""state"": { ""type"": { ""neq"": ""completed"" } } }");
 
         private static LinearRule RawFilterRule() => new LinearRule
         {
-            // The raw value is opaque to MockLinearServer (which doesn't body-match on it).
             FilterRaw = JObject.Parse(@"{ ""state"": { ""type"": { ""neq"": ""completed"" } } }")
         };
 
+        private static LinearRule PromptRule(string prompt = "issues assigned to me, not completed") =>
+            new LinearRule { Filter = prompt };
+
+        private static LinearRule ViewIdRule(string id = "0e8a3b41-1234-4321-aaaa-bbbbbbbbbbbb") =>
+            new LinearRule { ViewId = id };
+
+        // ----- Raw filter mode -----
+
         [Test]
-        public void HappyPath_MapsAllFields()
+        public void RawFilter_HappyPath_MapsAllFields()
         {
             using var server = new MockLinearServer();
-            server.StubAssignedIssuesQuery(FiveIssuesResponse);
+            server.StubIssuesQuery(FiveIssuesResponse);
 
             var connection = new LinearConnection(FakeApiKey, server.GraphQlUrl);
             var source = new LinearIssueSource(connection);
@@ -152,10 +202,10 @@ namespace Tests.Linear
         }
 
         [Test]
-        public void EmptyResult_ReturnsEmptyArray()
+        public void RawFilter_EmptyResult_ReturnsEmptyArray()
         {
             using var server = new MockLinearServer();
-            server.StubAssignedIssuesQuery(EmptyResponse);
+            server.StubIssuesQuery(EmptyIssuesResponse);
 
             var connection = new LinearConnection(FakeApiKey, server.GraphQlUrl);
             var source = new LinearIssueSource(connection);
@@ -167,10 +217,10 @@ namespace Tests.Linear
         }
 
         [Test]
-        public void GraphQlErrorResponse_ReturnsEmptyArrayAndLogs()
+        public void RawFilter_GraphQlErrorResponse_ReturnsEmptyArrayAndLogs()
         {
             using var server = new MockLinearServer();
-            server.StubAssignedIssuesQuery(ErrorResponse);
+            server.StubIssuesQuery(ErrorResponse);
 
             var connection = new LinearConnection(FakeApiKey, server.GraphQlUrl);
             var logger = Substitute.For<ILogger>();
@@ -182,6 +232,123 @@ namespace Tests.Linear
             Assert.IsTrue(
                 logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"),
                 "Expected ILogger.Error to be called when GraphQL response contains an errors array");
+        }
+
+        // ----- AI prompt mode (2-hop fetch) -----
+
+        [Test]
+        public void Prompt_HappyPath_TwoHopFetch()
+        {
+            using var server = new MockLinearServer();
+            // Order matters when using WireMock.Net regex matchers — register the
+            // (more specific) suggestion stub last so it's evaluated first.
+            server.StubIssuesQuery(FiveIssuesResponse);
+            server.StubFilterSuggestionQuery("not completed", SuggestedFilter());
+
+            var connection = new LinearConnection(FakeApiKey, server.GraphQlUrl);
+            var source = new LinearIssueSource(connection);
+
+            var issues = source.GetIssues(PromptRule("issues assigned to me, not completed"));
+
+            Assert.AreEqual(5, issues.Length);
+            Assert.AreEqual("PRE-1", issues[0].Key);
+        }
+
+        [Test]
+        public void Prompt_SuggestionReturnsNullFilter_ReturnsEmptyArrayAndLogsWarning()
+        {
+            using var server = new MockLinearServer();
+            // Linear can return a null filter for ambiguous prompts; we should
+            // skip the second hop and warn.
+            const string nullFilterResponse =
+                @"{ ""data"": { ""issueFilterSuggestion"": { ""filter"": null } } }";
+            server.StubAssignedIssuesQuery(nullFilterResponse);
+
+            var connection = new LinearConnection(FakeApiKey, server.GraphQlUrl);
+            var logger = Substitute.For<ILogger>();
+            var source = new LinearIssueSource(connection, logger);
+
+            var issues = source.GetIssues(PromptRule("ambiguous prompt"));
+
+            Assert.AreEqual(0, issues.Length);
+            Assert.IsTrue(
+                logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Warning"),
+                "Expected ILogger.Warning when issueFilterSuggestion returns no filter");
+        }
+
+        [Test]
+        public void Prompt_SuggestionReturnsErrors_ReturnsEmptyArrayAndLogs()
+        {
+            using var server = new MockLinearServer();
+            // The generic body-less stub matches the first request (suggestion),
+            // returning the GraphQL error envelope.
+            server.StubAssignedIssuesQuery(ErrorResponse);
+
+            var connection = new LinearConnection(FakeApiKey, server.GraphQlUrl);
+            var logger = Substitute.For<ILogger>();
+            var source = new LinearIssueSource(connection, logger);
+
+            var issues = source.GetIssues(PromptRule());
+
+            Assert.AreEqual(0, issues.Length);
+            Assert.IsTrue(
+                logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"));
+        }
+
+        // ----- ViewId mode -----
+
+        [Test]
+        public void ViewId_HappyPath_MapsAllFields()
+        {
+            using var server = new MockLinearServer();
+            const string viewId = "0e8a3b41-1234-4321-aaaa-bbbbbbbbbbbb";
+            server.StubCustomViewQuery(viewId, CustomViewTwoIssuesResponse);
+
+            var connection = new LinearConnection(FakeApiKey, server.GraphQlUrl);
+            var source = new LinearIssueSource(connection);
+
+            var issues = source.GetIssues(ViewIdRule(viewId));
+
+            Assert.AreEqual(2, issues.Length);
+            Assert.AreEqual("PRE-10", issues[0].Key);
+            Assert.AreEqual("View issue A", issues[0].Summary);
+            // PRE-11 has state.type == completed, so Resolution should be set.
+            Assert.AreEqual("Done", issues[1].Resolution);
+        }
+
+        [Test]
+        public void ViewId_ErrorResponse_ReturnsEmptyArray()
+        {
+            using var server = new MockLinearServer();
+            const string viewId = "deadbeef-0000-0000-0000-000000000000";
+            server.StubCustomViewQuery(viewId, ErrorResponse);
+
+            var connection = new LinearConnection(FakeApiKey, server.GraphQlUrl);
+            var logger = Substitute.For<ILogger>();
+            var source = new LinearIssueSource(connection, logger);
+
+            var issues = source.GetIssues(ViewIdRule(viewId));
+
+            Assert.AreEqual(0, issues.Length);
+            Assert.IsTrue(logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"));
+        }
+
+        // ----- Defensive: malformed rule with no source set -----
+
+        [Test]
+        public void NoFilterSet_ReturnsEmptyArrayAndLogsWarning()
+        {
+            // GetLinearRules drops these before they hit the source, but we still
+            // defend against a hand-constructed rule.
+            var gateway = Substitute.For<ILinearGateway>();
+            var logger = Substitute.For<ILogger>();
+            var source = new LinearIssueSource(gateway, logger);
+
+            var issues = source.GetIssues(new LinearRule());
+
+            Assert.AreEqual(0, issues.Length);
+            gateway.DidNotReceive().Query(Arg.Any<string>(), Arg.Any<object?>());
+            Assert.IsTrue(logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Warning"));
         }
     }
 }

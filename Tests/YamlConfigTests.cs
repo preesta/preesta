@@ -129,5 +129,118 @@ redirectionRules:
             var rules = _config.GetJqlRules("nonexistent");
             Assert.AreEqual(0, rules.Length);
         }
+
+        // ----- Phase 12.1: Linear filter modes -----
+
+        private const string LinearYaml = @"
+rules:
+  - type: linear
+    group: linear-prompt
+    filter: ""issues assigned to me, not completed""
+
+  - type: linear
+    group: linear-raw
+    filterRaw:
+      state:
+        type:
+          neq: completed
+
+  - type: linear
+    group: linear-view
+    viewId: ""0e8a3b41-1234-4321-aaaa-bbbbbbbbbbbb""
+
+  - type: linear
+    group: linear-bad
+    # zero filter sources — should be dropped
+
+  - type: linear
+    group: linear-bad
+    filter: ""whatever""
+    viewId: ""abc""
+    # two filter sources — should be dropped
+
+  - type: linear
+    group: linear-bad
+    filter: ""ok""
+    filterRaw:
+      state: { type: { neq: completed } }
+    # two filter sources — should be dropped
+";
+
+        [Test]
+        public void Linear_FilterPromptMode_ParsedCorrectly()
+        {
+            var config = new YamlRulesConfig(LinearYaml, Substitute.For<ILogger>());
+            var rules = config.GetLinearRules("linear-prompt");
+            Assert.AreEqual(1, rules.Length);
+            Assert.AreEqual("issues assigned to me, not completed", rules[0].Filter);
+            Assert.IsNull(rules[0].FilterRaw);
+            Assert.IsNull(rules[0].ViewId);
+        }
+
+        [Test]
+        public void Linear_FilterRawMode_ParsedAsJObject()
+        {
+            var config = new YamlRulesConfig(LinearYaml, Substitute.For<ILogger>());
+            var rules = config.GetLinearRules("linear-raw");
+            Assert.AreEqual(1, rules.Length);
+            Assert.IsNull(rules[0].Filter);
+            Assert.IsNotNull(rules[0].FilterRaw);
+            Assert.AreEqual("completed",
+                (string?)rules[0].FilterRaw!.SelectToken("state.type.neq"));
+            Assert.IsNull(rules[0].ViewId);
+        }
+
+        [Test]
+        public void Linear_ViewIdMode_ParsedCorrectly()
+        {
+            var config = new YamlRulesConfig(LinearYaml, Substitute.For<ILogger>());
+            var rules = config.GetLinearRules("linear-view");
+            Assert.AreEqual(1, rules.Length);
+            Assert.AreEqual("0e8a3b41-1234-4321-aaaa-bbbbbbbbbbbb", rules[0].ViewId);
+            Assert.IsNull(rules[0].Filter);
+            Assert.IsNull(rules[0].FilterRaw);
+        }
+
+        [Test]
+        public void Linear_RuleWithNoFilterSource_IsDroppedAndLogged()
+        {
+            var logger = Substitute.For<ILogger>();
+            var config = new YamlRulesConfig(LinearYaml, logger);
+
+            var rules = config.GetLinearRules("linear-bad");
+
+            Assert.AreEqual(0, rules.Length);
+            // Three malformed rules in linear-bad group (zero/two/two sources).
+            // We don't assert exact message text here; the count of Error calls
+            // (one per dropped rule) is sufficient signal.
+            var errorCalls = logger.ReceivedCalls()
+                .Where(c => c.GetMethodInfo().Name == "Error")
+                .ToList();
+            Assert.GreaterOrEqual(errorCalls.Count, 3,
+                "Expected at least one Error log per dropped Linear rule (3 malformed rules)");
+        }
+
+        [Test]
+        public void Linear_RuleWithMultipleFilterSources_IsDroppedAndLogged()
+        {
+            const string yaml = @"
+rules:
+  - type: linear
+    group: bad
+    filter: ""x""
+    filterRaw:
+      state: { type: { neq: completed } }
+";
+            var logger = Substitute.For<ILogger>();
+            var config = new YamlRulesConfig(yaml, logger);
+
+            var rules = config.GetLinearRules("bad");
+
+            Assert.AreEqual(0, rules.Length);
+            Assert.IsTrue(
+                logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"),
+                "Expected ILogger.Error when a Linear rule has multiple filter sources set");
+        }
     }
 }
