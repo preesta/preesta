@@ -237,17 +237,11 @@ namespace Preesta.Formatting
                 if (!string.IsNullOrEmpty(s))
                     return $"AI filter: «{s}»";
             }
-            if (package.Properties.TryGetValue("LinearFilterRaw", out var raw))
-            {
-                var s = raw?.ToString();
-                if (!string.IsNullOrEmpty(s))
-                {
-                    // Truncate to keep digest headers readable. Raw filters can nest
-                    // arbitrarily deep; the prompt never needs truncation by spec.
-                    if (s!.Length > 200) s = s.Substring(0, 197) + "…";
-                    return $"Filter: {s}";
-                }
-            }
+            // filterRaw is intentionally NOT shown in the digest header — it's a
+            // power-user escape hatch (the user wrote the GraphQL filter object
+            // themselves in rules.yaml, so re-displaying it here just clutters the
+            // notification with non-actionable JSON). AI prompt and viewId are still
+            // shown because they are human-readable / clickable.
             if (package.Properties.TryGetValue("LinearViewName", out var name))
             {
                 var s = name?.ToString();

@@ -159,8 +159,12 @@ namespace Tests.Linear
         // ----- Raw filter mode -----
 
         [Test]
-        public void RawFilterMode_FilterDescriptionStartsWithFilterAndContainsCompactJson()
+        public void RawFilterMode_FilterDescriptionIsHidden()
         {
+            // filterRaw is a power-user escape hatch — the user wrote the JSON
+            // themselves in rules.yaml, so re-displaying it in the digest header
+            // adds non-actionable clutter (Linear's UI doesn't accept these via
+            // URL — verified live). AI prompt and viewId still render.
             var (source, server) = RawFilterStubbed();
             using (server)
             {
@@ -169,30 +173,11 @@ namespace Tests.Linear
 
                 var html = IssueFormatter.ToHtml(packages, "https://linear.app/preesta-dev/", linearWorkspace: "preesta-dev");
 
-                StringAssert.Contains("Filter:", html);
-                // Compact (no whitespace inside the JSON), HTML-escaped — both quote
-                // characters and the inner braces should appear in the output.
-                StringAssert.Contains("&quot;state&quot;", html);
-                StringAssert.Contains("&quot;completed&quot;", html);
-                // No view link.
+                StringAssert.DoesNotContain("Filter:", html);
+                StringAssert.DoesNotContain("&quot;state&quot;", html);
+                StringAssert.DoesNotContain("&quot;completed&quot;", html);
+                // No view link either — filterRaw has no canonical Linear URL.
                 StringAssert.DoesNotContain("Open in Linear", html);
-            }
-        }
-
-        [Test]
-        public void RawFilterMode_HugeFilterIsTruncatedTo200Chars()
-        {
-            var (source, server) = RawFilterStubbed();
-            using (server)
-            {
-                // Build a filter whose JSON serialisation is well over 200 chars.
-                var huge = new JObject();
-                for (int i = 0; i < 50; i++)
-                    huge[$"field_with_a_long_name_{i}"] = $"value_with_a_long_name_{i}";
-                var packages = PackagesFor(new LinearRule { FilterRaw = huge }, source);
-
-                var html = IssueFormatter.ToHtml(packages, "https://linear.app/preesta-dev/", linearWorkspace: "preesta-dev");
-                StringAssert.Contains("…", html);
             }
         }
 

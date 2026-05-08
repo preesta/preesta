@@ -5,9 +5,6 @@
 {{~ if section.recommendations ~}}
 <i>{{ section.recommendations | html.escape }}</i>
 {{~ end ~}}
-{{~ if section.filter_description ~}}
-<i>{{ section.filter_description | html.escape }}</i>
-{{~ end ~}}
 {{~ if section.jql_uri ~}}
 <a href="{{ section.jql_uri }}">Open in Jira</a>
 {{~ end ~}}
