@@ -31,7 +31,7 @@ namespace Preesta.Data.Supplying
         {
             try
             {
-                return _source.GetAssignedIssues();
+                return _source.GetIssues(rule);
             }
             catch (Exception e)
             {

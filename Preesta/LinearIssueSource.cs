@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using LinearGraphQL;
 using Newtonsoft.Json.Linq;
+using Preesta.Configuration.Action;
 using Preesta.Data;
 using Serilog;
 
@@ -15,12 +16,33 @@ namespace Preesta
     /// (no <c>IIssueSource</c> abstraction yet, per Phase 12 architecture decision).
     /// </summary>
     /// <remarks>
-    /// MVP filter (assignee = viewer, state.type != completed) is hardcoded inside
-    /// <see cref="LinearGraphQL.LinearConnection.GetAssignedIssues"/>.
-    /// A user-friendly DSL for filters is deferred to Phase 12.1.
+    /// Each call to <see cref="GetIssues(LinearRule)"/> dispatches on the rule's filter
+    /// mode (see <see cref="LinearRule"/> for the three options). Per-rule failures
+    /// are logged and turned into an empty array — the pipeline keeps going for the
+    /// other rules in the group.
     /// </remarks>
     public class LinearIssueSource
     {
+        // Shared field projection — used by both `issues(filter:)` and `customView.issues`.
+        private const string IssueFields =
+            "identifier title url state { name type } priority priorityLabel " +
+            "assignee { id name email } creator { id name email } " +
+            "project { id name } labels { nodes { name } } " +
+            "dueDate createdAt updatedAt";
+
+        // Hop 1 of the AI-prompt path: ask Linear to translate a natural-language prompt
+        // into a Linear filter object. Returns { data: { issueFilterSuggestion: { filter } } }.
+        private const string FilterSuggestionQuery =
+            "query($prompt: String!) { issueFilterSuggestion(prompt: $prompt) { filter } }";
+
+        // Used by both AI-prompt (hop 2) and raw-filter paths.
+        private static readonly string IssuesByFilterQuery =
+            "query($filter: IssueFilter!) { issues(filter: $filter) { nodes { " + IssueFields + " } } }";
+
+        // Saved-view path — Linear evaluates the view server-side; we just unwrap nodes.
+        private static readonly string CustomViewQuery =
+            "query($id: String!) { customView(id: $id) { issues { nodes { " + IssueFields + " } } } }";
+
         private readonly ILinearGateway _gateway;
         private readonly ILogger? _logger;
 
@@ -35,34 +57,82 @@ namespace Preesta
         {
         }
 
-        public virtual Issue[] GetAssignedIssues()
+        /// <summary>
+        /// Dispatches on the rule's filter mode. Validation in the YAML converter
+        /// guarantees exactly one of {Filter, FilterRaw, ViewId} is set; if a caller
+        /// somehow hands us a malformed rule we log and return empty.
+        /// </summary>
+        public virtual Issue[] GetIssues(LinearRule rule)
         {
-            JObject response;
             try
             {
-                response = _gateway.GetAssignedIssues();
+                if (rule.Filter != null)
+                    return GetByPrompt(rule.Filter);
+                if (rule.FilterRaw != null)
+                    return GetByRawFilter(rule.FilterRaw);
+                if (rule.ViewId != null)
+                    return GetByViewId(rule.ViewId);
+
+                _logger?.Warning("Linear rule has no filter source set; skipping");
+                return Array.Empty<Issue>();
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, "Failed to query Linear GraphQL API");
+                _logger?.Warning(ex, "Failed to fetch issues from Linear");
+                return Array.Empty<Issue>();
+            }
+        }
+
+        private Issue[] GetByPrompt(string prompt)
+        {
+            var suggestion = _gateway.Query(FilterSuggestionQuery, new { prompt });
+            if (HasErrors(suggestion, "issueFilterSuggestion"))
+                return Array.Empty<Issue>();
+
+            var filter = suggestion.SelectToken("data.issueFilterSuggestion.filter") as JObject;
+            if (filter == null)
+            {
+                _logger?.Warning("Linear issueFilterSuggestion returned no filter for prompt {Prompt}", prompt);
                 return Array.Empty<Issue>();
             }
 
+            return GetByRawFilter(filter);
+        }
+
+        private Issue[] GetByRawFilter(JObject filter)
+        {
+            var response = _gateway.Query(IssuesByFilterQuery, new { filter });
+            if (HasErrors(response, "issues"))
+                return Array.Empty<Issue>();
+
+            var nodes = response.SelectToken("data.issues.nodes") as JArray;
+            if (nodes == null) return Array.Empty<Issue>();
+            return nodes.OfType<JObject>().Select(MapNode).ToArray();
+        }
+
+        private Issue[] GetByViewId(string viewId)
+        {
+            var response = _gateway.Query(CustomViewQuery, new { id = viewId });
+            if (HasErrors(response, "customView"))
+                return Array.Empty<Issue>();
+
+            var nodes = response.SelectToken("data.customView.issues.nodes") as JArray;
+            if (nodes == null) return Array.Empty<Issue>();
+            return nodes.OfType<JObject>().Select(MapNode).ToArray();
+        }
+
+        private bool HasErrors(JObject response, string context)
+        {
             var errors = response["errors"] as JArray;
             if (errors != null && errors.Count > 0)
             {
-                _logger?.Error("Linear GraphQL returned errors: {Errors}", errors.ToString());
-                return Array.Empty<Issue>();
+                _logger?.Error("Linear GraphQL ({Context}) returned errors: {Errors}", context, errors.ToString());
+                return true;
             }
-
-            var nodes = response.SelectToken("data.viewer.assignedIssues.nodes") as JArray;
-            if (nodes == null)
-                return Array.Empty<Issue>();
-
-            return nodes.OfType<JObject>().Select(ToIssue).ToArray();
+            return false;
         }
 
-        internal static Issue ToIssue(JObject node)
+        internal static Issue MapNode(JObject node)
         {
             var stateName = (string?)node.SelectToken("state.name");
             var stateType = (string?)node.SelectToken("state.type");

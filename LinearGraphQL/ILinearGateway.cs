@@ -9,9 +9,9 @@ namespace LinearGraphQL
     public interface ILinearGateway
     {
         /// <summary>
-        /// Returns the raw GraphQL response (full envelope including <c>data</c> and
-        /// optional <c>errors</c> array) for the assigned-issues query.
+        /// POSTs the given GraphQL query (and optional variables object) to Linear and
+        /// returns the raw JSON response envelope (<c>data</c> + optional <c>errors</c>).
         /// </summary>
-        JObject GetAssignedIssues();
+        JObject Query(string graphqlQuery, object? variables = null);
     }
 }

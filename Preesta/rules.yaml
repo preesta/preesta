@@ -55,6 +55,7 @@ rules:
 
   - type: linear
     group: e2etest
+    filter: "issues assigned to me, not completed"
     notify:
       subject: "Linear digest"
       recommendations: "Open Linear tickets assigned to you."
