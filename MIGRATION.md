@@ -93,6 +93,16 @@
 - `IssueInclusionToStructRule` → `StructureAmbiguityRule`; `IssuesInMultipleStructuresSupplier` → `StructureAmbiguitySupplier`
 - `Preesta.Data.User` kept as is (namespaces resolve the conflict with `JiraRest.Data.User`)
 
+### Phase 12 (partial / MVP): Linear support ✅
+- New `type: linear` rule alongside `type: jql` and `type: build`
+- `LinearIssueSource` queries Linear's GraphQL API (`api.linear.app/graphql`) with hardcoded MVP filter (`assignee = viewer, state.type ≠ completed`)
+- New `LinearGraphQL/` project: `LinearConnection` (raw API key in `Authorization` header — no `Bearer` prefix), `ILinearGateway`
+- New `LinearRule` (marker class), `LinearIssueSupplier` (mirrors `JqlSupplier`)
+- `Issue.Url` field added — populated by sources that return a canonical URL (Linear); formatter prefers it over the reconstructed `rootUri/browse/{key}` form
+- `Linear:apiKey` + `Linear:workspace` in `appsettings.yaml`; pipeline registered only when API key is configured
+- Tests: 68 → 71 (`MockLinearServer` + 3 `LinearIssueSourceTests`)
+- **Filter syntax DSL deferred to Phase 12.1** — no per-rule filter field yet, the MVP query is fixed inside `LinearIssueSource`
+
 ## Remaining
 
 ## Roadmap: New Features

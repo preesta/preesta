@@ -55,7 +55,11 @@ namespace Preesta.Formatting
                         .Select(col => htmlMode ? RenderHtmlChip(col, issue) : RenderTextChip(col, issue))
                         .Where(s => !string.IsNullOrEmpty(s))
                         .ToList();
-                    var browseUri = new JiraRest.UriBuilder().SetRoot(rootUri).AddRelativePath($"browse/{issue.Key ?? ""}").Build().ToString();
+                    // Prefer the canonical URL from the source (e.g. Linear) over the
+                    // reconstructed Jira-style /browse/{key} fallback.
+                    var browseUri = !string.IsNullOrEmpty(issue.Url)
+                        ? issue.Url!
+                        : new JiraRest.UriBuilder().SetRoot(rootUri).AddRelativePath($"browse/{issue.Key ?? ""}").Build().ToString();
                     return new DigestItem
                     {
                         Key = issue.Key ?? "",

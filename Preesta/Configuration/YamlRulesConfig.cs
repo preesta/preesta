@@ -68,6 +68,11 @@ namespace Preesta.Configuration
             });
         }
 
+        public Action.LinearRule[] GetLinearRules(string @group)
+        {
+            return GetRules<Action.LinearRule>(@group, "linear", ToBaseRule<Action.LinearRule>);
+        }
+
         public IReadOnlyDictionary<string, string> GetRedirectionMap()
         {
             return new ReadOnlyDictionary<string, string>(

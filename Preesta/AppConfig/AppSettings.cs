@@ -83,6 +83,10 @@ namespace Preesta.AppConfig
 
         public string? TelegramBotToken => _configuration["Telegram:botToken"];
 
+        public string? LinearApiKey => _configuration["Linear:apiKey"];
+
+        public string? LinearWorkspace => _configuration["Linear:workspace"];
+
         public IConfigurationSection SmtpSection => _configuration.GetSection("Smtp");
 
         public IConfigurationSection LoggerSection => _configuration.GetSection("Logger");

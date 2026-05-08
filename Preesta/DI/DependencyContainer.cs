@@ -61,6 +61,30 @@ namespace Preesta.DI
             services.AddSingleton(new ReactionPipeline<Release>(
                 buildSupplier, buildConverter, messenger, jiraService, redirector, logoFileName, telegramMessenger, telegramUserMap));
 
+            // Linear pipeline is registered only when an API key is provided.
+            // Application.cs uses GetKeyedService (nullable) so the pipeline is
+            // skipped silently when Linear isn't configured.
+            if (!string.IsNullOrEmpty(appSettings.LinearApiKey))
+            {
+                var linearSource = new LinearIssueSource(appSettings.LinearApiKey!, httpClient: null, logger);
+                var linearSupplier = new LinearIssueSupplier(
+                    linearSource, jiraService, rulesConfig.GetLinearRules(@group), logger);
+
+                // IssuePackageConverter is reused as-is. For Linear issues, Issue.Url is
+                // populated by LinearIssueSource and the formatter prefers it over the
+                // reconstructed-from-rootUri form, so the rootUri passed here is only
+                // a fallback (and a workspace-scoped URL works either way).
+                var linearWorkspace = appSettings.LinearWorkspace;
+                var linearRootUri = string.IsNullOrEmpty(linearWorkspace)
+                    ? "https://linear.app/"
+                    : $"https://linear.app/{linearWorkspace}/";
+                var linearConverter = new IssuePackageConverter(linearRootUri, appSettings.SubjectPrefix);
+
+                services.AddKeyedSingleton("Linear", new ReactionPipeline<Issue>(
+                    linearSupplier, linearConverter, messenger, jiraService, redirector,
+                    logoFileName, telegramMessenger, telegramUserMap));
+            }
+
             _provider = services.BuildServiceProvider();
         }
 
@@ -69,6 +93,15 @@ namespace Preesta.DI
             return name != null
                 ? _provider.GetRequiredKeyedService<ReactionPipeline<TIssueType>>(name)
                 : _provider.GetRequiredService<ReactionPipeline<TIssueType>>();
+        }
+
+        /// <summary>
+        /// Returns the keyed pipeline if it was registered (e.g. only when its
+        /// underlying service is configured), or <c>null</c> otherwise.
+        /// </summary>
+        public ReactionPipeline<TIssueType>? TryResolveNotificationPipe<TIssueType>(string name)
+        {
+            return _provider.GetKeyedService<ReactionPipeline<TIssueType>>(name);
         }
 
         internal void ValidateRules()

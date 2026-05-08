@@ -36,3 +36,7 @@ Smtp:
 
 Telegram:
   botToken: "--- set in appsettings.secrets.yaml ---"
+
+Linear:
+  apiKey: ""        # Personal API key from Linear → Settings → Account → Security & Access → API
+  workspace: ""     # Workspace URL key, e.g. "preesta-dev" for linear.app/preesta-dev
