@@ -103,6 +103,14 @@
 - Tests: 68 → 71 (`MockLinearServer` + 3 `LinearIssueSourceTests`)
 - **Filter syntax DSL deferred to Phase 12.1** — no per-rule filter field yet, the MVP query is fixed inside `LinearIssueSource`
 
+### Phase 12.1: Linear filter modes ✅
+- Three mutually exclusive filter modes per `type: linear` rule: `filter` (AI prompt — primary, the only one we advertise), `filterRaw` (raw Linear GraphQL filter — undocumented escape hatch), `viewId` (Linear saved-view ID — undocumented escape hatch)
+- Validation in `YamlRulesConfig.GetLinearRules`: rules with zero or 2+ filter sources are dropped with an `_logger.Error(...)` message
+- AI prompt path is a 2-hop GraphQL fetch: `issueFilterSuggestion(prompt:)` translates the prompt into a Linear filter object, which is then passed straight into `issues(filter:)`. No caching — the extra hop is accepted as noise
+- `viewId` path uses `customView(id:){ issues { nodes { ... } } }` so Linear evaluates the saved view server-side
+- The hardcoded `viewer.assignedIssues` MVP query is gone; `ILinearGateway` exposes a generic `Query(string, object?)`
+- Tests: 71 → 82 (8 `LinearIssueSourceTests` covering all three modes + 5 `YamlConfigTests` for filter-mode validation)
+
 ## Remaining
 
 ## Roadmap: New Features
