@@ -100,27 +100,41 @@ namespace Preesta.Data.Supplying
                 )
                 .ToArray();
 
-            var actionPackages =
-                (
-                    from set in uncategorizedSet
-                    from updateAction in set.rule.Mutations
-                    let package = new Package<SelfUpdate, Issue>
-                    {
-                        Reaction = new SelfUpdate
-                        {
-                            BodyPattern = updateAction.BodyPattern,
-                            UrlPattern = updateAction.UrlPattern,
-                            Verb = updateAction.Verb
-                        },
-                        Items = set.issues
-                    }
-                    select package
-                )
-                .Cast<PackageBase>()
+            var sets = uncategorizedSet
+                .Select(s => (rule: s.rule, issues: s.issues))
                 .ToArray();
+            var actionPackages = GetMutationPackages(sets);
 
             return notificationPackages.Union(actionPackages).ToArray();
+        }
 
+        /// <summary>
+        /// Produce the mutation/action packages for a batch of (rule, issues) pairs.
+        /// Default implementation emits one <see cref="Package{TReaction,TItem}"/> of
+        /// <see cref="SelfUpdate"/> per <see cref="Rule.Mutations"/> entry — the REST
+        /// path used by Jira. Linear-style suppliers override to emit GraphQL packages
+        /// from a different rule field.
+        /// </summary>
+        protected virtual PackageBase[] GetMutationPackages((TRule rule, Issue[] issues)[] sets)
+        {
+            return
+            (
+                from set in sets
+                from updateAction in set.rule.Mutations
+                let package = new Package<SelfUpdate, Issue>
+                {
+                    Reaction = new SelfUpdate
+                    {
+                        BodyPattern = updateAction.BodyPattern,
+                        UrlPattern = updateAction.UrlPattern,
+                        Verb = updateAction.Verb
+                    },
+                    Items = set.issues
+                }
+                select package
+            )
+            .Cast<PackageBase>()
+            .ToArray();
         }
 
         protected internal virtual PackageBase Enrich(PackageBase basePackage, TRule rule)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Preesta.Configuration.Action;
 using Serilog;
 
@@ -48,6 +49,30 @@ namespace Preesta.Data.Supplying
         /// only set <c>LinearViewName</c>+<c>LinearViewId</c> for the viewId mode; the
         /// other modes get the raw prompt or filter JSON to show, with no link.
         /// </summary>
+        /// <summary>
+        /// Linear's <c>mutations:</c> are GraphQL, not REST. Replace the base
+        /// implementation entirely — base would have produced empty REST packages
+        /// from the always-empty inherited <see cref="Rule.Mutations"/>; we instead
+        /// wrap each <see cref="LinearRule.GraphQLMutations"/> entry as a
+        /// <see cref="GraphQLMutation"/> reaction.
+        /// </summary>
+        protected override PackageBase[] GetMutationPackages((LinearRule rule, Issue[] issues)[] sets)
+        {
+            return
+            (
+                from set in sets
+                from spec in set.rule.GraphQLMutations
+                let package = new Package<GraphQLMutation, Issue>
+                {
+                    Reaction = new GraphQLMutation { MutationBody = spec.MutationBody },
+                    Items = set.issues
+                }
+                select package
+            )
+            .Cast<PackageBase>()
+            .ToArray();
+        }
+
         protected internal override PackageBase Enrich(PackageBase basePackage, LinearRule rule)
         {
             if (!string.IsNullOrEmpty(rule.Filter))
