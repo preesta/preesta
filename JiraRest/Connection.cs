@@ -73,7 +73,7 @@ namespace JiraRest
             return Decode<dynamic>(uri);
         }
 
-        public dynamic GetBuilds(string projectCode)
+        public dynamic GetReleases(string projectCode)
         {
             //https://jira.example.com/jira/rest/api/2/project/BENDER/versions
             var uri = new Uri(RootUri, $"rest/api/2/project/{projectCode}/versions");

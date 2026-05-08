@@ -77,9 +77,9 @@ namespace End2End.Tests
             var jqlRule = new JqlRule
             {
                 Jql = "any",
-                HowToUpdate = new[]
+                Updates = new[]
                 {
-                    new Update
+                    new SelfUpdateSpec
                     {
                         Verb = "POST",
                         UrlPattern = "{{@jiraRoot}}/rest/api/2/issue/{{@issueKey}}/transitions",
@@ -107,7 +107,7 @@ namespace End2End.Tests
 
             var messenger = Substitute.For<IMessenger>();
 
-            var pipe = new ReactionPipe<Issue>
+            var pipe = new ReactionPipeline<Issue>
             {
                 PackageSupplier = jqlSupplier,
                 PackageConverter = new IssuePackageConverter("http://jira"),
@@ -249,7 +249,7 @@ namespace End2End.Tests
             };
 
             var packageSupplier = new JqlSupplier(jiraService, rulesConfig.GetJqlRules("test"), Substitute.For<ILogger>());
-            var pipe = new ReactionPipe<Issue>()
+            var pipe = new ReactionPipeline<Issue>()
                 {
                     PackageSupplier = packageSupplier,
                     PackageConverter = new IssuePackageConverter(Empty),

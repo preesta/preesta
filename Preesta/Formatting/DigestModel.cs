@@ -23,19 +23,19 @@ namespace Preesta.Formatting
         public string MetaText { get; set; } = "";
     }
 
-    internal class BuildDigestModel
+    internal class ReleaseDigestModel
     {
-        public IReadOnlyList<BuildDigestSection> Sections { get; set; } = new List<BuildDigestSection>();
+        public IReadOnlyList<ReleaseDigestSection> Sections { get; set; } = new List<ReleaseDigestSection>();
     }
 
-    internal class BuildDigestSection
+    internal class ReleaseDigestSection
     {
         public string Subject { get; set; } = "";
         public string? Recommendations { get; set; }
-        public IReadOnlyList<BuildRow> Builds { get; set; } = new List<BuildRow>();
+        public IReadOnlyList<ReleaseRow> Builds { get; set; } = new List<ReleaseRow>();
     }
 
-    internal class BuildRow
+    internal class ReleaseRow
     {
         public string Name { get; set; } = "";
         public string ReleaseDate { get; set; } = "";

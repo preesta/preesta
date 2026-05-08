@@ -4,17 +4,17 @@ using Preesta.Configuration;
 
 namespace Preesta.Data.Supplying
 {
-    internal class IssuesInMultipleStructuresSupplier : IssueSupplier<IssueInclusionToStructRule>
+    internal class StructureAmbiguitySupplier : IssueSupplier<StructureAmbiguityRule>
     {
         public int MaxIssueCount { get; set; } = 50;
 
-        public IssuesInMultipleStructuresSupplier(IJiraService jiraService, IEnumerable<IssueInclusionToStructRule> rules, int maxIssueCount = 50)
+        public StructureAmbiguitySupplier(IJiraService jiraService, IEnumerable<StructureAmbiguityRule> rules, int maxIssueCount = 50)
             : base(jiraService, rules)
         {
             MaxIssueCount = maxIssueCount;
         }
 
-        protected override Issue[] GetIssues(IssueInclusionToStructRule rule)
+        protected override Issue[] GetIssues(StructureAmbiguityRule rule)
         {
             var enumerator = (from s in rule.Structures
                     from id in JiraService.GetIssuesInStructure(s)

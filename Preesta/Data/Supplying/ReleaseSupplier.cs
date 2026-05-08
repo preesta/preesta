@@ -4,12 +4,12 @@ using Preesta.Configuration;
 
 namespace Preesta.Data.Supplying
 {
-    internal class BuildSupplier : IPackageSupplier
+    internal class ReleaseSupplier : IPackageSupplier
     {
         protected IJiraService JiraService { get; }
-        protected IEnumerable<BuildRule> Rules { get; }
+        protected IEnumerable<ReleaseRule> Rules { get; }
 
-        public BuildSupplier(IJiraService jiraService, IEnumerable<BuildRule> rules)
+        public ReleaseSupplier(IJiraService jiraService, IEnumerable<ReleaseRule> rules)
         {
             JiraService = jiraService;
             Rules = rules;
@@ -19,19 +19,19 @@ namespace Preesta.Data.Supplying
         {
             string ToOrderedString(IEnumerable<string> a) => string.Join(",", a.OrderBy(c => c).ToArray());
             return (from rule in Rules
-                    from build in JiraService.GetBuilds(rule.ProjectCode)
+                    from build in JiraService.GetReleases(rule.ProjectCode)
                     where rule.IsMatch(build)
                     group new {build, rule} by new
                     {
-                        To = ToOrderedString(rule.HowToNotify!.MetaAddressers),
-                        Cc = ToOrderedString(rule.HowToNotify.MetaCarbonCopy),
-                        rule.HowToNotify.Subject
+                        To = ToOrderedString(rule.Notification!.RawRecipients),
+                        Cc = ToOrderedString(rule.Notification.RawCc),
+                        rule.Notification.Subject
                     }
                     into ag
-                    select new Package<SendsNotification, Build>
+                    select new Package<NotificationReaction, Release>
                     {
                         Items = ag.Select(a => a.build).ToArray(),
-                        Reaction = new SendsNotification
+                        Reaction = new NotificationReaction
                         {
                             Addressees = new Addressees
                             {
@@ -39,7 +39,7 @@ namespace Preesta.Data.Supplying
                                 Cc = ag.Key.Cc.Split(',')
                             },
                             Subject = ag.Key.Subject,
-                            Recommendations = ag.First().rule.HowToNotify!.Recommendations
+                            Recommendations = ag.First().rule.Notification!.Recommendations
                         }
                     })
                 .Cast<PackageBase>()

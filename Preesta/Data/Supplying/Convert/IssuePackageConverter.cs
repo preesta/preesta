@@ -38,28 +38,28 @@ namespace Preesta.Data.Supplying.Convert
             : template
                 .Replace("{{@jiraRoot}}", _rootUri)
                 .Replace("{{@issueKey}}", issue.Key)
-                .Replace("{{@assignee.email}}", issue.Staff.Assignee?.Email)
-                .Replace("{{@assignee.key}}", issue.Staff.Assignee?.Key)
-                .Replace("{{@assignee.name}}", issue.Staff.Assignee?.Name)
-                .Replace("{{@assignee.displayName}}", issue.Staff.Assignee?.DisplayName)
-                .Replace("{{@reporter.email}}", issue.Staff.Reporter?.Email)
-                .Replace("{{@reporter.key}}", issue.Staff.Reporter?.Key)
-                .Replace("{{@reporter.name}}", issue.Staff.Reporter?.Name)
-                .Replace("{{@reporter.displayName}}", issue.Staff.Reporter?.DisplayName)
-                .Replace("{{@creator.email}}", issue.Staff.Creator?.Email)
-                .Replace("{{@creator.key}}", issue.Staff.Creator?.Key)
-                .Replace("{{@creator.name}}", issue.Staff.Creator?.Name)
-                .Replace("{{@creator.displayName}}", issue.Staff.Creator?.DisplayName)
+                .Replace("{{@assignee.email}}", issue.Participants.Assignee?.Email)
+                .Replace("{{@assignee.key}}", issue.Participants.Assignee?.Key)
+                .Replace("{{@assignee.name}}", issue.Participants.Assignee?.Name)
+                .Replace("{{@assignee.displayName}}", issue.Participants.Assignee?.DisplayName)
+                .Replace("{{@reporter.email}}", issue.Participants.Reporter?.Email)
+                .Replace("{{@reporter.key}}", issue.Participants.Reporter?.Key)
+                .Replace("{{@reporter.name}}", issue.Participants.Reporter?.Name)
+                .Replace("{{@reporter.displayName}}", issue.Participants.Reporter?.DisplayName)
+                .Replace("{{@creator.email}}", issue.Participants.Creator?.Email)
+                .Replace("{{@creator.key}}", issue.Participants.Creator?.Key)
+                .Replace("{{@creator.name}}", issue.Participants.Creator?.Name)
+                .Replace("{{@creator.displayName}}", issue.Participants.Creator?.DisplayName)
                 .EvaluateScriptingInjections(new ScriptingContext { issue = issue, rootUri = _rootUri })
                 ;
         }
 
-        protected internal override string FormatHtml(IEnumerable<Package<SendsNotification, Issue>> packages)
+        protected internal override string FormatHtml(IEnumerable<Package<NotificationReaction, Issue>> packages)
         {
             return IssueFormatter.ToHtml(packages, _rootUri);
         }
 
-        protected internal override string FormatText(IEnumerable<Package<SendsNotification, Issue>> packages)
+        protected internal override string FormatText(IEnumerable<Package<NotificationReaction, Issue>> packages)
         {
             return IssueFormatter.ToText(packages, _rootUri);
         }

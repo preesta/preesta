@@ -2,7 +2,7 @@
 
 namespace Preesta.Data
 {
-    public class Build
+    public class Release
     {
         public string? Description { get; set; }
         public string Name { get; set; } = string.Empty;

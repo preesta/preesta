@@ -41,12 +41,12 @@ namespace Preesta.DI
             var rulesConfig = CreateRulesConfig(rulesFileName, logger);
 
             var jqlSupplier = new JqlSupplier(jiraService, rulesConfig.GetJqlRules(@group), logger);
-            var structSupplier = new IssuesInMultipleStructuresSupplier(
-                jiraService, rulesConfig.GetInStructRules(@group), appSettings.MaxResults);
-            var buildSupplier = new BuildSupplier(jiraService, rulesConfig.GetBuildRules(@group));
+            var structSupplier = new StructureAmbiguitySupplier(
+                jiraService, rulesConfig.GetStructureAmbiguityRules(@group), appSettings.MaxResults);
+            var buildSupplier = new ReleaseSupplier(jiraService, rulesConfig.GetReleaseRules(@group));
 
             var issueConverter = new IssuePackageConverter(appSettings.JiraRootUri, appSettings.SubjectPrefix);
-            var buildConverter = new BuildPackageConverter(appSettings.SubjectPrefix);
+            var buildConverter = new ReleasePackageConverter(appSettings.SubjectPrefix);
 
             var redirector = new Redirector(
                 rulesConfig.GetRedirectionMap(), appSettings.Supervisors, appSettings.Maintainers);
@@ -57,23 +57,23 @@ namespace Preesta.DI
             var services = new ServiceCollection();
             services.AddSingleton<IRulesConfig>(rulesConfig);
 
-            services.AddKeyedSingleton("Jql", new ReactionPipe<Issue>(
+            services.AddKeyedSingleton("Jql", new ReactionPipeline<Issue>(
                 jqlSupplier, issueConverter, messenger, jiraService, redirector, logoFileName, telegramMessenger, telegramUserMap));
 
-            services.AddKeyedSingleton("Structure", new ReactionPipe<Issue>(
+            services.AddKeyedSingleton("Structure", new ReactionPipeline<Issue>(
                 structSupplier, issueConverter, messenger, jiraService, redirector, logoFileName, telegramMessenger, telegramUserMap));
 
-            services.AddSingleton(new ReactionPipe<Build>(
+            services.AddSingleton(new ReactionPipeline<Release>(
                 buildSupplier, buildConverter, messenger, jiraService, redirector, logoFileName, telegramMessenger, telegramUserMap));
 
             _provider = services.BuildServiceProvider();
         }
 
-        public ReactionPipe<TIssueType> ResolveNotificationPipe<TIssueType>(string? name = null)
+        public ReactionPipeline<TIssueType> ResolveNotificationPipe<TIssueType>(string? name = null)
         {
             return name != null
-                ? _provider.GetRequiredKeyedService<ReactionPipe<TIssueType>>(name)
-                : _provider.GetRequiredService<ReactionPipe<TIssueType>>();
+                ? _provider.GetRequiredKeyedService<ReactionPipeline<TIssueType>>(name)
+                : _provider.GetRequiredService<ReactionPipeline<TIssueType>>();
         }
 
         internal void ValidateRules()

@@ -7,11 +7,11 @@ using static System.String;
 
 namespace Preesta.Data.Supplying.Convert
 {
-    internal static class Common<TIssueType>
+    internal static class MessageBuilder<TIssueType>
     {
-        public static Message[] ToMessage(IEnumerable<Package<SendsNotification, TIssueType>> packages,
-            Func<IEnumerable<Package<SendsNotification, TIssueType>>, string> toHtml,
-            Func<IEnumerable<Package<SendsNotification, TIssueType>>, string> toText,
+        public static Message[] ToMessage(IEnumerable<Package<NotificationReaction, TIssueType>> packages,
+            Func<IEnumerable<Package<NotificationReaction, TIssueType>>, string> toHtml,
+            Func<IEnumerable<Package<NotificationReaction, TIssueType>>, string> toText,
             string subjectPrefix)
         {
             string ToOrderedString(IEnumerable<string> a) => Join(",", a.OrderBy(c => c).ToArray());
@@ -36,8 +36,8 @@ namespace Preesta.Data.Supplying.Convert
                            }).ToArray();
         }
 
-        public static Message[] ToTelegramMessages(IEnumerable<Package<SendsNotification, TIssueType>> packages,
-            Func<IEnumerable<Package<SendsNotification, TIssueType>>, string> toText,
+        public static Message[] ToTelegramMessages(IEnumerable<Package<NotificationReaction, TIssueType>> packages,
+            Func<IEnumerable<Package<NotificationReaction, TIssueType>>, string> toText,
             string subjectPrefix,
             Redirector redirector,
             IReadOnlyDictionary<string, string> telegramUserMap)

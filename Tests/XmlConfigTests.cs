@@ -25,12 +25,12 @@ namespace Tests
             var config = new XmlRulesConfig(XDocument.Parse(xml), Substitute.For<ILogger>());
 
             Rule rule = config.GetJqlRules("test").Single();
-            Assert.AreEqual(string.Join(",", rule.HowToNotify!.MetaAddressers), string.Join(",", "admin"));
-            Assert.AreEqual(rule.HowToNotify.Subject, "test");
+            Assert.AreEqual(string.Join(",", rule.Notification!.RawRecipients), string.Join(",", "admin"));
+            Assert.AreEqual(rule.Notification.Subject, "test");
         }
 
         [Test]
-        public void GetBuildRules()
+        public void GetReleaseRules()
         {
             var xml =
 @"<configuration>
@@ -46,15 +46,15 @@ namespace Tests
 
             var config = new XmlRulesConfig(XDocument.Parse(xml), Substitute.For<ILogger>());
 
-            var rule = config.GetBuildRules("test").Single();
+            var rule = config.GetReleaseRules("test").Single();
             Assert.IsFalse(rule.ExpiredOnly);
-            Assert.AreEqual(string.Join(",", rule.HowToNotify!.MetaAddressers), string.Join(",", new[] { "admin" }));
-            Assert.AreEqual(rule.HowToNotify.Subject, "test");
+            Assert.AreEqual(string.Join(",", rule.Notification!.RawRecipients), string.Join(",", new[] { "admin" }));
+            Assert.AreEqual(rule.Notification.Subject, "test");
             Assert.AreEqual(rule.ProjectCode, "BENDER");
         }
 
         [Test]
-        public void GetInStructRules()
+        public void GetStructureAmbiguityRules()
         {
             var xml =
 @"<configuration>
@@ -71,10 +71,10 @@ namespace Tests
 
             var config = new XmlRulesConfig(XDocument.Parse(xml), Substitute.For<ILogger>());
 
-            var rule = config.GetInStructRules("test").Single();
+            var rule = config.GetStructureAmbiguityRules("test").Single();
             Assert.AreEqual(string.Join(",", rule.Structures), "417,462,525,576");
-            Assert.AreEqual(string.Join(",", rule.HowToNotify!.MetaAddressers), string.Join(",", new[] { "reporter" }));
-            Assert.AreEqual(rule.HowToNotify.Subject, "Task is present in more than one project structure. Remove it from others.");
+            Assert.AreEqual(string.Join(",", rule.Notification!.RawRecipients), string.Join(",", new[] { "reporter" }));
+            Assert.AreEqual(rule.Notification.Subject, "Task is present in more than one project structure. Remove it from others.");
         }
 
         [Test]
@@ -115,7 +115,7 @@ namespace Tests
 
             var config = new XmlRulesConfig(XDocument.Parse(xml), logger);
 
-            Assert.IsFalse(config.GetBuildRules("test").Any());
+            Assert.IsFalse(config.GetReleaseRules("test").Any());
             logger.Received(1).Error(Arg.Is<Exception>(e => e != null), Arg.Any<string>());
         }
     }

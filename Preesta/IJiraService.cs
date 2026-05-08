@@ -12,6 +12,6 @@ namespace Preesta
 
         Attachment[] GetIssueAttachments(string issueKey);
 
-        Build[] GetBuilds(string projectCode);
+        Release[] GetReleases(string projectCode);
     }
 }

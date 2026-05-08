@@ -25,7 +25,7 @@ namespace Tests
                             {
                                 FixVersions = new[] {"1"},
                                 AffectsVersions = new string[] {},
-                                Staff = new IssueStaff()
+                                Participants = new IssueParticipants()
                             }
                         }
                 );
@@ -37,10 +37,10 @@ namespace Tests
                         {
                             AdditionalPredicateName = "MoreThanOneFixVersion",
                             Jql = "any jql",
-                            HowToNotify = new Notify
+                            Notification = new NotificationSpec
                             {
-                                MetaAddressers = new[] {"1"},
-                                MetaCarbonCopy = new string[] { },
+                                RawRecipients = new[] {"1"},
+                                RawCc = new string[] { },
                                 Subject = "any subject",
                             }
                         }

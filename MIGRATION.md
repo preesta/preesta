@@ -59,29 +59,60 @@
 
 ### Phase 7: Telegram + Formatting Refactor ✅
 - Added `TelegramMessenger` — sends via Bot API (`/bot{token}/sendMessage`, HTML parse_mode)
-- Replaced T4 templates with C# `IssueFormatter` and `BuildFormatter` (StringBuilder-based)
+- Replaced T4 templates with C# `IssueFormatter` and `ReleaseFormatter` (StringBuilder-based)
 - Dual output: styled HTML tables for email, Telegram-compatible HTML for chat
-- `Notify.TelegramChatIds` in rules config (XML `telegramChatId` attribute, YAML `telegramChatId` field)
+- `NotificationSpec.TelegramChatIds` in rules config (XML `telegramChatId` attribute, YAML `telegramChatId` field)
 - `Telegram:botToken` in `appsettings.yaml` / `appsettings.secrets.yaml`
-- `ReactionPipe<T>` runs email + Telegram flows in parallel
+- `ReactionPipeline<T>` runs email + Telegram flows in parallel
 - `Message.TextBody` property for plain/Telegram text alongside HTML `Body`
 - Deleted T4 template files (`Preesta/Template/` directory removed)
-- Tests: 50/50 passed (4 new Telegram tests)
+
+### Phase 8: Scriban templates, list-of-items layout ✅
+- Scriban templates in `Preesta/Templates/*.scriban-html|text` (separate from C# code)
+- List-of-items layout (Linear-style) replaces table; coloured pills for Status, dots for Priority
+- `notify.columns` per rule controls meta-line; `all-non-empty` magic value expands to every populated field
+- Resolution / Updated / Project added to Issue model
+- Renamed `BuildFound`/`BuildFixed` → `AffectsVersions`/`FixVersions` (matches Jira UI naming)
+
+### Phase 9a: typos + dead code cleanup ✅
+- Fixed `Newtownsoft → Newtonsoft`, `RulesExtentions → RulesExtensions`, log message "convertion", structured prop `FoundRueles`
+- Test fixtures: `faired-suprevisor → expired-supervisor`
+- DTO field `Status.desription → Status.description`
+- Removed dead code: `Service.cs` (never called since 2021), `SimpleCustomField`, decade-old TODO comments
+
+### Phase 9b: naming refactor ✅
+- `Notify` → `NotificationSpec` (class); YAML keyword `notify:` preserved
+- `Notify.MetaAddressers` → `RawRecipients`, `MetaCarbonCopy` → `RawCc`
+- `Update` → `SelfUpdateSpec`
+- `Rule.HowToNotify` → `Notification`, `HowToUpdate` → `Updates`
+- `SendsNotification` (in `Letter.cs`) → `NotificationReaction` (file `NotificationReaction.cs`)
+- `IssueStaff` → `IssueParticipants`; `Issue.Staff` → `Issue.Participants`
+- `ReactionPipe<T>` → `ReactionPipeline<T>` (`Reaction` semantics kept — we react to a rule trigger)
+- `Common<T>` → `MessageBuilder<T>` (former `Convert/Common.cs` was generic anti-pattern)
+- Full rename of `Build*` → `Release*` (entity, rule, supplier, formatter, converter, templates) — matches Jira UI
+- `IssueInclusionToStructRule` → `StructureAmbiguityRule`; `IssuesInMultipleStructuresSupplier` → `StructureAmbiguitySupplier`
+- `Preesta.Data.User` kept as is (namespaces resolve the conflict with `JiraRest.Data.User`)
 
 ## Remaining
 
 ## Roadmap: New Features
 
-### Phase 8: Slack notifications
+### Phase 9c (consider): drop Structure plugin support
+- `StructureAmbiguityRule` + `StructureAmbiguitySupplier` integrate with Almworks Structure (Atlassian Marketplace plugin, alive in 2026 — Platinum Partner, v7.3.0 released 2026-05-08)
+- Currently use Server-style REST endpoint `/rest/structure/2.0/forest/latest`. Cloud compatibility unverified
+- Niche feature originally written for one specific project. Preesta itself works without it
+- Decision: keep for one more release cycle; if no users opt in by then, delete this rule type, supplier, XML/YAML parsing, DI registration, related tests
+
+### Phase 10: Slack notifications
 - `SlackMessenger` (incoming webhook)
 - New XML/YAML syntax for Slack channel targeting
 
-### Phase 9: MS Teams notifications
+### Phase 11: MS Teams notifications
 - `TeamsMessenger` via Incoming Webhook connector (POST JSON with Adaptive Card)
 - Adaptive Card format for rich issue tables (natively rendered in Teams)
 - Config: `Teams:webhookUrl` in appsettings, `teamsWebhookUrl` per rule in rules config
 
-### Phase 10: Input — Linear + GitHub Issues
+### Phase 12: Input — Linear + GitHub Issues
 Linear and GitHub Issues are the primary targets — both popular, both lack built-in rule-engine automation.
 
 | Tracker | Built-in automation | Preesta value |
@@ -96,19 +127,19 @@ Architecture: abstract `IIssueSource` interface (replaces current Jira-specific 
 
 Trackers NOT worth targeting (strong built-in automation): Jira Cloud, Azure DevOps, Monday.com, Asana.
 
-### Phase 11: REST API
+### Phase 13: REST API
 - ASP.NET Minimal API alongside the CLI
 - Endpoints: list rules, trigger rule group, get last run status/results, health check
 - Config stays in files (GitOps principle — API is for operations, not configuration)
 - Prometheus `/metrics` endpoint: rules executed, issues matched, errors
 
-### Phase 12: Web dashboard (read-only)
+### Phase 14: Web dashboard (read-only)
 - Blazor or static SPA
 - Shows: rule run history, matched issues, notification log, system health
 - NOT a config editor — config lives in git
 - Light enough to embed in the same Docker container
 
-### Phase 13: Integration testing infrastructure
+### Phase 15: Integration testing infrastructure
 - **WireMock.Net** — mock any HTTP API (Jira, Linear, GitHub, Slack, Telegram) in-process
 - **Testcontainers** + **MailHog** — real SMTP in Docker, verify sent emails via MailHog API
 - Test topology:

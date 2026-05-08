@@ -107,7 +107,7 @@ namespace Tests.MailSending
                         {
                             FixVersions = new[] {"1"},
                             AffectsVersions = new string[] {},
-                            Staff = new IssueStaff
+                            Participants = new IssueParticipants
                                     {
                                         Assignee = new User {Email = "assignee@express.ship"},
                                         Reporter = new User {Email = "reporter@express.ship"},
@@ -117,7 +117,7 @@ namespace Tests.MailSending
                     }
                 );
 
-            jiraMock.GetBuilds(Arg.Any<string>()).Returns(new Build[] { });
+            jiraMock.GetReleases(Arg.Any<string>()).Returns(new Release[] { });
             jiraMock.GetIssueById(Arg.Any<string>()).Returns(new Issue());
 
             _jiraService = jiraMock;
@@ -132,7 +132,7 @@ namespace Tests.MailSending
         {
             IPackageSupplier packageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test"), _logger!);
             var message = new IssuePackageConverter("https://jira.express.ship/jira/")
-                .ToMessages(packageSupplier.GetPackages().Cast<Package<SendsNotification, Issue>>())
+                .ToMessages(packageSupplier.GetPackages().Cast<Package<NotificationReaction, Issue>>())
                 .Redirect(new Redirector(_rulesConfig.GetRedirectionMap(), Enumerable.Empty<string>(), Enumerable.Empty<string>()))
                 .Single();
 
@@ -146,7 +146,7 @@ namespace Tests.MailSending
 
             IPackageSupplier packageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test-2"), _logger!);
             var message = new IssuePackageConverter("https://jira.express.ship/jira/")
-                .ToMessages(packageSupplier.GetPackages().Cast<Package<SendsNotification, Issue>>())
+                .ToMessages(packageSupplier.GetPackages().Cast<Package<NotificationReaction, Issue>>())
                 .Redirect(new Redirector(_rulesConfig.GetRedirectionMap(), Enumerable.Empty<string>(), Enumerable.Empty<string>()))
                 .Single();
 
@@ -160,7 +160,7 @@ namespace Tests.MailSending
             var messenger = Substitute.For<IMessenger>();
             messenger.SendAll(Arg.Do<IEnumerable<Message>>(m => message = m.Single()));
             
-            var pipe = new ReactionPipe<Issue>()
+            var pipe = new ReactionPipeline<Issue>()
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test-for-faired-supervisor"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
@@ -182,7 +182,7 @@ namespace Tests.MailSending
             var messenger = Substitute.For<IMessenger>();
             messenger.SendAll(Arg.Do<IEnumerable<Message>>(m => message = m.Single()));
 
-            var pipe = new ReactionPipe<Issue>()
+            var pipe = new ReactionPipeline<Issue>()
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("supervisor-in-To"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
@@ -203,7 +203,7 @@ namespace Tests.MailSending
             var messenger = Substitute.For<IMessenger>();
             messenger.SendAll(Arg.Do<IEnumerable<Message>>(m => message = m.Single()));
 
-            var pipe = new ReactionPipe<Issue>()
+            var pipe = new ReactionPipeline<Issue>()
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("supervisor-in-Cc"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
@@ -224,7 +224,7 @@ namespace Tests.MailSending
             var messenger = Substitute.For<IMessenger>();
             messenger.SendAll(Arg.Do<IEnumerable<Message>>(m => message = m.Single()));
 
-            var pipe = new ReactionPipe<Issue>()
+            var pipe = new ReactionPipeline<Issue>()
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test-for-empty-addressers"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
@@ -246,7 +246,7 @@ namespace Tests.MailSending
             var messenger = Substitute.For<IMessenger>();
             messenger.SendAll(Arg.Do<IEnumerable<Message>>(m => message = m.Single()));
 
-            var pipe = new ReactionPipe<Issue>()
+            var pipe = new ReactionPipeline<Issue>()
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test-for-empty-addressers"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
@@ -267,7 +267,7 @@ namespace Tests.MailSending
             var messenger = Substitute.For<IMessenger>();
             messenger.SendAll(Arg.Do<IEnumerable<Message>>(m => message = m.Single()));
 
-            var pipe = new ReactionPipe<Issue>()
+            var pipe = new ReactionPipeline<Issue>()
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("expired-supervisor-in-addressees"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),

@@ -1,6 +1,6 @@
 ﻿namespace Preesta.Data
 {
-    public class IssueStaff
+    public class IssueParticipants
     {
         public User? Assignee { get; set; }
         public User? Reporter { get; set; }

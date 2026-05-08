@@ -26,12 +26,12 @@
 {{~ end ~}}
 <table class="preesta-builds">
   <thead>
-    <tr><th>Build</th><th>Release date</th></tr>
+    <tr><th>Release</th><th>Release date</th></tr>
   </thead>
   <tbody>
     {{~ for build in section.builds ~}}
     <tr>
-      <td data-label="Build">{{ build.name | html.escape }}</td>
+      <td data-label="Release">{{ build.name | html.escape }}</td>
       <td data-label="Release date">{{ build.release_date }}{{ if build.expired }} <span style="color:#DE350B">(expired)</span>{{ end }}</td>
     </tr>
     {{~ end ~}}

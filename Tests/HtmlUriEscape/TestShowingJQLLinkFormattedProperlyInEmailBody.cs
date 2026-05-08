@@ -12,7 +12,7 @@ namespace Tests.HtmlUriEscape
         [Test]
         public void Test1()
         {
-            var pac = new Package<SendsNotification, Issue>
+            var pac = new Package<NotificationReaction, Issue>
             {
                 Items = Enumerable.Empty<Issue>().ToArray(),
                 Properties =
@@ -25,7 +25,7 @@ namespace Tests.HtmlUriEscape
 "
                     }
                 },
-                Reaction = new SendsNotification { Subject = string.Empty }
+                Reaction = new NotificationReaction { Subject = string.Empty }
             };
 
             var mailBody = IssueFormatter.ToHtml(Enumerable.Repeat(pac, 1), "https://jira.example.com/");
@@ -36,9 +36,9 @@ namespace Tests.HtmlUriEscape
         [Test]
         public void Test2()
         {
-            var pac = new Package<SendsNotification, Issue>
+            var pac = new Package<NotificationReaction, Issue>
             {
-                Reaction = new SendsNotification {Subject = string.Empty},
+                Reaction = new NotificationReaction {Subject = string.Empty},
                 Items = Enumerable.Empty<Issue>().ToArray(),
                 Properties =
                 {
@@ -58,9 +58,9 @@ namespace Tests.HtmlUriEscape
         [Test]
         public void Test3()
         {
-            var pac = new Package<SendsNotification, Issue>
+            var pac = new Package<NotificationReaction, Issue>
             {
-                Reaction = new SendsNotification { Subject = string.Empty },
+                Reaction = new NotificationReaction { Subject = string.Empty },
                 Items = Enumerable.Empty<Issue>().ToArray(),
                 Properties =
                 {

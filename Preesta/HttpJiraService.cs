@@ -68,14 +68,14 @@ namespace Preesta
                 );
         }
 
-        public virtual Build[] GetBuilds(string projectCode)
+        public virtual Release[] GetReleases(string projectCode)
         {
             return CallFuncInConnectionContext(jira =>
                 ((IEnumerable<dynamic>)
-                    jira.GetBuilds(projectCode))
-                    .Select(JToken.ToBuild)
+                    jira.GetReleases(projectCode))
+                    .Select(JToken.ToRelease)
                     .Where(b => b != null)
-                    .Cast<Build>()
+                    .Cast<Release>()
                     .ToArray()
                 );
         }

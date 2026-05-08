@@ -46,12 +46,12 @@ namespace Preesta.Configuration
             return GetRules(@group, new[] {"request", "jqlRule"}, XRuleSource.ToJqlRule);
         }
 
-        public BuildRule[] GetBuildRules(string @group)
+        public ReleaseRule[] GetReleaseRules(string @group)
         {
-            return GetRules(@group, new[] { "build" }, XRuleSource.ToBuildRule);
+            return GetRules(@group, new[] { "build" }, XRuleSource.ToReleaseRule);
         }
 
-        public IssueInclusionToStructRule[] GetInStructRules(string @group)
+        public StructureAmbiguityRule[] GetStructureAmbiguityRules(string @group)
         {
             return GetRules(@group, new[] { "structureAmbiguityRule" }, XRuleSource.ToInStructRule);
         }

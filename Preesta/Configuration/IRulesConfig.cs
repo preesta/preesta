@@ -5,8 +5,8 @@ namespace Preesta.Configuration
     public interface IRulesConfig
     {
         JqlRule[] GetJqlRules(string @group);
-        BuildRule[] GetBuildRules(string @group);
-        IssueInclusionToStructRule[] GetInStructRules(string @group);
+        ReleaseRule[] GetReleaseRules(string @group);
+        StructureAmbiguityRule[] GetStructureAmbiguityRules(string @group);
         IReadOnlyDictionary<string, string> GetRedirectionMap();
         IReadOnlyDictionary<string, string> GetTelegramUserMap();
         void ValidateSchema();

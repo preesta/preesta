@@ -7,8 +7,8 @@ namespace Preesta.Data.Supplying.Convert
 {
     internal interface IPackageConverter<TIssueType>
     {
-        Message[] ToMessages(IEnumerable<Package<SendsNotification, TIssueType>> packages);
-        Message[] ToTelegramMessages(IEnumerable<Package<SendsNotification, TIssueType>> packages,
+        Message[] ToMessages(IEnumerable<Package<NotificationReaction, TIssueType>> packages);
+        Message[] ToTelegramMessages(IEnumerable<Package<NotificationReaction, TIssueType>> packages,
             Redirector redirector,
             IReadOnlyDictionary<string, string> telegramUserMap);
         HttpRequest[] ToHttpRequests(IEnumerable<Package<SelfUpdate, TIssueType>> packages);

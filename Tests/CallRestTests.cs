@@ -23,10 +23,10 @@ namespace Tests
             // Setup
             var rule = new JqlRule
             {
-                HowToUpdate = new[]
+                Updates = new[]
                 {
-                    new Update {UrlPattern = "http://example.com"},
-                    new Update {UrlPattern = "http://example.com"}
+                    new SelfUpdateSpec {UrlPattern = "http://example.com"},
+                    new SelfUpdateSpec {UrlPattern = "http://example.com"}
                 }
             };
 
@@ -39,7 +39,7 @@ namespace Tests
 
             var httpHandler = Substitute.For<IHttpHandler>();
 
-            var pipe = new ReactionPipe<Issue>
+            var pipe = new ReactionPipeline<Issue>
             {
                 PackageSupplier = jqlSupplier,
                 PackageConverter = new IssuePackageConverter("http://jira"),

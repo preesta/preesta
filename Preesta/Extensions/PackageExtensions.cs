@@ -9,13 +9,13 @@ namespace Preesta.Extensions
 {
     internal static class PackageExtensions
     {
-        public static IEnumerable<Message> ToMessages<TIssueType>(this IEnumerable<Package<SendsNotification, TIssueType>> packages,
+        public static IEnumerable<Message> ToMessages<TIssueType>(this IEnumerable<Package<NotificationReaction, TIssueType>> packages,
             IPackageConverter<TIssueType> converter)
         {
             return converter.ToMessages(packages);
         }
 
-        public static IEnumerable<Message> ToTelegramMessages<TIssueType>(this IEnumerable<Package<SendsNotification, TIssueType>> packages,
+        public static IEnumerable<Message> ToTelegramMessages<TIssueType>(this IEnumerable<Package<NotificationReaction, TIssueType>> packages,
             IPackageConverter<TIssueType> converter,
             Redirector redirector,
             IReadOnlyDictionary<string, string> telegramUserMap)

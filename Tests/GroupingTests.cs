@@ -19,16 +19,16 @@ namespace Tests
         {
             var jira = Substitute.For<Preesta.IJiraService>();
             jira
-                .GetBuilds(Arg.Any<string>())
+                .GetReleases(Arg.Any<string>())
                 .Returns(
                     new[]
                     {
-                        new Build
+                        new Release
                         {
                             Name = "9.0.0.1",
                             ReleaseDate = DateTime.Now.AddDays(1)
                         },
-                        new Build
+                        new Release
                         {
                             Name = "9.0.0.2",
                             ReleaseDate = DateTime.Now.AddDays(1)
@@ -38,46 +38,46 @@ namespace Tests
 
             var rules = new[]
             {
-                new BuildRule
+                new ReleaseRule
                 {
                     Mask = @"^9\.0\.0\.1",
                     RemainingDays = 1,
-                    HowToNotify = new Notify
+                    Notification = new NotificationSpec
                     {
                         Subject = "Subject",
-                        MetaAddressers = new[] {"teammate1@express.ship", "teammate2@express.ship"},
-                        MetaCarbonCopy = new[] {"teammate1@express.ship", "teammate2@express.ship"}
+                        RawRecipients = new[] {"teammate1@express.ship", "teammate2@express.ship"},
+                        RawCc = new[] {"teammate1@express.ship", "teammate2@express.ship"}
                     }
                 },
-                new BuildRule
+                new ReleaseRule
                 {
                     Mask = @"^9\.0\.0\.2",
                     RemainingDays = 1,
-                    HowToNotify = new Notify
+                    Notification = new NotificationSpec
                     {
                         Subject = "Subject",
-                        MetaAddressers = new[] {"teammate2@express.ship", "teammate1@express.ship"},
-                        MetaCarbonCopy = new[] {"teammate2@express.ship", "teammate1@express.ship"}
+                        RawRecipients = new[] {"teammate2@express.ship", "teammate1@express.ship"},
+                        RawCc = new[] {"teammate2@express.ship", "teammate1@express.ship"}
                     }
                 },
-                new BuildRule
+                new ReleaseRule
                 {
                     Mask = @"^9\.0\.0\.2",
                     RemainingDays = 1,
-                    HowToNotify = new Notify
+                    Notification = new NotificationSpec
                     {
                         Subject = "DifferentSubject",
 
-                        MetaAddressers = new[] {"teammate2@express.ship", "teammate1@express.ship"},
-                        MetaCarbonCopy = new[] {"teammate2@express.ship", "teammate1@express.ship"}
+                        RawRecipients = new[] {"teammate2@express.ship", "teammate1@express.ship"},
+                        RawCc = new[] {"teammate2@express.ship", "teammate1@express.ship"}
                     }
                 }
             };
 
-            var packages = new BuildSupplier(jira, rules).GetPackages().Cast<Package<SendsNotification, Build>>().ToArray();
+            var packages = new ReleaseSupplier(jira, rules).GetPackages().Cast<Package<NotificationReaction, Release>>().ToArray();
             Assert.AreEqual(2, packages.Count());
             Assert.AreEqual(2, packages.Single(p => p.Reaction.Subject == "Subject").Items.Count());
-            var messages = new BuildPackageConverter().ToMessages(packages);
+            var messages = new ReleasePackageConverter().ToMessages(packages);
             Assert.AreEqual(2, messages.Count());
             var actualBody1 = messages.First().Body;
             var actualBody2 = messages.ElementAt(1).Body;
@@ -107,7 +107,7 @@ namespace Tests
                         {
                             FixVersions = new[] {"1"},
                             AffectsVersions = new string[] {},
-                            Staff = new IssueStaff
+                            Participants = new IssueParticipants
                                     {
                                         Assignee = null
                                     }
@@ -119,29 +119,29 @@ namespace Tests
             {
                 new JqlRule
                 {
-                    HowToNotify = new Notify
+                    Notification = new NotificationSpec
                     {
                         Subject = "Subject",
-                        MetaAddressers = new[] {"teammate1@express.ship", "teammate2@express.ship"},
-                        MetaCarbonCopy = new[] {"teammate1@express.ship", "teammate2@express.ship"}
+                        RawRecipients = new[] {"teammate1@express.ship", "teammate2@express.ship"},
+                        RawCc = new[] {"teammate1@express.ship", "teammate2@express.ship"}
                     }
                 },
                 new JqlRule
                 {
-                    HowToNotify = new Notify
+                    Notification = new NotificationSpec
                     {
                         Subject = "Subject",
-                        MetaAddressers = new[] {"teammate1@express.ship", "teammate2@express.ship"},
-                        MetaCarbonCopy = new[] {"teammate2@express.ship", "teammate1@express.ship"}
+                        RawRecipients = new[] {"teammate1@express.ship", "teammate2@express.ship"},
+                        RawCc = new[] {"teammate2@express.ship", "teammate1@express.ship"}
                     }
                 },
                 new JqlRule
                 {
-                    HowToNotify = new Notify
+                    Notification = new NotificationSpec
                     {
                         Subject = "DifferentSubject",
-                        MetaAddressers = new[] {"teammate1@express.ship", "teammate2@express.ship"},
-                        MetaCarbonCopy = new[] {"teammate1@express.ship", "teammate2@express.ship"}
+                        RawRecipients = new[] {"teammate1@express.ship", "teammate2@express.ship"},
+                        RawCc = new[] {"teammate1@express.ship", "teammate2@express.ship"}
                     }
                 }
             };
@@ -150,7 +150,7 @@ namespace Tests
 
             var packages = new JqlSupplier(jira, rules, logger)
                 .GetPackages()
-                .Cast<Package<SendsNotification, Issue>>()
+                .Cast<Package<NotificationReaction, Issue>>()
                 .ToArray();
 
             Assert.AreEqual(3, packages.Count());

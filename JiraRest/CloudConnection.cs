@@ -56,7 +56,7 @@ namespace JiraRest
             return GetJson(uri);
         }
 
-        public dynamic GetBuilds(string projectCode)
+        public dynamic GetReleases(string projectCode)
         {
             var uri = new Uri(ApiRoot, $"rest/api/3/project/{projectCode}/versions");
             return GetJson(uri);
