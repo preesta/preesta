@@ -9,28 +9,28 @@ using Scriban.Runtime;
 
 namespace Preesta.Formatting
 {
-    internal static class BuildFormatter
+    internal static class ReleaseFormatter
     {
         private static readonly Lazy<Template> HtmlTemplate =
-            new(() => LoadTemplate("BuildDigest.scriban-html"));
+            new(() => LoadTemplate("ReleaseDigest.scriban-html"));
 
         private static readonly Lazy<Template> TextTemplate =
-            new(() => LoadTemplate("BuildDigest.scriban-text"));
+            new(() => LoadTemplate("ReleaseDigest.scriban-text"));
 
-        public static string ToHtml(IEnumerable<Package<SendsNotification, Build>> packages) =>
+        public static string ToHtml(IEnumerable<Package<NotificationReaction, Release>> packages) =>
             Render(HtmlTemplate.Value, BuildModel(packages));
 
-        public static string ToText(IEnumerable<Package<SendsNotification, Build>> packages) =>
+        public static string ToText(IEnumerable<Package<NotificationReaction, Release>> packages) =>
             Render(TextTemplate.Value, BuildModel(packages));
 
-        private static BuildDigestModel BuildModel(IEnumerable<Package<SendsNotification, Build>> packages)
+        private static ReleaseDigestModel BuildModel(IEnumerable<Package<NotificationReaction, Release>> packages)
         {
             var today = DateTime.Now.Date;
-            var sections = packages.Select(package => new BuildDigestSection
+            var sections = packages.Select(package => new ReleaseDigestSection
             {
                 Subject = package.Reaction.Subject,
                 Recommendations = package.Reaction.Recommendations,
-                Builds = package.Items.Select(b => new BuildRow
+                Builds = package.Items.Select(b => new ReleaseRow
                 {
                     Name = b.Name ?? "",
                     ReleaseDate = b.ReleaseDate?.ToString("dd.MM.yyyy") ?? "",
@@ -38,7 +38,7 @@ namespace Preesta.Formatting
                 }).ToList()
             }).ToList();
 
-            return new BuildDigestModel { Sections = sections };
+            return new ReleaseDigestModel { Sections = sections };
         }
 
         private static Template LoadTemplate(string name)

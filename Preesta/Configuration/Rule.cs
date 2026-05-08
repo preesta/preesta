@@ -6,7 +6,7 @@ namespace Preesta.Configuration
     public abstract class Rule
     {
         public string? AdditionalPredicateName { get; set; }
-        public Notify? HowToNotify { get; set; }
-        public Update[] HowToUpdate { get; set; } = new Update[] {};
+        public NotificationSpec? Notification { get; set; }
+        public SelfUpdateSpec[] Updates { get; set; } = new SelfUpdateSpec[] {};
    }
 }

@@ -26,22 +26,22 @@ namespace Tests
             var rule = new JqlRule
             {
                 Jql = "DueDate < startOfDay() AND Resolution is EMPTY",
-                HowToNotify = new Notify
+                Notification = new NotificationSpec
                 {
                     Subject = "DueDate expired",
-                    MetaAddressers = new[] { "assignee" },
-                    MetaCarbonCopy = new string[] { }
+                    RawRecipients = new[] { "assignee" },
+                    RawCc = new string[] { }
                 }
             };
 
             var supplier = new JqlSupplier(JiraReturning(
-                new Issue { Key = "T-1", Staff = new IssueStaff { Assignee = new User { Email = "ivanov@x" } } },
-                new Issue { Key = "T-2", Staff = new IssueStaff { Assignee = new User { Email = "sidorov@x" } } },
-                new Issue { Key = "T-3", Staff = new IssueStaff { Assignee = new User { Email = "ivanov@x" } } }
+                new Issue { Key = "T-1", Participants = new IssueParticipants { Assignee = new User { Email = "ivanov@x" } } },
+                new Issue { Key = "T-2", Participants = new IssueParticipants { Assignee = new User { Email = "sidorov@x" } } },
+                new Issue { Key = "T-3", Participants = new IssueParticipants { Assignee = new User { Email = "ivanov@x" } } }
             ), new[] { rule }, Substitute.For<ILogger>());
 
             var packages = supplier.GetPackages()
-                .Cast<Package<SendsNotification, Issue>>()
+                .Cast<Package<NotificationReaction, Issue>>()
                 .ToArray();
 
             Assert.AreEqual(2, packages.Length);
@@ -59,11 +59,11 @@ namespace Tests
             var rule = new JqlRule
             {
                 Jql = "any",
-                HowToNotify = new Notify
+                Notification = new NotificationSpec
                 {
                     Subject = "S",
-                    MetaAddressers = new[] { "assignee" },
-                    MetaCarbonCopy = new[] { "reporter" }
+                    RawRecipients = new[] { "assignee" },
+                    RawCc = new[] { "reporter" }
                 }
             };
 
@@ -71,7 +71,7 @@ namespace Tests
                 new Issue
                 {
                     Key = "T-1",
-                    Staff = new IssueStaff
+                    Participants = new IssueParticipants
                     {
                         Assignee = new User { Email = "a@x" },
                         Reporter = new User { Email = "p1@x" }
@@ -80,7 +80,7 @@ namespace Tests
                 new Issue
                 {
                     Key = "T-2",
-                    Staff = new IssueStaff
+                    Participants = new IssueParticipants
                     {
                         Assignee = new User { Email = "a@x" },
                         Reporter = new User { Email = "p2@x" }
@@ -89,7 +89,7 @@ namespace Tests
             ), new[] { rule }, Substitute.For<ILogger>());
 
             var packages = supplier.GetPackages()
-                .Cast<Package<SendsNotification, Issue>>()
+                .Cast<Package<NotificationReaction, Issue>>()
                 .ToArray();
 
             Assert.AreEqual(2, packages.Length);
@@ -107,11 +107,11 @@ namespace Tests
             var rule = new JqlRule
             {
                 Jql = "any",
-                HowToNotify = new Notify
+                Notification = new NotificationSpec
                 {
                     Subject = "S",
-                    MetaAddressers = new[] { "assignee" },
-                    MetaCarbonCopy = new[] { "reporter", "managers" }
+                    RawRecipients = new[] { "assignee" },
+                    RawCc = new[] { "reporter", "managers" }
                 }
             };
 
@@ -119,7 +119,7 @@ namespace Tests
                 new Issue
                 {
                     Key = "T-1",
-                    Staff = new IssueStaff
+                    Participants = new IssueParticipants
                     {
                         Assignee = new User { Email = "a@x" },
                         Reporter = new User { Email = "p@x" }
@@ -128,7 +128,7 @@ namespace Tests
             ), new[] { rule }, Substitute.For<ILogger>());
 
             var package = supplier.GetPackages()
-                .Cast<Package<SendsNotification, Issue>>()
+                .Cast<Package<NotificationReaction, Issue>>()
                 .Single();
 
             CollectionAssert.AreEquivalent(new[] { "a@x" }, package.Reaction.Addressees.To);
@@ -141,11 +141,11 @@ namespace Tests
             var rule = new JqlRule
             {
                 Jql = "any",
-                HowToNotify = new Notify
+                Notification = new NotificationSpec
                 {
                     Subject = "S",
-                    MetaAddressers = new[] { "assignee", "reporter" },
-                    MetaCarbonCopy = new string[] { }
+                    RawRecipients = new[] { "assignee", "reporter" },
+                    RawCc = new string[] { }
                 }
             };
 
@@ -153,7 +153,7 @@ namespace Tests
                 new Issue
                 {
                     Key = "T-1",
-                    Staff = new IssueStaff
+                    Participants = new IssueParticipants
                     {
                         Assignee = new User { Email = "a@x" },
                         Reporter = new User { Email = "p1@x" }
@@ -162,7 +162,7 @@ namespace Tests
                 new Issue
                 {
                     Key = "T-2",
-                    Staff = new IssueStaff
+                    Participants = new IssueParticipants
                     {
                         Assignee = new User { Email = "a@x" },
                         Reporter = new User { Email = "p2@x" }
@@ -171,7 +171,7 @@ namespace Tests
             ), new[] { rule }, Substitute.For<ILogger>());
 
             var packages = supplier.GetPackages()
-                .Cast<Package<SendsNotification, Issue>>()
+                .Cast<Package<NotificationReaction, Issue>>()
                 .ToArray();
 
             Assert.AreEqual(2, packages.Length);

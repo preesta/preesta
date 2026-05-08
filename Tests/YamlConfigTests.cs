@@ -44,7 +44,7 @@ rules:
     remainingDays: 2
     expiredOnly: true
     notify:
-      subject: Build alert
+      subject: Release alert
       mailTo: admin
 
   - type: structure
@@ -79,10 +79,10 @@ redirectionRules:
         public void GetJqlRules_NotifyParsedCorrectly()
         {
             var rule = _config.GetJqlRules("daily").Single();
-            Assert.AreEqual("DueDate expired", rule.HowToNotify!.Subject);
-            Assert.AreEqual(new[] { "assignee" }, rule.HowToNotify.MetaAddressers);
-            Assert.AreEqual(new[] { "reporter", "managers" }, rule.HowToNotify.MetaCarbonCopy);
-            Assert.AreEqual("Please resolve", rule.HowToNotify.Recommendations);
+            Assert.AreEqual("DueDate expired", rule.Notification!.Subject);
+            Assert.AreEqual(new[] { "assignee" }, rule.Notification.RawRecipients);
+            Assert.AreEqual(new[] { "reporter", "managers" }, rule.Notification.RawCc);
+            Assert.AreEqual("Please resolve", rule.Notification.Recommendations);
         }
 
         [Test]
@@ -97,16 +97,16 @@ redirectionRules:
         {
             var rules = _config.GetJqlRules("hourly");
             Assert.AreEqual(1, rules.Length);
-            Assert.AreEqual(1, rules[0].HowToUpdate.Length);
-            Assert.AreEqual("PUT", rules[0].HowToUpdate[0].Verb);
-            Assert.AreEqual("{{@jiraRoot}}/rest/api/2/issue/{{@issueKey}}", rules[0].HowToUpdate[0].UrlPattern);
-            Assert.IsTrue(rules[0].HowToUpdate[0].BodyPattern!.Contains("auto"));
+            Assert.AreEqual(1, rules[0].Updates.Length);
+            Assert.AreEqual("PUT", rules[0].Updates[0].Verb);
+            Assert.AreEqual("{{@jiraRoot}}/rest/api/2/issue/{{@issueKey}}", rules[0].Updates[0].UrlPattern);
+            Assert.IsTrue(rules[0].Updates[0].BodyPattern!.Contains("auto"));
         }
 
         [Test]
-        public void GetBuildRules_ParsedCorrectly()
+        public void GetReleaseRules_ParsedCorrectly()
         {
-            var rules = _config.GetBuildRules("daily");
+            var rules = _config.GetReleaseRules("daily");
             Assert.AreEqual(1, rules.Length);
             Assert.AreEqual(@"^9\.0\.0\.", rules[0].Mask);
             Assert.AreEqual("MYPROJ", rules[0].ProjectCode);
@@ -115,9 +115,9 @@ redirectionRules:
         }
 
         [Test]
-        public void GetInStructRules_ParsedCorrectly()
+        public void GetStructureAmbiguityRules_ParsedCorrectly()
         {
-            var rules = _config.GetInStructRules("daily");
+            var rules = _config.GetStructureAmbiguityRules("daily");
             Assert.AreEqual(1, rules.Length);
             Assert.AreEqual(new[] { "417", "462", "525" }, rules[0].Structures);
         }

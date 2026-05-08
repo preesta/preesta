@@ -53,11 +53,11 @@ namespace Tests
             var rule = new Preesta.Configuration.JqlRule
             {
                 Jql = "any",
-                HowToNotify = new Notify
+                Notification = new NotificationSpec
                 {
                     Subject = "Alert",
-                    MetaAddressers = new[] { "admin@test.com" },
-                    MetaCarbonCopy = new string[] { },
+                    RawRecipients = new[] { "admin@test.com" },
+                    RawCc = new string[] { },
                     TelegramChatIds = new[] { "-1001234567890" }
                 }
             };
@@ -66,7 +66,7 @@ namespace Tests
             var converter = new IssuePackageConverter("http://jira");
 
             var packages = supplier.GetPackages()
-                .Cast<Package<SendsNotification, Issue>>()
+                .Cast<Package<NotificationReaction, Issue>>()
                 .ToArray();
 
             var telegramMessages = converter.ToTelegramMessages(packages, EmptyRedirector, EmptyMap);
@@ -83,11 +83,11 @@ namespace Tests
             var rule = new Preesta.Configuration.JqlRule
             {
                 Jql = "any",
-                HowToNotify = new Notify
+                Notification = new NotificationSpec
                 {
                     Subject = "Alert",
-                    MetaAddressers = new[] { "admin@test.com" },
-                    MetaCarbonCopy = new string[] { }
+                    RawRecipients = new[] { "admin@test.com" },
+                    RawCc = new string[] { }
                 }
             };
 
@@ -98,7 +98,7 @@ namespace Tests
             var converter = new IssuePackageConverter("http://jira");
 
             var packages = supplier.GetPackages()
-                .Cast<Package<SendsNotification, Issue>>()
+                .Cast<Package<NotificationReaction, Issue>>()
                 .ToArray();
 
             var telegramMessages = converter.ToTelegramMessages(packages, EmptyRedirector, EmptyMap);
@@ -117,11 +117,11 @@ namespace Tests
             var rule = new Preesta.Configuration.JqlRule
             {
                 Jql = "any",
-                HowToNotify = new Notify
+                Notification = new NotificationSpec
                 {
                     Subject = "Alert",
-                    MetaAddressers = new[] { "admin@test.com" },
-                    MetaCarbonCopy = new string[] { }
+                    RawRecipients = new[] { "admin@test.com" },
+                    RawCc = new string[] { }
                 }
             };
 
@@ -129,7 +129,7 @@ namespace Tests
             var converter = new IssuePackageConverter("http://jira");
 
             var packages = supplier.GetPackages()
-                .Cast<Package<SendsNotification, Issue>>()
+                .Cast<Package<NotificationReaction, Issue>>()
                 .ToArray();
 
             var messages = converter.ToMessages(packages);
@@ -140,7 +140,7 @@ namespace Tests
         }
 
         [Test]
-        public void ReactionPipeSendsTelegramMessages()
+        public void ReactionPipelineSendsTelegramMessages()
         {
             var jira = Substitute.For<IJiraService>();
             jira.GetIssuesForJql(Arg.Any<string>()).Returns(new[]
@@ -151,11 +151,11 @@ namespace Tests
             var rule = new Preesta.Configuration.JqlRule
             {
                 Jql = "any",
-                HowToNotify = new Notify
+                Notification = new NotificationSpec
                 {
                     Subject = "Alert",
-                    MetaAddressers = new[] { "admin" },
-                    MetaCarbonCopy = new string[] { },
+                    RawRecipients = new[] { "admin" },
+                    RawCc = new string[] { },
                     TelegramChatIds = new[] { "-100" }
                 }
             };
@@ -164,7 +164,7 @@ namespace Tests
             var emailMessenger = Substitute.For<IMessenger>();
             var telegramMessenger = Substitute.For<IMessenger>();
 
-            var pipe = new ReactionPipe<Issue>
+            var pipe = new ReactionPipeline<Issue>
             {
                 PackageSupplier = supplier,
                 PackageConverter = new IssuePackageConverter("http://jira"),
@@ -189,11 +189,11 @@ namespace Tests
             var rule = new Preesta.Configuration.JqlRule
             {
                 Jql = "any",
-                HowToNotify = new Notify
+                Notification = new NotificationSpec
                 {
                     Subject = "Alert",
-                    MetaAddressers = new[] { "managers" },
-                    MetaCarbonCopy = new string[] { }
+                    RawRecipients = new[] { "managers" },
+                    RawCc = new string[] { }
                 }
             };
 
@@ -216,7 +216,7 @@ namespace Tests
             var converter = new IssuePackageConverter("http://jira");
 
             var packages = supplier.GetPackages()
-                .Cast<Package<SendsNotification, Issue>>()
+                .Cast<Package<NotificationReaction, Issue>>()
                 .ToArray();
 
             var messages = converter.ToTelegramMessages(packages, redirector, telegramUsers);
@@ -234,7 +234,7 @@ namespace Tests
                 new Issue
                 {
                     Key = "T-1",
-                    Staff = new IssueStaff
+                    Participants = new IssueParticipants
                     {
                         Assignee = new User { Email = "assignee@ex.com" }
                     }
@@ -244,11 +244,11 @@ namespace Tests
             var rule = new Preesta.Configuration.JqlRule
             {
                 Jql = "any",
-                HowToNotify = new Notify
+                Notification = new NotificationSpec
                 {
                     Subject = "Alert",
-                    MetaAddressers = new[] { "assignee" },
-                    MetaCarbonCopy = new string[] { }
+                    RawRecipients = new[] { "assignee" },
+                    RawCc = new string[] { }
                 }
             };
 
@@ -261,7 +261,7 @@ namespace Tests
             var converter = new IssuePackageConverter("http://jira");
 
             var packages = supplier.GetPackages()
-                .Cast<Package<SendsNotification, Issue>>()
+                .Cast<Package<NotificationReaction, Issue>>()
                 .ToArray();
 
             var messages = converter.ToTelegramMessages(packages, Redirector.Empty, telegramUsers);
@@ -279,11 +279,11 @@ namespace Tests
             var rule = new Preesta.Configuration.JqlRule
             {
                 Jql = "any",
-                HowToNotify = new Notify
+                Notification = new NotificationSpec
                 {
                     Subject = "Alert",
-                    MetaAddressers = new[] { "stranger@ex.com" },
-                    MetaCarbonCopy = new string[] { }
+                    RawRecipients = new[] { "stranger@ex.com" },
+                    RawCc = new string[] { }
                 }
             };
 
@@ -291,7 +291,7 @@ namespace Tests
             var converter = new IssuePackageConverter("http://jira");
 
             var packages = supplier.GetPackages()
-                .Cast<Package<SendsNotification, Issue>>()
+                .Cast<Package<NotificationReaction, Issue>>()
                 .ToArray();
 
             var messages = converter.ToTelegramMessages(packages, Redirector.Empty, EmptyMap);
@@ -308,18 +308,18 @@ namespace Tests
                 new Issue
                 {
                     Key = "T-1",
-                    Staff = new IssueStaff { Assignee = new User { Email = "a@ex.com" } }
+                    Participants = new IssueParticipants { Assignee = new User { Email = "a@ex.com" } }
                 }
             });
 
             var rule = new Preesta.Configuration.JqlRule
             {
                 Jql = "any",
-                HowToNotify = new Notify
+                Notification = new NotificationSpec
                 {
                     Subject = "Alert",
-                    MetaAddressers = new[] { "assignee" },
-                    MetaCarbonCopy = new string[] { },
+                    RawRecipients = new[] { "assignee" },
+                    RawCc = new string[] { },
                     TelegramChatIds = new[] { "-1001" }
                 }
             };
@@ -333,7 +333,7 @@ namespace Tests
             var converter = new IssuePackageConverter("http://jira");
 
             var packages = supplier.GetPackages()
-                .Cast<Package<SendsNotification, Issue>>()
+                .Cast<Package<NotificationReaction, Issue>>()
                 .ToArray();
 
             var messages = converter.ToTelegramMessages(packages, Redirector.Empty, telegramUsers);
@@ -351,18 +351,18 @@ namespace Tests
                 new Issue
                 {
                     Key = "T-1",
-                    Staff = new IssueStaff { Assignee = new User { Email = "MiXeD@Ex.com" } }
+                    Participants = new IssueParticipants { Assignee = new User { Email = "MiXeD@Ex.com" } }
                 }
             });
 
             var rule = new Preesta.Configuration.JqlRule
             {
                 Jql = "any",
-                HowToNotify = new Notify
+                Notification = new NotificationSpec
                 {
                     Subject = "Alert",
-                    MetaAddressers = new[] { "assignee" },
-                    MetaCarbonCopy = new string[] { }
+                    RawRecipients = new[] { "assignee" },
+                    RawCc = new string[] { }
                 }
             };
 
@@ -375,7 +375,7 @@ namespace Tests
             var converter = new IssuePackageConverter("http://jira");
 
             var packages = supplier.GetPackages()
-                .Cast<Package<SendsNotification, Issue>>()
+                .Cast<Package<NotificationReaction, Issue>>()
                 .ToArray();
 
             var messages = converter.ToTelegramMessages(packages, Redirector.Empty, telegramUsers);
@@ -393,23 +393,23 @@ namespace Tests
                 new Issue
                 {
                     Key = "T-1",
-                    Staff = new IssueStaff { Assignee = new User { Email = "a@ex.com" } }
+                    Participants = new IssueParticipants { Assignee = new User { Email = "a@ex.com" } }
                 },
                 new Issue
                 {
                     Key = "T-2",
-                    Staff = new IssueStaff { Assignee = new User { Email = "b@ex.com" } }
+                    Participants = new IssueParticipants { Assignee = new User { Email = "b@ex.com" } }
                 }
             });
 
             var rule = new Preesta.Configuration.JqlRule
             {
                 Jql = "any",
-                HowToNotify = new Notify
+                Notification = new NotificationSpec
                 {
                     Subject = "Alert",
-                    MetaAddressers = new[] { "assignee" },
-                    MetaCarbonCopy = new string[] { }
+                    RawRecipients = new[] { "assignee" },
+                    RawCc = new string[] { }
                 }
             };
 
@@ -423,7 +423,7 @@ namespace Tests
             var converter = new IssuePackageConverter("http://jira");
 
             var packages = supplier.GetPackages()
-                .Cast<Package<SendsNotification, Issue>>()
+                .Cast<Package<NotificationReaction, Issue>>()
                 .ToArray();
 
             var messages = converter.ToTelegramMessages(packages, Redirector.Empty, telegramUsers);

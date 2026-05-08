@@ -22,7 +22,7 @@ using static System.String;
 namespace End2End.Tests
 {
 	[TestFixture]
-	public class SendsNotificationsWithIssues
+	public class NotificationReactionsWithIssues
 	{
 		#region "Raw Data"
 		private const string JsonIssueWithNullPriority = @"
@@ -145,11 +145,11 @@ namespace End2End.Tests
 			var jqlRule = new JqlRule
 			{
 				Jql = "any",
-				HowToNotify = new Notify
+				Notification = new NotificationSpec
 				{
 					Subject = "subject",
-					MetaAddressers = new[] { "assignee" },
-					MetaCarbonCopy = new string[] { },
+					RawRecipients = new[] { "assignee" },
+					RawCc = new string[] { },
 					Columns = new[] { "Type", "Key", "Summary", "Assignee", "Reporter", "Status", "Created" }
 				}
 			};
@@ -157,7 +157,7 @@ namespace End2End.Tests
 			var jqlSupplier = new JqlSupplier(svc, new[] { jqlRule }, Substitute.For<ILogger>());
 
 			var messenger = Substitute.For<IMessenger>();
-			var pipe = new ReactionPipe<Issue>
+			var pipe = new ReactionPipeline<Issue>
 			{
 				PackageSupplier = jqlSupplier,
 				PackageConverter = new IssuePackageConverter("http://jira"),
@@ -201,18 +201,18 @@ namespace End2End.Tests
 			var jqlRule = new JqlRule
 			{
 				Jql = "any",
-				HowToNotify = new Notify
+				Notification = new NotificationSpec
 				{
 					Subject = "subject",
-					MetaAddressers = new[] { "assignee" },
-					MetaCarbonCopy = new string[] { }
+					RawRecipients = new[] { "assignee" },
+					RawCc = new string[] { }
 				}
 			};
 
 			var jqlSupplier = new JqlSupplier(svc, new[] { jqlRule }, Substitute.For<ILogger>());
 
 			var messenger = Substitute.For<IMessenger>();
-			var pipe = new ReactionPipe<Issue>
+			var pipe = new ReactionPipeline<Issue>
 			{
 				PackageSupplier = jqlSupplier,
 				PackageConverter = new IssuePackageConverter("http://jira"),

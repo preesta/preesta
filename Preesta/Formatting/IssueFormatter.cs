@@ -31,13 +31,13 @@ namespace Preesta.Formatting
         private static readonly Lazy<Template> TextTemplate =
             new(() => LoadTemplate("IssueDigest.scriban-text"));
 
-        public static string ToHtml(IEnumerable<Package<SendsNotification, Issue>> packages, string rootUri) =>
+        public static string ToHtml(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri) =>
             Render(HtmlTemplate.Value, BuildModel(packages, rootUri, htmlMode: true));
 
-        public static string ToText(IEnumerable<Package<SendsNotification, Issue>> packages, string rootUri) =>
+        public static string ToText(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri) =>
             Render(TextTemplate.Value, BuildModel(packages, rootUri, htmlMode: false));
 
-        private static DigestModel BuildModel(IEnumerable<Package<SendsNotification, Issue>> packages, string rootUri, bool htmlMode)
+        private static DigestModel BuildModel(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri, bool htmlMode)
         {
             var sections = packages.Select(package =>
             {
@@ -93,9 +93,9 @@ namespace Preesta.Formatting
                     if (string.IsNullOrEmpty(issue.Priority)) return "";
                     return $"<span style=\"{DotBase};background:{PriorityColor(issue.Priority)}\"></span>{E(issue.Priority)}";
                 case "Assignee":
-                    return E((issue.Staff.Assignee ?? new User { DisplayName = "UNASSIGNED" }).DisplayName);
+                    return E((issue.Participants.Assignee ?? new User { DisplayName = "UNASSIGNED" }).DisplayName);
                 case "Reporter":
-                    return $"Reported by {E((issue.Staff.Reporter ?? new User { DisplayName = "UNKNOWN" }).DisplayName)}";
+                    return $"Reported by {E((issue.Participants.Reporter ?? new User { DisplayName = "UNKNOWN" }).DisplayName)}";
                 case "Type":
                     return string.IsNullOrEmpty(issue.Type) ? "" : $"<span style=\"{PillBase};background:#F4F5F7;color:#42526E\">{E(issue.Type)}</span>";
                 case "Components":
@@ -134,9 +134,9 @@ namespace Preesta.Formatting
                 case "Priority":
                     return string.IsNullOrEmpty(issue.Priority) ? "" : $"{PriorityIcon(issue.Priority)} {issue.Priority}";
                 case "Assignee":
-                    return (issue.Staff.Assignee ?? new User { DisplayName = "UNASSIGNED" }).DisplayName ?? "";
+                    return (issue.Participants.Assignee ?? new User { DisplayName = "UNASSIGNED" }).DisplayName ?? "";
                 case "Reporter":
-                    return $"Reported by {(issue.Staff.Reporter ?? new User { DisplayName = "UNKNOWN" }).DisplayName}";
+                    return $"Reported by {(issue.Participants.Reporter ?? new User { DisplayName = "UNKNOWN" }).DisplayName}";
                 case "Type":
                     return string.IsNullOrEmpty(issue.Type) ? "" : $"[{issue.Type}]";
                 case "Components":
@@ -194,7 +194,7 @@ namespace Preesta.Formatting
             _ => "⚫"
         };
 
-        private static string? JqlUriOrNull(Package<SendsNotification, Issue> package, string rootUri)
+        private static string? JqlUriOrNull(Package<NotificationReaction, Issue> package, string rootUri)
         {
             if (!package.Properties.ContainsKey("Jql"))
                 return null;

@@ -7,7 +7,7 @@ namespace Preesta.Data
     {
         public string Key { get; set; } = Empty;
         public string Summary { get; set; } = Empty;
-        public IssueStaff Staff { get; set; } = new IssueStaff();
+        public IssueParticipants Participants { get; set; } = new IssueParticipants();
         public string? Type { get; set; }
         public string? Status { get; set; }
         public string? Priority { get; set; }

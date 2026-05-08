@@ -8,7 +8,7 @@ using Preesta.Extensions;
 
 namespace Preesta.Notification
 {
-    internal class ReactionPipe<TIssueType>
+    internal class ReactionPipeline<TIssueType>
     {
         public IPackageSupplier? PackageSupplier { get; set; }
         public IPackageConverter<TIssueType>? PackageConverter { get; set; }
@@ -19,7 +19,7 @@ namespace Preesta.Notification
         public IReadOnlyDictionary<string, string> TelegramUserMap { get; set; } = new Dictionary<string, string>();
         public string LogoFileName { get; set; } = string.Empty;
 
-        public ReactionPipe(
+        public ReactionPipeline(
             IPackageSupplier? packageSupplier = null,
             IPackageConverter<TIssueType>? packageConverter = null,
             IMessenger? messenger = null,
@@ -49,7 +49,7 @@ namespace Preesta.Notification
             var allPackages = PackageSupplier.GetPackages();
 
             var notificationPackages = allPackages
-                .OfType<Package<SendsNotification, TIssueType>>()
+                .OfType<Package<NotificationReaction, TIssueType>>()
                 .ToArray();
 
             // Email

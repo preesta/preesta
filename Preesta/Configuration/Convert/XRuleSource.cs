@@ -14,10 +14,10 @@ namespace Preesta.Configuration.Convert
             return rule;
         }
 
-        public static BuildRule ToBuildRule(XElement src)
+        public static ReleaseRule ToReleaseRule(XElement src)
         {
-            //Contract.Requires<ArgumentNullException>(src.Attribute("projectCode") != null, "BuildRule.projectCode is null");
-            var rule = ToIssueRule<BuildRule>(src);
+            //Contract.Requires<ArgumentNullException>(src.Attribute("projectCode") != null, "ReleaseRule.projectCode is null");
+            var rule = ToIssueRule<ReleaseRule>(src);
             rule.Mask = src.Attribute("mask")!.Value;
             rule.RemainingDays = (int?)src.Attribute("remainingDays") ?? 0;
             rule.ExpiredOnly = (bool?)src.Attribute("expiredOnly") ?? false;
@@ -25,9 +25,9 @@ namespace Preesta.Configuration.Convert
             return rule;
         }
 
-        public static IssueInclusionToStructRule ToInStructRule(XElement src)
+        public static StructureAmbiguityRule ToInStructRule(XElement src)
         {
-            var rule = ToIssueRule<IssueInclusionToStructRule>(src);
+            var rule = ToIssueRule<StructureAmbiguityRule>(src);
             rule.Structures = src.Element("structures")!.Value
                 .Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries)
                 .ToArray();
@@ -47,16 +47,16 @@ namespace Preesta.Configuration.Convert
             var notify = src.Element("notify");
             if (notify != null)
             {
-                rule.HowToNotify = new Notify
+                rule.Notification = new NotificationSpec
                 {
                     Subject = (string) notify.Attribute("subject")!,
                     Recommendations = (string?) notify.Attribute("recommendations"),
 
-                    MetaAddressers = ((string) notify.Attribute("mailTo")!).ToLower()
+                    RawRecipients = ((string) notify.Attribute("mailTo")!).ToLower()
                         .Split(',', StringSplitOptions.RemoveEmptyEntries)
                         .ToArray(),
 
-                    MetaCarbonCopy = (notify.Attribute("cc")?.Value ?? string.Empty).ToLower()
+                    RawCc = (notify.Attribute("cc")?.Value ?? string.Empty).ToLower()
                         .Split(',', StringSplitOptions.RemoveEmptyEntries)
                         .ToArray(),
 
@@ -66,10 +66,10 @@ namespace Preesta.Configuration.Convert
                 };
             }
 
-            rule.HowToUpdate = 
+            rule.Updates = 
             (
                 from callRest in src.Elements("callRest")
-                select new Update
+                select new SelfUpdateSpec
                 {
                     Verb = (string) callRest.Attribute("verb")!,
                     UrlPattern = (string)callRest.Attribute("urlPattern")!,

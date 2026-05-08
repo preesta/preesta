@@ -1,6 +1,6 @@
 ﻿namespace Preesta.Configuration
 {
-    public class IssueInclusionToStructRule : Rule
+    public class StructureAmbiguityRule : Rule
     {
         /// <summary>
         /// Identifiers of the used structures by the project

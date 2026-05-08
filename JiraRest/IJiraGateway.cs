@@ -6,7 +6,7 @@ namespace JiraRest
         dynamic GetIssue(string issueKey);
         dynamic GetIssueWorklogs(string issueKey);
         dynamic GetIssueComments(string issueKey);
-        dynamic GetBuilds(string projectCode);
+        dynamic GetReleases(string projectCode);
         string[] GetIssuesInStructure(string structId);
         void HandleRequest(HttpRequest request);
     }

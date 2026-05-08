@@ -55,11 +55,11 @@ namespace Preesta.Configuration
             });
         }
 
-        public BuildRule[] GetBuildRules(string @group)
+        public ReleaseRule[] GetReleaseRules(string @group)
         {
-            return GetRules<BuildRule>(@group, "build", entry =>
+            return GetRules<ReleaseRule>(@group, "build", entry =>
             {
-                var rule = ToBaseRule<BuildRule>(entry);
+                var rule = ToBaseRule<ReleaseRule>(entry);
                 rule.Mask = entry.Mask ?? string.Empty;
                 rule.RemainingDays = entry.RemainingDays ?? 0;
                 rule.ExpiredOnly = entry.ExpiredOnly ?? false;
@@ -68,11 +68,11 @@ namespace Preesta.Configuration
             });
         }
 
-        public IssueInclusionToStructRule[] GetInStructRules(string @group)
+        public StructureAmbiguityRule[] GetStructureAmbiguityRules(string @group)
         {
-            return GetRules<IssueInclusionToStructRule>(@group, "structure", entry =>
+            return GetRules<StructureAmbiguityRule>(@group, "structure", entry =>
             {
-                var rule = ToBaseRule<IssueInclusionToStructRule>(entry);
+                var rule = ToBaseRule<StructureAmbiguityRule>(entry);
                 rule.Structures = (entry.Structures ?? string.Empty)
                     .Split(',', StringSplitOptions.RemoveEmptyEntries);
                 return rule;
@@ -130,13 +130,13 @@ namespace Preesta.Configuration
 
             if (entry.Notify != null)
             {
-                rule.HowToNotify = new Notify
+                rule.Notification = new NotificationSpec
                 {
                     Subject = entry.Notify.Subject ?? string.Empty,
                     Recommendations = entry.Notify.Recommendations,
-                    MetaAddressers = (entry.Notify.MailTo ?? string.Empty).ToLower()
+                    RawRecipients = (entry.Notify.MailTo ?? string.Empty).ToLower()
                         .Split(',', StringSplitOptions.RemoveEmptyEntries),
-                    MetaCarbonCopy = (entry.Notify.Cc ?? string.Empty).ToLower()
+                    RawCc = (entry.Notify.Cc ?? string.Empty).ToLower()
                         .Split(',', StringSplitOptions.RemoveEmptyEntries),
                     TelegramChatIds = (entry.Notify.TelegramChatId ?? string.Empty)
                         .Split(',', StringSplitOptions.RemoveEmptyEntries),
@@ -146,7 +146,7 @@ namespace Preesta.Configuration
 
             if (entry.CallRest != null)
             {
-                rule.HowToUpdate = entry.CallRest.Select(cr => new Update
+                rule.Updates = entry.CallRest.Select(cr => new SelfUpdateSpec
                 {
                     Verb = cr.Verb ?? string.Empty,
                     UrlPattern = cr.UrlPattern ?? string.Empty,
@@ -175,7 +175,7 @@ namespace Preesta.Configuration
         // JQL
         public string? Jql { get; set; }
 
-        // Build
+        // Release
         public string? Mask { get; set; }
         public int? RemainingDays { get; set; }
         public bool? ExpiredOnly { get; set; }

@@ -24,7 +24,7 @@ namespace Preesta.Data.Supplying
                 .Invoke(null, new object[] {JiraService, issue})!;
         }
 
-        protected string ReplaceMarkersByRealAddresses(string[] metaAddressees, IssueStaff staff)
+        protected string ReplaceMarkersByRealAddresses(string[] metaAddressees, IssueParticipants staff)
         {
             var markedStaff = new Dictionary<string, User?>
                           {
@@ -71,19 +71,19 @@ namespace Preesta.Data.Supplying
                 (
                     from set in uncategorizedSet
                     from issue in set.issues
-                    where set.rule.HowToNotify != null
+                    where set.rule.Notification != null
                     group new {issue, set.rule} by new
                     {
-                        To = ReplaceMarkersByRealAddresses(set.rule.HowToNotify!.MetaAddressers, issue.Staff),
-                        Cc = ReplaceMarkersByRealAddresses(set.rule.HowToNotify.MetaCarbonCopy, issue.Staff),
-                        set.rule.HowToNotify.Subject,
+                        To = ReplaceMarkersByRealAddresses(set.rule.Notification!.RawRecipients, issue.Participants),
+                        Cc = ReplaceMarkersByRealAddresses(set.rule.Notification.RawCc, issue.Participants),
+                        set.rule.Notification.Subject,
                         Rule = set.rule
                     }
                     into ag
-                    let basePackage = new Package<SendsNotification, Issue>
+                    let basePackage = new Package<NotificationReaction, Issue>
                     {
                         Items = ag.Select(a => a.issue).ToArray(),
-                        Reaction = new SendsNotification
+                        Reaction = new NotificationReaction
                         {
                             Addressees = new Addressees
                             {
@@ -91,9 +91,9 @@ namespace Preesta.Data.Supplying
                                 Cc = ag.Key.Cc.Split(',')
                             },
                             Subject = ag.Key.Subject,
-                            Recommendations = ag.First().rule.HowToNotify!.Recommendations,
-                            TelegramChatIds = ag.First().rule.HowToNotify!.TelegramChatIds,
-                            Columns = ag.First().rule.HowToNotify!.Columns
+                            Recommendations = ag.First().rule.Notification!.Recommendations,
+                            TelegramChatIds = ag.First().rule.Notification!.TelegramChatIds,
+                            Columns = ag.First().rule.Notification!.Columns
                         }
                     }
                     select Enrich(basePackage, ag.First().rule)
@@ -103,7 +103,7 @@ namespace Preesta.Data.Supplying
             var actionPackages =
                 (
                     from set in uncategorizedSet
-                    from updateAction in set.rule.HowToUpdate
+                    from updateAction in set.rule.Updates
                     let package = new Package<SelfUpdate, Issue>
                     {
                         Reaction = new SelfUpdate

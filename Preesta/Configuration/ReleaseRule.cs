@@ -2,7 +2,7 @@
 
 namespace Preesta.Configuration
 {
-    public class BuildRule : Rule
+    public class ReleaseRule : Rule
     {
         public int RemainingDays { get; set; }
         /// <summary>

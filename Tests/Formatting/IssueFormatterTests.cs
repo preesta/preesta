@@ -21,20 +21,20 @@ namespace Tests.Formatting
             return jira;
         }
 
-        private static Message[] Render(Notify notify, params Issue[] issues)
+        private static Message[] Render(NotificationSpec notify, params Issue[] issues)
         {
-            var rule = new Preesta.Configuration.JqlRule { Jql = "any", HowToNotify = notify };
+            var rule = new Preesta.Configuration.JqlRule { Jql = "any", Notification = notify };
             var supplier = new JqlSupplier(JiraReturning(issues), new[] { rule }, Substitute.For<ILogger>());
             var converter = new IssuePackageConverter("http://jira", subjectPrefix: "");
-            var packages = supplier.GetPackages().Cast<Package<SendsNotification, Issue>>().ToArray();
+            var packages = supplier.GetPackages().Cast<Package<NotificationReaction, Issue>>().ToArray();
             return converter.ToMessages(packages);
         }
 
-        private static Notify NotifyWith(string[]? columns = null) => new Notify
+        private static NotificationSpec NotifyWith(string[]? columns = null) => new NotificationSpec
         {
             Subject = "T",
-            MetaAddressers = new[] { "a@x" },
-            MetaCarbonCopy = new string[] { },
+            RawRecipients = new[] { "a@x" },
+            RawCc = new string[] { },
             Columns = columns
         };
 
@@ -47,7 +47,7 @@ namespace Tests.Formatting
                 Summary = "S",
                 Status = "To Do",
                 Priority = "Medium",
-                Staff = new IssueStaff { Assignee = new User { DisplayName = "Alice" } }
+                Participants = new IssueParticipants { Assignee = new User { DisplayName = "Alice" } }
             })[0].Body;
 
             Assert.IsTrue(html.Contains(">To Do<"), "Status pill missing");
@@ -158,7 +158,7 @@ namespace Tests.Formatting
                 Components = "Frontend",
                 Labels = "regression",
                 ProjectKey = "SCRUM",
-                Staff = new IssueStaff { Assignee = new User { DisplayName = "Alice" } }
+                Participants = new IssueParticipants { Assignee = new User { DisplayName = "Alice" } }
             })[0].Body;
 
             // populated fields show up

@@ -6,10 +6,10 @@ namespace Preesta.Data.Convert
 {
     internal static class JToken
     {
-        public static Build? ToBuild(dynamic build)
+        public static Release? ToRelease(dynamic build)
         {
             return build == null ? null
-            : new Build
+            : new Release
                 {
                     Description = (string) build.description,
                     Name = (string) build.name,
@@ -55,7 +55,7 @@ namespace Preesta.Data.Convert
                     Newtonsoft.Json.Linq.JToken.FromObject(new {name = (string?)null})
                   ).name,
 
-                Staff = new IssueStaff
+                Participants = new IssueParticipants
                 {
                     Assignee = JToken.ToUser(issue.fields.assignee),
                     Reporter = JToken.ToUser(issue.fields.reporter),

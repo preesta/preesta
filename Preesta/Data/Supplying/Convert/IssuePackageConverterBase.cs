@@ -14,22 +14,22 @@ namespace Preesta.Data.Supplying.Convert
             SubjectPrefix = subjectPrefix;
         }
 
-        public Message[] ToMessages(IEnumerable<Package<SendsNotification, TItemType>> packages)
+        public Message[] ToMessages(IEnumerable<Package<NotificationReaction, TItemType>> packages)
         {
-            return Common<TItemType>.ToMessage(packages, FormatHtml, FormatText, SubjectPrefix);
+            return MessageBuilder<TItemType>.ToMessage(packages, FormatHtml, FormatText, SubjectPrefix);
         }
 
-        public Message[] ToTelegramMessages(IEnumerable<Package<SendsNotification, TItemType>> packages,
+        public Message[] ToTelegramMessages(IEnumerable<Package<NotificationReaction, TItemType>> packages,
             Redirector redirector,
             IReadOnlyDictionary<string, string> telegramUserMap)
         {
-            return Common<TItemType>.ToTelegramMessages(packages, FormatText, SubjectPrefix, redirector, telegramUserMap);
+            return MessageBuilder<TItemType>.ToTelegramMessages(packages, FormatText, SubjectPrefix, redirector, telegramUserMap);
         }
 
         public abstract HttpRequest[] ToHttpRequests(
             IEnumerable<Package<SelfUpdate, TItemType>> packages);
 
-        protected internal abstract string FormatHtml(IEnumerable<Package<SendsNotification, TItemType>> packages);
-        protected internal abstract string FormatText(IEnumerable<Package<SendsNotification, TItemType>> packages);
+        protected internal abstract string FormatHtml(IEnumerable<Package<NotificationReaction, TItemType>> packages);
+        protected internal abstract string FormatText(IEnumerable<Package<NotificationReaction, TItemType>> packages);
     }
 }
