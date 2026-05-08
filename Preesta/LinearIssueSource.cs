@@ -120,9 +120,11 @@ namespace Preesta
             if (token == null || token.Type == JTokenType.Null) return null;
             var s = (string?)token;
             if (string.IsNullOrEmpty(s)) return null;
-            if (DateTime.TryParse(s, System.Globalization.CultureInfo.InvariantCulture,
-                    System.Globalization.DateTimeStyles.RoundtripKind, out var d))
-                return d;
+            // Linear timestamps are ISO-8601 with explicit offsets (usually Z).
+            // Parse via DateTimeOffset to keep things tz-aware, then return the UTC DateTime.
+            if (System.DateTimeOffset.TryParse(s, System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.AssumeUniversal, out var dto))
+                return dto.UtcDateTime;
             return null;
         }
     }
