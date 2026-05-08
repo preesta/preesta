@@ -7,6 +7,12 @@ namespace Preesta.Data
     {
         public string Key { get; set; } = Empty;
         public string Summary { get; set; } = Empty;
+        /// <summary>
+        /// Canonical "Open in tracker" URL. Populated by sources that return it
+        /// directly in the API payload (e.g. Linear). For Jira issues this is left
+        /// null and the formatter reconstructs the URL from the rootUri + key.
+        /// </summary>
+        public string? Url { get; set; }
         public IssueParticipants Participants { get; set; } = new IssueParticipants();
         public string? Type { get; set; }
         public string? Status { get; set; }

@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\JiraRest\JiraRest.csproj" />
+    <ProjectReference Include="..\LinearGraphQL\LinearGraphQL.csproj" />
     <ProjectReference Include="..\Messaging\Messaging.csproj" />
   </ItemGroup>
   <ItemGroup>
