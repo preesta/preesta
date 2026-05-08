@@ -51,11 +51,6 @@ namespace Preesta.Configuration
             return GetRules(@group, new[] { "build" }, XRuleSource.ToReleaseRule);
         }
 
-        public StructureAmbiguityRule[] GetStructureAmbiguityRules(string @group)
-        {
-            return GetRules(@group, new[] { "structureAmbiguityRule" }, XRuleSource.ToInStructRule);
-        }
-
         public IReadOnlyDictionary<string, string> GetRedirectionMap()
         {
             return new ReadOnlyDictionary<string, string>(

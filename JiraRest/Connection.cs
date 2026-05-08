@@ -80,22 +80,6 @@ namespace JiraRest
             return Decode<dynamic>(uri);
         }
 
-        public string[] GetIssuesInStructure(string structId)
-        {
-            //https://jira.example.com/jira/rest/structure/1.0/structure/{0}/forest - old style
-            //https://jira.example.com/jira/rest/structure/2.0/forest/latest?s={%22structureId%22:576} - new style
-            var uri =
-                new Uri(RootUri,
-                    $"rest/structure/2.0/forest/latest?s={{%22structureId%22:{structId}}}");
-
-            return ((string)Decode<dynamic>(uri).formula)
-                .Split(',')
-                .Select(r => r.Split(':').Last())
-                .Distinct()
-                .ToArray()
-                ;
-        }
-
         public string GetPureResponse(Uri url)
         {
             return HandleResponse(Client.GetAsync(url), url);

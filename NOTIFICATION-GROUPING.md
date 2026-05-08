@@ -1,95 +1,90 @@
-# Notification Grouping: как работает и что нужно менять
+# Notification Grouping
 
-## Текущая архитектура
+Как Preesta превращает поток tickets в дискретные сообщения и почему так.
 
-### Двухуровневая группировка
+## Двухуровневая группировка
 
-Группировка происходит в два этапа, на двух разных уровнях.
+Чтобы не спамить получателю одинаковыми тикетами из разных правил, группировка
+проходит в два этапа на двух разных уровнях.
 
-**Уровень 1: Supplier** (JqlSupplier / BuildSupplier) — группировка issues в packages.
+### Уровень 1: Supplier (issues → packages)
 
-Ключ группировки: `{To, Cc, Subject}`.
+`JqlSupplier` / `ReleaseSupplier` группируют issues по ключу
+**`{To, Cc, Subject, Rule}`** в [`IssueSupplier.GetPackages`](Preesta/Data/Supplying/IssueSupplier.cs).
+
+Маркеры адресатов (`assignee` / `reporter` / `creator`) разрешаются здесь же —
+[`ReplaceMarkersByRealAddresses`](Preesta/Data/Supplying/IssueSupplier.cs#L27)
+swap-ит их на реальные email из `Issue.Participants`. Группировка идёт уже по
+**resolved** адресам, поэтому два issue с разными `assignee` попадают в **разные
+packages** даже если rule один — каждый получатель видит только свои.
 
 ```
-Rule A (JQL: "...", mailTo: team1@x, team2@x, subject: "Alert")  → issue-1, issue-2
-Rule B (JQL: "...", mailTo: team2@x, team1@x, subject: "Alert")  → issue-3
-Rule C (JQL: "...", mailTo: team1@x, team2@x, subject: "Other")  → issue-4
+Rule A (mailTo: assignee, subject: "Daily")
+  Issue I1 (assignee=alice@x)  →  Package(to=alice@x, subj=Daily, [I1])
+  Issue I2 (assignee=bob@x)    →  Package(to=bob@x,   subj=Daily, [I2])
+
+Rule B (mailTo: alice@x, subject: "Daily")
+  Issue I3                      →  Package(to=alice@x, subj=Daily, [I3], rule=B)
 ```
 
-Результат:
-- Package 1: subject="Alert", to=team1@x,team2@x → [issue-1, issue-2, issue-3]
-- Package 2: subject="Other", to=team1@x,team2@x → [issue-4]
+`Rule` входит в ключ группировки специально: разные правила могут указывать
+**одинаковый** subject, но иметь разные `Recommendations`, `TelegramChatIds`,
+`Columns`. Без `Rule` в ключе эти per-rule поля брались бы из `ag.First().rule`
+и мы бы теряли их для всех остальных правил в группе. Это была реальная проблема
+до Phase 7 ("TelegramChatIds bug"); fix — добавить `Rule` в ключ.
 
-Для Issues адреса `assignee`/`reporter`/`creator` заменяются на реальные email (per-issue),
-поэтому группировка идёт по **resolved** адресам, а не маркерам. Это значит,
-что issues с разными assignee попадут в разные packages, даже если rule один.
+### Уровень 2: MessageBuilder (packages → messages)
 
-Для Builds маркеры не используются — только статические адреса.
+[`MessageBuilder<T>.ToMessage`](Preesta/Data/Supplying/Convert/MessageBuilder.cs)
+группирует packages по ключу **`{To, Cc, Subject}`** (без `Rule` — здесь rule
+уже неважен, мы делаем финальную почту). Один Message содержит все packages,
+у которых совпали адресаты и тема. `IssueFormatter` отрисует их как **отдельные
+секции** в теле — у каждой свои recommendations, JQL-link, columns.
 
-**Уровень 2: Converter** (Common.ToMessage) — группировка packages в messages.
+В итоге пользователь Alice из примера выше получит **один** email с двумя
+секциями: одна от Rule A (issue I1), другая от Rule B (issue I3). Если subject
+у Rule A и Rule B был бы разный — пришло бы два разных email-а.
 
-Тот же ключ: `{To, Cc, Subject}`. Packages с одинаковыми адресатами и темой
-склеиваются в одно письмо. На практике это мержит packages от разных suppliers
-(JQL + Structure), если адресаты совпадают.
+## Telegram: независимая группировка
 
-### Telegram: отдельная группировка
+[`MessageBuilder<T>.ToTelegramMessages`](Preesta/Data/Supplying/Convert/MessageBuilder.cs)
+работает по другому ключу — **`chatId`**. На один `chatId` идёт одно сообщение
+со всеми packages, которые на этот chat указаны (через `TelegramChatIds` или
+через `telegramUsers` map с резолвом email→chatId). Email-группировка и
+Telegram-группировка независимы — у каналов разная природа адресации
+(emails объединяются в To/Cc одного письма; Telegram chats не "комбинируются",
+каждый получает своё сообщение).
 
-`Common.ToTelegramMessages` группирует по `chatId`:
-- Собирает все packages, у которых есть `TelegramChatIds`
-- Для каждого уникального chatId находит все packages, содержащие этот chatId
-- Генерирует одно сообщение на chatId
+`telegramUsers` mapping (config) переиспользует тот же `Redirector`, что и
+email — расширяя такие маркеры как `managers` в список emails, и потом мапя
+каждый email на personal `chatId`. См. [`Redirector.ResolveRecipients`](Preesta/Notification/Redirector.cs).
 
-### Тестовое покрытие
+## Тестовое покрытие
 
 | Тест | Что проверяет |
-|------|---------------|
-| `GroupingTests.GroupBuilds` | 3 BuildRules → 2 packages. Rules 1 и 2 (одинаковые адресаты + subject "Subject") объединяются, Rule 3 ("DifferentSubject") — отдельно. Порядок адресатов не влияет (OrderBy). |
-| `GroupingTests.GroupIssues` | 3 JqlRules → 2 packages. Та же логика: правила с одинаковыми {To, Cc, Subject} объединяются. |
-| `TelegramTests.TelegramMessagesCreatedForRulesWithChatId` | Rule с chatId → 1 Telegram-сообщение. |
-| `TelegramTests.NoTelegramMessagesWhenNoChatId` | Rule без chatId → 0 Telegram-сообщений. |
-| `TelegramTests.ReactionPipeSendsTelegramMessages` | ReactionPipe вызывает оба мессенджера (email + Telegram). |
+|---|---|
+| [`GroupingTests.GroupReleases`](Tests/GroupingTests.cs) | 3 ReleaseRules → 2 messages: rules с одинаковым subject склеиваются, разный subject — отдельный message. Порядок адресатов нормализуется (OrderBy). |
+| [`GroupingTests.GroupIssues`](Tests/GroupingTests.cs) | 3 JqlRules с одинаковым subject → 3 packages в Supplier (по-rule), 1 message в MessageBuilder (по {To,Cc,Subject}). |
+| [`PerIssueSplittingTests.AssigneeMarkerSplitsIssuesByAssigneeIntoSeparatePackages`](Tests/PerIssueSplittingTests.cs) | 3 issues с разными assignees + один rule с `mailTo: assignee` → 2 packages, каждый получатель видит только свои issues. |
+| [`PerIssueSplittingTests.ReporterMarkerInCcSplitsByReporter`](Tests/PerIssueSplittingTests.cs) | то же для reporter в Cc. |
+| [`TelegramTests.TelegramMessagesCreatedForRulesWithChatId`](Tests/TelegramTests.cs) | Rule с статичным `telegramChatId` → 1 Telegram-сообщение. |
+| [`TelegramTests.RedirectionRulesExpandToMultipleTelegramChatIds`](Tests/TelegramTests.cs) | `mailTo: managers` + redirectionRules `managers → 3 emails` + telegramUsers map → 3 Telegram-сообщения. |
+| [`TelegramTests.AssigneeMarkerResolvesToTelegramChatId`](Tests/TelegramTests.cs) | `mailTo: assignee` + telegramUsers `{assignee_email: chatId}` → 1 Telegram-сообщение на верный chatId. |
 
-### Проблема текущего дизайна
+## Что бы поменял в будущем
 
-`TelegramChatIds` прибит к `Notify`/`SendsNotification` — тому же объекту, где живут email-адреса.
-Группировка в Supplier идёт по `{To, Cc, Subject}`, а `TelegramChatIds` берётся из
-`ag.First().rule` — т.е. из первого rule в группе, что может быть некорректно, если у
-разных rules в группе разные chatIds.
-
+Текущий `NotificationSpec` держит email-поля и Telegram-поля плоско рядом:
 ```
-Notify
+NotificationSpec
 ├── Subject
-├── MetaAddressers (email To)      ← ключ группировки
-├── MetaCarbonCopy (email Cc)      ← ключ группировки
+├── RawRecipients (email To)        ← ключ группировки + resolved через Redirector
+├── RawCc          (email Cc)        ← то же
 ├── Recommendations
-└── TelegramChatIds                ← НЕ участвует в группировке, берётся от первого rule
+├── TelegramChatIds                  ← независимая группировка по chatId
+└── Columns                          ← per-section meta-line
 ```
 
-## Предлагаемый рефакторинг
-
-Разделить каналы доставки в конфигурации:
-
-```yaml
-rules:
-  - type: jql
-    jql: "..."
-    notify:
-      subject: Alert
-      recommendations: Fix it
-      channels:
-        - type: email
-          to: assignee
-          cc: reporter,managers
-        - type: telegram
-          chatId: "-1001234567890"
-        - type: teams
-          webhookUrl: "https://..."
-```
-
-Это потребует:
-1. Новая модель конфига: `Notify.Channels[]` вместо плоских полей
-2. Группировка email и Telegram/Teams должна происходить независимо
-3. `SendsNotification` должен содержать список каналов, а не плоские поля
-4. `TelegramChatIds` должен участвовать в ключе группировки Telegram-пакетов на уровне Supplier
-5. Обновление парсеров (XML, YAML)
-6. Обновление всех тестов группировки
+С добавлением Slack/Teams (Phase 10/11) плоская структура упрётся в потолок.
+Логичнее перейти к **channels-based config** — `notify.channels: [...]` где
+каждый channel описывает свой адрес и render-стратегию. Это запланировано как
+часть Phase 10 (Slack), когда появится третий канал и pattern станет видимым.

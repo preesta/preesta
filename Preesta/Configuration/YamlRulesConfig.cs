@@ -68,17 +68,6 @@ namespace Preesta.Configuration
             });
         }
 
-        public StructureAmbiguityRule[] GetStructureAmbiguityRules(string @group)
-        {
-            return GetRules<StructureAmbiguityRule>(@group, "structure", entry =>
-            {
-                var rule = ToBaseRule<StructureAmbiguityRule>(entry);
-                rule.Structures = (entry.Structures ?? string.Empty)
-                    .Split(',', StringSplitOptions.RemoveEmptyEntries);
-                return rule;
-            });
-        }
-
         public IReadOnlyDictionary<string, string> GetRedirectionMap()
         {
             return new ReadOnlyDictionary<string, string>(
@@ -180,9 +169,6 @@ namespace Preesta.Configuration
         public int? RemainingDays { get; set; }
         public bool? ExpiredOnly { get; set; }
         public string? ProjectCode { get; set; }
-
-        // Structure
-        public string? Structures { get; set; }
 
         // Actions
         public YamlNotifyEntry? Notify { get; set; }

@@ -14,7 +14,6 @@ namespace Preesta
             container.ValidateRules();
             Task.WaitAll(
                 container.ResolveNotificationPipe<Issue>("Jql").RunAsync(),
-                container.ResolveNotificationPipe<Issue>("Structure").RunAsync(),
                 container.ResolveNotificationPipe<Release>().RunAsync()
             );
         }

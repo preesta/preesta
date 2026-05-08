@@ -5,8 +5,6 @@ namespace Preesta
     public interface IJiraService
     {
         Issue[] GetIssuesForJql(string query);
-        
-        string[] GetIssuesInStructure(string structId);
 
         Issue GetIssueById(string issueId);
 

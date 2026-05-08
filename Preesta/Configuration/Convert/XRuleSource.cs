@@ -25,16 +25,6 @@ namespace Preesta.Configuration.Convert
             return rule;
         }
 
-        public static StructureAmbiguityRule ToInStructRule(XElement src)
-        {
-            var rule = ToIssueRule<StructureAmbiguityRule>(src);
-            rule.Structures = src.Element("structures")!.Value
-                .Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries)
-                .ToArray();
-            
-            return rule;
-        }
-
         public static TRule ToIssueRule<TRule>(XElement src) where TRule : Rule, new()
         {
             //Contract.Requires(!string.IsNullOrEmpty((string)src.Attribute("mailTo")), "Mandatory attribute 'mailTo' is absent in a rule");

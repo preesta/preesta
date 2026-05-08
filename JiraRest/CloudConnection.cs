@@ -62,9 +62,6 @@ namespace JiraRest
             return GetJson(uri);
         }
 
-        public string[] GetIssuesInStructure(string structId) =>
-            _inner.GetIssuesInStructure(structId);
-
         public void HandleRequest(HttpRequest request) =>
             _inner.HandleRequest(request);
 

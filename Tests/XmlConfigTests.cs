@@ -54,30 +54,6 @@ namespace Tests
         }
 
         [Test]
-        public void GetStructureAmbiguityRules()
-        {
-            var xml =
-@"<configuration>
-    <structureAmbiguityRule
-      group=""test"">
-
-        <notify
-          subject=""Task is present in more than one project structure. Remove it from others.""
-          mailTo=""reporter""/>
-
-        <structures>417,462,525,576</structures>
-    </structureAmbiguityRule>
-</configuration>";
-
-            var config = new XmlRulesConfig(XDocument.Parse(xml), Substitute.For<ILogger>());
-
-            var rule = config.GetStructureAmbiguityRules("test").Single();
-            Assert.AreEqual(string.Join(",", rule.Structures), "417,462,525,576");
-            Assert.AreEqual(string.Join(",", rule.Notification!.RawRecipients), string.Join(",", new[] { "reporter" }));
-            Assert.AreEqual(rule.Notification.Subject, "Task is present in more than one project structure. Remove it from others.");
-        }
-
-        [Test]
         public void GetRedirectionRules()
         {
             var xml =

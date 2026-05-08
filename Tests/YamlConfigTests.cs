@@ -47,13 +47,6 @@ rules:
       subject: Release alert
       mailTo: admin
 
-  - type: structure
-    group: daily
-    structures: ""417,462,525""
-    notify:
-      subject: Duplicate issues
-      mailTo: reporter
-
 redirectionRules:
   managers: ""super_boss@example.com,super_boss2@example.com""
   admin: ""administrator@example.com""
@@ -112,14 +105,6 @@ redirectionRules:
             Assert.AreEqual("MYPROJ", rules[0].ProjectCode);
             Assert.AreEqual(2, rules[0].RemainingDays);
             Assert.IsTrue(rules[0].ExpiredOnly);
-        }
-
-        [Test]
-        public void GetStructureAmbiguityRules_ParsedCorrectly()
-        {
-            var rules = _config.GetStructureAmbiguityRules("daily");
-            Assert.AreEqual(1, rules.Length);
-            Assert.AreEqual(new[] { "417", "462", "525" }, rules[0].Structures);
         }
 
         [Test]
