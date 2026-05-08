@@ -12,9 +12,9 @@ namespace JiraRest
         private readonly Connection _inner;
         private readonly Lazy<Uri> _apiRoot;
 
-        public CloudConnection(string tenantUri, string user, string apiToken)
+        public CloudConnection(string tenantUri, string user, string apiToken, HttpClient? httpClient = null)
         {
-            _inner = new Connection(tenantUri, user, apiToken);
+            _inner = new Connection(tenantUri, user, apiToken, httpClient);
             _apiRoot = new Lazy<Uri>(() => ResolveApiRoot(_inner));
         }
 

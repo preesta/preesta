@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using JiraRest;
 using Preesta.Data;
 using System.Linq;
@@ -12,17 +13,17 @@ namespace Preesta
         public int MaxIssueCount { get; set; } = 50;
         internal IJiraGateway Connection { get; set; }
 
-        public HttpJiraService(string rootUri, string user, string password, int maxIssueCount = 50)
+        public HttpJiraService(string rootUri, string user, string password, int maxIssueCount = 50, HttpClient? httpClient = null)
         {
             Connection = IsCloudUri(rootUri)
-                ? (IJiraGateway)new CloudConnection(rootUri, user, password)
-                : new Connection(rootUri, user, password);
+                ? (IJiraGateway)new CloudConnection(rootUri, user, password, httpClient)
+                : new Connection(rootUri, user, password, httpClient);
             MaxIssueCount = maxIssueCount;
         }
 
-        public HttpJiraService(string rootUri, string bearerToken, int maxIssueCount = 50)
+        public HttpJiraService(string rootUri, string bearerToken, int maxIssueCount = 50, HttpClient? httpClient = null)
         {
-            Connection = new Connection(rootUri, bearerToken);
+            Connection = new Connection(rootUri, bearerToken, httpClient);
             MaxIssueCount = maxIssueCount;
         }
 

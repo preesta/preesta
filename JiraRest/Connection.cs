@@ -12,21 +12,22 @@ namespace JiraRest
     {
         public ISerializer Serializer { get; set; } = new NewtonsoftSerializer();
 
-        // how to mock HttpClient: http://stackoverflow.com/questions/22223223/how-to-pass-in-a-mocked-httpclient-in-a-net-test
-        internal HttpClient Client { get; set; } = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
+        internal HttpClient Client { get; set; }
 
         internal Uri RootUri { get; }
 
-        public Connection(string rootUri, string user, string password)
+        public Connection(string rootUri, string user, string password, HttpClient? httpClient = null)
         {
+            Client = httpClient ?? new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
             RootUri = new Uri($"{rootUri}{(rootUri.EndsWith("/") ? string.Empty : "/")}");
             var cred = Encoding.UTF8.GetBytes($"{user}:{password}");
             Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
                 "Basic", Convert.ToBase64String(cred));
         }
 
-        public Connection(string rootUri, string bearerToken)
+        public Connection(string rootUri, string bearerToken, HttpClient? httpClient = null)
         {
+            Client = httpClient ?? new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
             RootUri = new Uri($"{rootUri}{(rootUri.EndsWith("/") ? string.Empty : "/")}");
             Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
                 "Bearer", bearerToken);
