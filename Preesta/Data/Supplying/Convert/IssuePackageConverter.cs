@@ -32,18 +32,20 @@ namespace Preesta.Data.Supplying.Convert
                 select new HttpRequest
                 {
                     Verb = package.Reaction.Verb,
-                    Body = ReplaceKnownMarkers(package.Reaction.BodyPattern, issue) ?? string.Empty,
-                    Uri = new Uri(ReplaceKnownMarkers(package.Reaction.UrlPattern, issue) ?? string.Empty)
+                    Body = ReplaceKnownMarkers(package.Reaction.BodyPattern, issue, _rootUri) ?? string.Empty,
+                    Uri = new Uri(ReplaceKnownMarkers(package.Reaction.UrlPattern, issue, _rootUri) ?? string.Empty)
                 }
             ).ToArray();
         }
 
-        private string? ReplaceKnownMarkers(string? template, Issue issue)
+        internal static string? ReplaceKnownMarkers(string? template, Issue issue, string rootUri)
         {
             return template == null ? null
             : template
-                .Replace("{{@jiraRoot}}", _rootUri)
+                .Replace("{{@jiraRoot}}", rootUri)
                 .Replace("{{@issueKey}}", issue.Key)
+                .Replace("{{@issueId}}", issue.LinearId ?? string.Empty)
+                .Replace("{{@title}}", issue.Summary)
                 .Replace("{{@assignee.email}}", issue.Participants.Assignee?.Email)
                 .Replace("{{@assignee.key}}", issue.Participants.Assignee?.Key)
                 .Replace("{{@assignee.name}}", issue.Participants.Assignee?.Name)
@@ -56,7 +58,7 @@ namespace Preesta.Data.Supplying.Convert
                 .Replace("{{@creator.key}}", issue.Participants.Creator?.Key)
                 .Replace("{{@creator.name}}", issue.Participants.Creator?.Name)
                 .Replace("{{@creator.displayName}}", issue.Participants.Creator?.DisplayName)
-                .EvaluateScriptingInjections(new ScriptingContext { issue = issue, rootUri = _rootUri })
+                .EvaluateScriptingInjections(new ScriptingContext { issue = issue, rootUri = rootUri })
                 ;
         }
 

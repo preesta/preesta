@@ -27,5 +27,14 @@ namespace Preesta.Data
         public DateTime? UpdatedDate { get; set; }
         public string? Resolution { get; set; }
         public string? ProjectKey { get; set; }
+
+        /// <summary>
+        /// Tracker-internal UUID. Populated by sources that issue mutations against
+        /// an internal-id-based API (Linear's GraphQL <c>issueUpdate(id:)</c>,
+        /// <c>commentCreate(input: {issueId})</c>, etc.). Jira leaves this null —
+        /// Jira REST identifies issues by the human key.
+        /// Used by <c>{{@issueId}}</c> marker in mutation templates.
+        /// </summary>
+        public string? LinearId { get; set; }
     }
 }

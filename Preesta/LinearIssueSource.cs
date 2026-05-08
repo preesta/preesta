@@ -25,8 +25,10 @@ namespace Preesta
     public class LinearIssueSource
     {
         // Shared field projection — used by both `issues(filter:)` and `customView.issues`.
+        // `id` is Linear's internal UUID — we expose it via Issue.LinearId so mutation
+        // templates can reference it as {{@issueId}} (issueUpdate(id:), commentCreate(input: {issueId}), …).
         private const string IssueFields =
-            "identifier title url state { name type } priority priorityLabel " +
+            "id identifier title url state { name type } priority priorityLabel " +
             "assignee { id name email } creator { id name email } " +
             "project { id name } labels { nodes { name } } " +
             "dueDate createdAt updatedAt";
@@ -164,6 +166,7 @@ namespace Preesta
             return new Issue
             {
                 Key = (string?)node["identifier"] ?? string.Empty,
+                LinearId = (string?)node["id"],
                 Summary = (string?)node["title"] ?? string.Empty,
                 Url = (string?)node["url"],
                 Status = stateName,
