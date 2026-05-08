@@ -79,6 +79,18 @@ namespace Preesta.Configuration
                 rule.FilterRaw = ConvertFilterRaw(entry.FilterRaw);
                 rule.ViewId = string.IsNullOrWhiteSpace(entry.ViewId) ? null : entry.ViewId;
 
+                // For linear rules `mutations:` is GraphQL, not REST — discard the
+                // REST array that ToBaseRule eagerly populated and re-read the same
+                // entries as GraphQL specs.
+                rule.Mutations = Array.Empty<RestMutationSpec>();
+                if (entry.Mutations != null)
+                {
+                    rule.GraphQLMutations = entry.Mutations
+                        .Where(m => !string.IsNullOrEmpty(m.Mutation))
+                        .Select(m => new Action.GraphQLMutationSpec { MutationBody = m.Mutation! })
+                        .ToArray();
+                }
+
                 if (!ValidateLinearFilterModes(rule))
                     return null!;
 
@@ -251,10 +263,22 @@ namespace Preesta.Configuration
         public List<string>? Columns { get; set; }
     }
 
+    /// <summary>
+    /// One entry in a rule's <c>mutations:</c> list. Shape differs by rule type:
+    /// <list type="bullet">
+    /// <item><description><b>jql</b>: REST request — populates <see cref="Verb"/>, <see cref="UrlPattern"/>, <see cref="Body"/>.</description></item>
+    /// <item><description><b>linear</b>: GraphQL — populates <see cref="Mutation"/>.</description></item>
+    /// </list>
+    /// All four fields are nullable; the relevant converter (in <see cref="YamlRulesConfig"/>) picks the ones it needs.
+    /// </summary>
     internal class YamlMutationsEntry
     {
+        // REST (jql rules)
         public string? Verb { get; set; }
         public string? UrlPattern { get; set; }
         public string? Body { get; set; }
+
+        // GraphQL (linear rules)
+        public string? Mutation { get; set; }
     }
 }

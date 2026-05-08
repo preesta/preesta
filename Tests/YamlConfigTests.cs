@@ -168,6 +168,32 @@ rules:
 ";
 
         [Test]
+        public void Linear_GraphQLMutations_ParsedFromMutationsKey()
+        {
+            const string yaml = @"
+rules:
+  - type: linear
+    group: linear-mutations
+    filter: ""issues with no assignee in Done""
+    mutations:
+      - mutation: |
+          mutation { commentCreate(input: { issueId: ""{{@issueId}}"", body: ""hi"" }) { success } }
+      - mutation: |
+          mutation { issueUpdate(id: ""{{@issueId}}"", input: { assigneeId: null }) { success } }
+";
+            var config = new YamlRulesConfig(yaml, Substitute.For<ILogger>());
+            var rules = config.GetLinearRules("linear-mutations");
+
+            Assert.AreEqual(1, rules.Length);
+            Assert.AreEqual(2, rules[0].GraphQLMutations.Length);
+            Assert.IsTrue(rules[0].GraphQLMutations[0].MutationBody.Contains("commentCreate"));
+            Assert.IsTrue(rules[0].GraphQLMutations[0].MutationBody.Contains("{{@issueId}}"));
+            Assert.IsTrue(rules[0].GraphQLMutations[1].MutationBody.Contains("assigneeId: null"));
+            // REST Mutations array is empty for linear rules — `mutations:` is GraphQL.
+            Assert.AreEqual(0, rules[0].Mutations.Length);
+        }
+
+        [Test]
         public void Linear_FilterPromptMode_ParsedCorrectly()
         {
             var config = new YamlRulesConfig(LinearYaml, Substitute.For<ILogger>());

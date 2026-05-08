@@ -49,5 +49,13 @@ namespace Preesta.Configuration.Action
 
         /// <summary>Linear saved-view ID (escape hatch). Mutually exclusive with <see cref="Filter"/> and <see cref="FilterRaw"/>.</summary>
         public string? ViewId { get; set; }
+
+        /// <summary>
+        /// Raw GraphQL mutations to execute for each matched issue. Power-user hook —
+        /// the rule author writes the full <c>mutation { ... }</c> body and places markers
+        /// (<c>{{@issueId}}</c>, <c>{{@assignee.email}}</c>, etc.) where Preesta should
+        /// substitute issue context. No DSL, no ID resolution — bring your own state/user/label IDs.
+        /// </summary>
+        public GraphQLMutationSpec[] GraphQLMutations { get; set; } = new GraphQLMutationSpec[] { };
     }
 }
