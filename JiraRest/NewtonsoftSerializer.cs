@@ -2,7 +2,7 @@
 
 namespace JiraRest
 {
-    internal class NewtownsoftSerializer : ISerializer
+    internal class NewtonsoftSerializer : ISerializer
     {
         public T Deserialize<T>(string input)
         {
