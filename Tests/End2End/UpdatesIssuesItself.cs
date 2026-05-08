@@ -1,7 +1,4 @@
-﻿using System;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using Messaging;
 using JiraRest;
 using Preesta;
@@ -15,7 +12,7 @@ using NSubstitute;
 using NUnit.Framework;
 using Serilog;
 using System.Xml.Linq;
-using Tests;
+using Tests.Mocks;
 
 using static System.String;
 
@@ -31,10 +28,10 @@ namespace End2End.Tests
 		""key"": ""BENDER-961"",
 		""fields"": {
 			""status"": {
-				
+
 			},
 			""issuetype"": {
-				
+
 			},
 			""created"": ""2018-08-14T13:50:59.000+0000"",
             ""assignee"": {
@@ -52,24 +49,13 @@ namespace End2End.Tests
         [Test]
         public void EnsureRequestToUpdateFormedCorrectlyAndRan()
         {
-            var responseWhenGetIssues = new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(JsonTypicalIssue)
-            };
+            using var server = new MockJiraServer();
+            server.StubGetIssuesByJql("any", JsonTypicalIssue);
+            server.StubPostIssue("BENDER-961");
 
-            var responseWhenDoPost = new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent("")
-            };
+            var connection = new Connection(server.Url, "any", "any");
 
-            var handler = new StubDelegatingHandler(responseWhenGetIssues, responseWhenDoPost);
-
-            var connection = new Connection("http://jira", "any", "any")
-            {
-                Client = new HttpClient(handler)
-            };
-
-            var svc = new HttpJiraService("http://jira", Empty, Empty)
+            var svc = new HttpJiraService(server.Url, Empty, Empty)
             {
                 Connection = connection
             };
@@ -110,16 +96,17 @@ namespace End2End.Tests
             var pipe = new ReactionPipeline<Issue>
             {
                 PackageSupplier = jqlSupplier,
-                PackageConverter = new IssuePackageConverter("http://jira"),
+                PackageConverter = new IssuePackageConverter(server.Url),
                 Messenger = messenger,
                 HttpHandler = svc
             };
             pipe.Run();
 
-            Assert.AreEqual(1, handler.Requests.Count(r =>
-                r.RequestUri == new Uri("http://jira/rest/api/2/issue/BENDER-961/transitions")
-                && r.Method == HttpMethod.Post
-                && r.Content!.ReadAsStringAsync().Result.Contains("Issue BENDER-961 Closed automatically because of activity absence")));
+            Assert.AreEqual(1, server.LogEntries.Count(e =>
+                e.RequestMessage != null
+                && e.RequestMessage.AbsoluteUrl == $"{server.Url}/rest/api/2/issue/BENDER-961/transitions"
+                && e.RequestMessage.Method == "POST"
+                && (e.RequestMessage.Body ?? "").Contains("Issue BENDER-961 Closed automatically because of activity absence")));
         }
 
         [Test]
@@ -205,19 +192,24 @@ namespace End2End.Tests
         [Test]
         public void CheckAssigneeAndReporterReplacement()
         {
-            // Setup
-            var rule = 
-@"<configuration>
+            using var server = new MockJiraServer();
+            server.StubGetIssuesByJql("any", JsonTypicalIssue);
+            server.StubAnyWrite();
+
+            // Setup: rule URL points at the in-process WireMock server so the
+            // PUT actually leaves the HttpClient and is recorded.
+            var rule =
+$@"<configuration>
   <jqlRule group=""test"">
     <jql>any</jql>
-    <callRest verb=""PUT"" urlPattern=""https://jira.example.com/swap-assignee-and-reporter-where/?assignee={{@assignee.name}}&amp;reporter={{@reporter.name}}"">
+    <callRest verb=""PUT"" urlPattern=""{server.Url}/swap-assignee-and-reporter-where/?assignee={{{{@assignee.name}}}}&amp;reporter={{{{@reporter.name}}}}"">
                     <body><![CDATA[
-                        {
-                            ""update"": {
-                                ""assignee"": [{""set"": {""name"": ""{{@reporter.name}}""}}],
-                                ""reporter"": [{""set"": {""name"": ""{{@assignee.name}}""}}]
-                            }
-                        }
+                        {{
+                            ""update"": {{
+                                ""assignee"": [{{""set"": {{""name"": ""{{{{@reporter.name}}}}""}}}}],
+                                ""reporter"": [{{""set"": {{""name"": ""{{{{@assignee.name}}}}""}}}}]
+                            }}
+                        }}
                     ]]>
                 </body>
     </callRest>
@@ -226,24 +218,9 @@ namespace End2End.Tests
 
             var rulesConfig = new XmlRulesConfig(XDocument.Parse(rule), Substitute.For<ILogger>());
 
-            var responseWhenGetIssues = new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(JsonTypicalIssue)
-            };
+            var connection = new Connection(server.Url, Empty, Empty);
 
-            var responseWhenDoPut = new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent("")
-            };
-
-            var handler = new StubDelegatingHandler(responseWhenGetIssues, responseWhenDoPut);
-
-            var connection = new Connection("http://jira", Empty, Empty)
-            {
-                Client = new HttpClient(handler)
-            };
-
-            var jiraService = new HttpJiraService("http://jira", Empty, Empty)
+            var jiraService = new HttpJiraService(server.Url, Empty, Empty)
             {
                 Connection = connection
             };
@@ -260,11 +237,12 @@ namespace End2End.Tests
             pipe.Run();
 
             // Check results
-            Assert.AreEqual(1, handler.Requests.Count(r =>
-                r.RequestUri == new Uri("https://jira.example.com/swap-assignee-and-reporter-where/?assignee=alice&reporter=bob")
-                && r.Method == HttpMethod.Put
-                && r.Content!.ReadAsStringAsync().Result.Contains(@"""assignee"": [{""set"": {""name"": ""bob""}}]")
-                && r.Content!.ReadAsStringAsync().Result.Contains(@"""reporter"": [{""set"": {""name"": ""alice""}}]")));
+            Assert.AreEqual(1, server.LogEntries.Count(e =>
+                e.RequestMessage != null
+                && e.RequestMessage.AbsoluteUrl == $"{server.Url}/swap-assignee-and-reporter-where/?assignee=alice&reporter=bob"
+                && e.RequestMessage.Method == "PUT"
+                && (e.RequestMessage.Body ?? "").Contains(@"""assignee"": [{""set"": {""name"": ""bob""}}]")
+                && (e.RequestMessage.Body ?? "").Contains(@"""reporter"": [{""set"": {""name"": ""alice""}}]")));
         }
 
        [Test]
@@ -276,15 +254,15 @@ namespace End2End.Tests
             var package = new Package<SelfUpdate, Issue>
             {
                 // JQL: issueFunction in issueFieldMatch('', labels, 'linkTo=')
-                Items = new[] 
+                Items = new[]
                 {
-                    new Issue 
+                    new Issue
                     {
                         Key = "BUG-2",
                         Labels = "linkTo=TASK-1",
                     }
                 },
-                
+
                 Reaction = new SelfUpdate
                 {
                     UrlPattern = "{{@jiraRoot}}/rest/api/2/issue/{{@issueKey}}",
