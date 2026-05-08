@@ -63,9 +63,9 @@ namespace End2End.Tests
             var jqlRule = new JqlRule
             {
                 Jql = "any",
-                Updates = new[]
+                Mutations = new[]
                 {
-                    new SelfUpdateSpec
+                    new RestMutationSpec
                     {
                         Verb = "POST",
                         UrlPattern = "{{@jiraRoot}}rest/api/2/issue/{{@issueKey}}/transitions",

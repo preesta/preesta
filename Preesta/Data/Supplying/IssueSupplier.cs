@@ -103,7 +103,7 @@ namespace Preesta.Data.Supplying
             var actionPackages =
                 (
                     from set in uncategorizedSet
-                    from updateAction in set.rule.Updates
+                    from updateAction in set.rule.Mutations
                     let package = new Package<SelfUpdate, Issue>
                     {
                         Reaction = new SelfUpdate

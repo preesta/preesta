@@ -122,7 +122,7 @@ rules:
       AND Assignee is Not Empty
       AND (Not Assignee Changed by membersOf("Support-Administrators"))
       AND Resolution is Empty
-    callRest:
+    mutations:
       - verb: PUT
         urlPattern: "{{@jiraRoot}}rest/api/2/issue/{{@issueKey}}"
         body: |
@@ -133,7 +133,7 @@ rules:
             }
           }
 ```
-The rule uses `callRest` action. When called the rule is translated to REST call to the url pointed in `urlPattern`. Supported verbs are PUT and POST. Placeholder `{{@jiraRoot}}` points to property `Jira.rootUri` from appsettings. Placeholder `{{@issueKey}}` points to Issue key found for the specified JQL expression.
+The rule uses `mutations` action. When called the rule is translated to REST call to the url pointed in `urlPattern`. Supported verbs are PUT and POST. Placeholder `{{@jiraRoot}}` points to property `Jira.rootUri` from appsettings. Placeholder `{{@issueKey}}` points to Issue key found for the specified JQL expression.
 
 Add new schedule to the crontab file to start this action automatically lets say every 10 minutes
 ```sh
@@ -160,7 +160,7 @@ Preesta uses YAML as the primary configuration format. Legacy XML format is also
 
 ## Rules Configuration specification
 Supported rule types: `jql` (JQL-based filter) and `build` (release/version monitoring).
-See [`Preesta/rules.yaml`](Preesta/rules.yaml) for a full example with `notify` (mailTo / cc / telegramChatId / columns / recommendations) and `callRest` (self-update via REST) actions.
+See [`Preesta/rules.yaml`](Preesta/rules.yaml) for a full example with `notify` (mailTo / cc / telegramChatId / columns / recommendations) and `mutations` (Jira REST self-update / Linear GraphQL — see rule type) actions.
 
 ### Code injection in rule body
 *TODO: C# code may be used and placed inside block `<<c#( your-code-here )#>>` in rule bodies.*

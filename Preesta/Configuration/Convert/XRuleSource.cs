@@ -56,10 +56,10 @@ namespace Preesta.Configuration.Convert
                 };
             }
 
-            rule.Updates = 
+            rule.Mutations = 
             (
                 from callRest in src.Elements("callRest")
-                select new SelfUpdateSpec
+                select new RestMutationSpec
                 {
                     Verb = (string) callRest.Attribute("verb")!,
                     UrlPattern = (string)callRest.Attribute("urlPattern")!,

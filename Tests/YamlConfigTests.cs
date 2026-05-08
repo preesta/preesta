@@ -31,7 +31,7 @@ rules:
   - type: jql
     group: hourly
     jql: ""Type = Support""
-    callRest:
+    mutations:
       - verb: PUT
         urlPattern: ""{{@jiraRoot}}/rest/api/2/issue/{{@issueKey}}""
         body: |
@@ -90,10 +90,10 @@ redirectionRules:
         {
             var rules = _config.GetJqlRules("hourly");
             Assert.AreEqual(1, rules.Length);
-            Assert.AreEqual(1, rules[0].Updates.Length);
-            Assert.AreEqual("PUT", rules[0].Updates[0].Verb);
-            Assert.AreEqual("{{@jiraRoot}}/rest/api/2/issue/{{@issueKey}}", rules[0].Updates[0].UrlPattern);
-            Assert.IsTrue(rules[0].Updates[0].BodyPattern!.Contains("auto"));
+            Assert.AreEqual(1, rules[0].Mutations.Length);
+            Assert.AreEqual("PUT", rules[0].Mutations[0].Verb);
+            Assert.AreEqual("{{@jiraRoot}}/rest/api/2/issue/{{@issueKey}}", rules[0].Mutations[0].UrlPattern);
+            Assert.IsTrue(rules[0].Mutations[0].BodyPattern!.Contains("auto"));
         }
 
         [Test]

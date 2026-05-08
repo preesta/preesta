@@ -23,10 +23,10 @@ namespace Tests
             // Setup
             var rule = new JqlRule
             {
-                Updates = new[]
+                Mutations = new[]
                 {
-                    new SelfUpdateSpec {UrlPattern = "http://example.com"},
-                    new SelfUpdateSpec {UrlPattern = "http://example.com"}
+                    new RestMutationSpec {UrlPattern = "http://example.com"},
+                    new RestMutationSpec {UrlPattern = "http://example.com"}
                 }
             };
 

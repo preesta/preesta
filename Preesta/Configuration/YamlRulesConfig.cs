@@ -191,9 +191,9 @@ namespace Preesta.Configuration
                 };
             }
 
-            if (entry.CallRest != null)
+            if (entry.Mutations != null)
             {
-                rule.Updates = entry.CallRest.Select(cr => new SelfUpdateSpec
+                rule.Mutations = entry.Mutations.Select(cr => new RestMutationSpec
                 {
                     Verb = cr.Verb ?? string.Empty,
                     UrlPattern = cr.UrlPattern ?? string.Empty,
@@ -238,7 +238,7 @@ namespace Preesta.Configuration
 
         // Actions
         public YamlNotifyEntry? Notify { get; set; }
-        public List<YamlCallRestEntry>? CallRest { get; set; }
+        public List<YamlMutationsEntry>? Mutations { get; set; }
     }
 
     internal class YamlNotifyEntry
@@ -251,7 +251,7 @@ namespace Preesta.Configuration
         public List<string>? Columns { get; set; }
     }
 
-    internal class YamlCallRestEntry
+    internal class YamlMutationsEntry
     {
         public string? Verb { get; set; }
         public string? UrlPattern { get; set; }
