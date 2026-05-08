@@ -1,5 +1,6 @@
 using System.Linq;
 using Preesta.Configuration;
+using Newtonsoft.Json.Linq;
 using NSubstitute;
 using NUnit.Framework;
 using Serilog;
@@ -191,6 +192,52 @@ rules:
             Assert.IsTrue(rules[0].GraphQLMutations[1].MutationBody.Contains("assigneeId: null"));
             // REST Mutations array is empty for linear rules — `mutations:` is GraphQL.
             Assert.AreEqual(0, rules[0].Mutations.Length);
+        }
+
+        [Test]
+        public void Linear_FilterRaw_PreservesScalarTypes()
+        {
+            // YamlDotNet returns all scalars as strings when target is `object`.
+            // ConvertFilterRaw must recover int/float/bool via TryParse so Linear's
+            // GraphQL doesn't reject e.g. { gte: ""2"" } where it expects { gte: 2 }.
+            const string yaml = @"
+rules:
+  - type: linear
+    group: types
+    filterRaw:
+      priority:
+        gte: 2
+      ratio:
+        eq: 1.5
+      flag:
+        eq: true
+      text:
+        eq: hello
+      quoted:
+        eq: ""9""
+";
+            var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>())
+                .GetLinearRules("types");
+            var f = rules[0].FilterRaw!;
+
+            Assert.AreEqual(JTokenType.Integer, f.SelectToken("priority.gte")!.Type);
+            Assert.AreEqual(2L, (long)f.SelectToken("priority.gte")!);
+
+            Assert.AreEqual(JTokenType.Float, f.SelectToken("ratio.eq")!.Type);
+            Assert.AreEqual(1.5, (double)f.SelectToken("ratio.eq")!);
+
+            Assert.AreEqual(JTokenType.Boolean, f.SelectToken("flag.eq")!.Type);
+            Assert.AreEqual(true, (bool)f.SelectToken("flag.eq")!);
+
+            Assert.AreEqual(JTokenType.String, f.SelectToken("text.eq")!.Type);
+            Assert.AreEqual("hello", (string?)f.SelectToken("text.eq"));
+
+            // Quoted scalars in YAML come through as strings even if the content looks
+            // numeric. Our walker can't distinguish "9" (quoted) from 9 (unquoted) since
+            // YamlDotNet hands both to us as plain string — known limitation, documented.
+            // Acceptable behaviour: "9" parses as Integer here too. Power users wanting
+            // string-typed numerics should rename the field or rely on the AI prompt.
+            Assert.AreEqual(JTokenType.Integer, f.SelectToken("quoted.eq")!.Type);
         }
 
         [Test]

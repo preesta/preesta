@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
@@ -126,17 +127,26 @@ namespace Preesta.Configuration
         }
 
         /// <summary>
-        /// YamlDotNet deserialises nested mappings into <c>Dictionary&lt;object, object&gt;</c>.
-        /// Round-trip via JSON to obtain a Newtonsoft <see cref="JObject"/> that we can
-        /// pass straight into the GraphQL <c>variables</c> envelope.
+        /// YamlDotNet deserialises nested mappings into <c>Dictionary&lt;object, object&gt;</c>
+        /// with ALL scalars as <c>string</c> (CoreSchema tag inference doesn't apply when
+        /// the target is <c>object</c> in this code path). Walk the tree, recover scalar
+        /// types via TryParse so Linear's GraphQL doesn't reject e.g. <c>{ "gte": "2" }</c>
+        /// where it expects <c>{ "gte": 2 }</c>.
         /// </summary>
-        private static JObject? ConvertFilterRaw(object? raw)
+        private static JObject? ConvertFilterRaw(object? raw) => ToJson(raw) as JObject;
+
+        private static JToken? ToJson(object? raw) => raw switch
         {
-            if (raw == null) return null;
-            var json = JsonConvert.SerializeObject(raw);
-            var token = JsonConvert.DeserializeObject<JToken>(json);
-            return token as JObject;
-        }
+            null => null,
+            IDictionary<object, object> map => new JObject(map.Select(kv =>
+                new JProperty(kv.Key.ToString()!, ToJson(kv.Value) ?? JValue.CreateNull()))),
+            IList<object> list => new JArray(list.Select(v => ToJson(v) ?? JValue.CreateNull())),
+            string s when long.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) => new JValue(i),
+            string s when double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var d) => new JValue(d),
+            string s when bool.TryParse(s, out var b) => new JValue(b),
+            string s => new JValue(s),
+            _ => new JValue(raw.ToString())
+        };
 
         public IReadOnlyDictionary<string, string> GetRedirectionMap()
         {
