@@ -53,5 +53,15 @@ rules:
       columns:
         - all-non-empty
 
+  - type: linear
+    group: e2etest
+    notify:
+      subject: "Linear digest"
+      recommendations: "Open Linear tickets assigned to you."
+      mailTo: you@example.com
+      cc: ""
+      telegramChatId: "12345678"
+      columns: [Status, Priority, Updated]
+
 # Email alias mappings
 redirectionRules: {}
