@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Preesta.Configuration.Action;
 using Serilog;
 using YamlDotNet.Serialization;
@@ -70,7 +72,58 @@ namespace Preesta.Configuration
 
         public Action.LinearRule[] GetLinearRules(string @group)
         {
-            return GetRules<Action.LinearRule>(@group, "linear", ToBaseRule<Action.LinearRule>);
+            return GetRules<Action.LinearRule>(@group, "linear", entry =>
+            {
+                var rule = ToBaseRule<Action.LinearRule>(entry);
+                rule.Filter = string.IsNullOrWhiteSpace(entry.Filter) ? null : entry.Filter;
+                rule.FilterRaw = ConvertFilterRaw(entry.FilterRaw);
+                rule.ViewId = string.IsNullOrWhiteSpace(entry.ViewId) ? null : entry.ViewId;
+
+                if (!ValidateLinearFilterModes(rule))
+                    return null!;
+
+                return rule;
+            });
+        }
+
+        /// <summary>
+        /// Enforces "exactly one of {filter, filterRaw, viewId}" on a Linear rule.
+        /// Returns false (and logs) when zero or 2+ are set; the converter then drops the rule.
+        /// </summary>
+        private bool ValidateLinearFilterModes(Action.LinearRule rule)
+        {
+            var which = new List<string>();
+            if (rule.Filter != null) which.Add("filter");
+            if (rule.FilterRaw != null) which.Add("filterRaw");
+            if (rule.ViewId != null) which.Add("viewId");
+
+            if (which.Count == 0)
+            {
+                _logger.Error("Linear rule must specify one of: filter (AI prompt), filterRaw (GraphQL filter), or viewId (saved view ID)");
+                return false;
+            }
+
+            if (which.Count > 1)
+            {
+                _logger.Error("Linear rule has multiple filter sources set ({Sources}); pick exactly one",
+                    string.Join(", ", which));
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// YamlDotNet deserialises nested mappings into <c>Dictionary&lt;object, object&gt;</c>.
+        /// Round-trip via JSON to obtain a Newtonsoft <see cref="JObject"/> that we can
+        /// pass straight into the GraphQL <c>variables</c> envelope.
+        /// </summary>
+        private static JObject? ConvertFilterRaw(object? raw)
+        {
+            if (raw == null) return null;
+            var json = JsonConvert.SerializeObject(raw);
+            var token = JsonConvert.DeserializeObject<JToken>(json);
+            return token as JObject;
         }
 
         public IReadOnlyDictionary<string, string> GetRedirectionMap()
@@ -174,6 +227,14 @@ namespace Preesta.Configuration
         public int? RemainingDays { get; set; }
         public bool? ExpiredOnly { get; set; }
         public string? ProjectCode { get; set; }
+
+        // Linear — three mutually exclusive filter modes (validated in GetLinearRules):
+        //   filter:    string — AI prompt (primary, user-facing)
+        //   filterRaw: nested mapping — raw Linear GraphQL filter object (escape hatch)
+        //   viewId:    string — Linear saved-view ID (escape hatch)
+        public string? Filter { get; set; }
+        public object? FilterRaw { get; set; }
+        public string? ViewId { get; set; }
 
         // Actions
         public YamlNotifyEntry? Notify { get; set; }
