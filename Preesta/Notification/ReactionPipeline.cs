@@ -14,10 +14,12 @@ namespace Preesta.Notification
         public IPackageConverter<TIssueType>? PackageConverter { get; set; }
         public IMessenger? Messenger { get; set; }
         public IMessenger? TelegramMessenger { get; set; }
+        public IMessenger? SlackMessenger { get; set; }
         public IHttpHandler? HttpHandler { get; set; }
         public ILinearMutationHandler? LinearMutationHandler { get; set; }
         public Redirector Redirector { get; set; } = Redirector.Empty;
         public IReadOnlyDictionary<string, string> TelegramUserMap { get; set; } = new Dictionary<string, string>();
+        public IReadOnlyDictionary<string, string> SlackUserMap { get; set; } = new Dictionary<string, string>();
         public string LogoFileName { get; set; } = string.Empty;
 
         public ReactionPipeline(
@@ -29,7 +31,9 @@ namespace Preesta.Notification
             string logoFileName = "",
             IMessenger? telegramMessenger = null,
             IReadOnlyDictionary<string, string>? telegramUserMap = null,
-            ILinearMutationHandler? linearMutationHandler = null)
+            ILinearMutationHandler? linearMutationHandler = null,
+            IMessenger? slackMessenger = null,
+            IReadOnlyDictionary<string, string>? slackUserMap = null)
         {
             PackageSupplier = packageSupplier;
             PackageConverter = packageConverter;
@@ -40,6 +44,8 @@ namespace Preesta.Notification
             LogoFileName = logoFileName;
             TelegramMessenger = telegramMessenger;
             TelegramUserMap = telegramUserMap ?? new Dictionary<string, string>();
+            SlackMessenger = slackMessenger;
+            SlackUserMap = slackUserMap ?? new Dictionary<string, string>();
         }
 
         public void Run()
@@ -69,6 +75,14 @@ namespace Preesta.Notification
                 var telegramMessages = notificationPackages
                     .ToTelegramMessages(PackageConverter, Redirector, TelegramUserMap);
                 TelegramMessenger.SendAll(telegramMessages);
+            }
+
+            // Slack (personal DMs via chat.postMessage)
+            if (SlackMessenger != null)
+            {
+                var slackMessages = notificationPackages
+                    .ToSlackMessages(PackageConverter, Redirector, SlackUserMap);
+                SlackMessenger.SendAll(slackMessages);
             }
 
             // Self-updates (REST calls)

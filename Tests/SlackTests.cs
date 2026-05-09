@@ -302,6 +302,49 @@ namespace Tests
             Assert.IsTrue(mrkdwn.Contains("Please act"), "Recommendations missing");
         }
 
+        // ----- Pipeline integration -----
+
+        [Test]
+        public void ReactionPipelineSendsSlackMessages()
+        {
+            var jira = Substitute.For<IJiraService>();
+            jira.GetIssuesForJql(Arg.Any<string>()).Returns(new[]
+            {
+                new Issue { Key = "T-1" }
+            });
+
+            var rule = new Preesta.Configuration.JqlRule
+            {
+                Jql = "any",
+                Notification = new NotificationSpec
+                {
+                    Subject = "Alert",
+                    RawRecipients = new[] { "admin" },
+                    RawCc = new string[] { },
+                    SlackUserIds = new[] { "U999" }
+                }
+            };
+
+            var supplier = new JqlSupplier(jira, new[] { rule }, Substitute.For<ILogger>());
+            var emailMessenger = Substitute.For<IMessenger>();
+            var slackMessenger = Substitute.For<IMessenger>();
+
+            var pipe = new ReactionPipeline<Issue>
+            {
+                PackageSupplier = supplier,
+                PackageConverter = new IssuePackageConverter("http://jira"),
+                Messenger = emailMessenger,
+                SlackMessenger = slackMessenger,
+                HttpHandler = Substitute.For<IHttpHandler>()
+            };
+
+            pipe.Run();
+
+            emailMessenger.Received(1).SendAll(Arg.Any<IEnumerable<Message>>());
+            slackMessenger.Received(1).SendAll(Arg.Is<IEnumerable<Message>>(
+                msgs => msgs.Count() == 1 && msgs.First().To == "U999"));
+        }
+
         [Test]
         public void MrkdwnFormatting_FilterDescription_AsItalic()
         {
