@@ -6,6 +6,7 @@ using Preesta.Configuration.Action;
 using Preesta.Data;
 using Preesta.Data.Supplying;
 using Preesta.Data.Supplying.Convert;
+using Preesta.Formatting;
 using Preesta.Notification;
 using NSubstitute;
 using NUnit.Framework;
@@ -258,6 +259,74 @@ namespace Tests
             // delivered once, even though two distinct Issues / two distinct Addressees.
             Assert.AreEqual(1, messages.Length);
             Assert.AreEqual("U777", messages[0].To);
+        }
+
+        // ----- Mrkdwn formatting tests -----
+
+        [Test]
+        public void MrkdwnFormatting_BoldKey_LinkInBrackets_StatusEmoji()
+        {
+            var package = new Package<NotificationReaction, Issue>
+            {
+                Reaction = new NotificationReaction
+                {
+                    Subject = "Alert",
+                    Recommendations = "Please act"
+                },
+                Items = new[]
+                {
+                    new Issue
+                    {
+                        Key = "PRE-7",
+                        Summary = "Refactor X",
+                        Url = "https://linear.app/preesta-dev/issue/PRE-7",
+                        Status = "In Progress",
+                        Priority = "High",
+                        Participants = new IssueParticipants
+                        {
+                            Assignee = new User { DisplayName = "Alice" }
+                        }
+                    }
+                }
+            };
+
+            var mrkdwn = IssueFormatter.ToSlackMrkdwn(new[] { package }, "https://linear.app/preesta-dev/", "preesta-dev");
+
+            // Bold + clickable: *<url|PRE-7>* (Slack mrkdwn link inside *...*)
+            Assert.IsTrue(mrkdwn.Contains("*<https://linear.app/preesta-dev/issue/PRE-7|PRE-7>*"),
+                $"Expected bold-clickable issue key. Got:\n{mrkdwn}");
+            Assert.IsTrue(mrkdwn.Contains("Refactor X"), "Summary missing");
+            Assert.IsTrue(mrkdwn.Contains(":hourglass_flowing_sand:"), "In Progress emoji missing");
+            Assert.IsTrue(mrkdwn.Contains(":large_orange_circle:"), "High priority emoji missing");
+            Assert.IsTrue(mrkdwn.Contains("Alice"), "Assignee missing");
+            Assert.IsTrue(mrkdwn.Contains("Please act"), "Recommendations missing");
+        }
+
+        [Test]
+        public void MrkdwnFormatting_FilterDescription_AsItalic()
+        {
+            var package = new Package<NotificationReaction, Issue>
+            {
+                Reaction = new NotificationReaction
+                {
+                    Subject = "Alert",
+                    Recommendations = "Resolve please"
+                },
+                Items = new[]
+                {
+                    new Issue { Key = "PRE-1", Summary = "X", Status = "Todo" }
+                }
+            };
+            // Simulate LinearIssueSupplier.Enrich populating LinearFilter on the package.
+            package.Properties["LinearFilter"] = "issues assigned to me, not done";
+
+            var mrkdwn = IssueFormatter.ToSlackMrkdwn(new[] { package }, "https://linear.app/preesta-dev/", "preesta-dev");
+
+            // Italic via _..._ wrapping
+            Assert.IsTrue(mrkdwn.Contains("_AI filter:"),
+                $"Expected italicized filter description. Got:\n{mrkdwn}");
+            Assert.IsTrue(mrkdwn.Contains("issues assigned to me, not done"),
+                "Filter prompt content missing");
         }
     }
 }
