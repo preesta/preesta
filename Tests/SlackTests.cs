@@ -1,5 +1,12 @@
+using System.Collections.Generic;
 using System.Linq;
 using Messaging;
+using Preesta;
+using Preesta.Configuration.Action;
+using Preesta.Data;
+using Preesta.Data.Supplying;
+using Preesta.Data.Supplying.Convert;
+using Preesta.Notification;
 using NSubstitute;
 using NUnit.Framework;
 using Serilog;
@@ -10,6 +17,9 @@ namespace Tests
     [TestFixture]
     public class SlackTests
     {
+        private static Redirector EmptyRedirector => Redirector.Empty;
+        private static IReadOnlyDictionary<string, string> EmptyMap => new Dictionary<string, string>();
+
         // ----- SlackMessenger direct tests -----
 
         [Test]
@@ -78,6 +88,176 @@ namespace Tests
                 .Count(c => c.GetMethodInfo().Name == "Error");
             Assert.GreaterOrEqual(errorCalls, 1,
                 "Expected ILogger.Error on HTTP 5xx");
+        }
+
+        // ----- MessageBuilder.ToSlackMessages routing tests -----
+
+        [Test]
+        public void MessagesCreatedForRulesWithSlackUserId()
+        {
+            var jira = Substitute.For<IJiraService>();
+            jira.GetIssuesForJql(Arg.Any<string>()).Returns(new[]
+            {
+                new Issue { Key = "T-1", Summary = "Test issue" }
+            });
+
+            var rule = new Preesta.Configuration.JqlRule
+            {
+                Jql = "any",
+                Notification = new NotificationSpec
+                {
+                    Subject = "Alert",
+                    RawRecipients = new[] { "admin@test.com" },
+                    RawCc = new string[] { },
+                    SlackUserIds = new[] { "U999ABC" }
+                }
+            };
+
+            var supplier = new JqlSupplier(jira, new[] { rule }, Substitute.For<ILogger>());
+            var converter = new IssuePackageConverter("http://jira");
+
+            var packages = supplier.GetPackages()
+                .Cast<Package<NotificationReaction, Issue>>()
+                .ToArray();
+
+            var slackMessages = converter.ToSlackMessages(packages, EmptyRedirector, EmptyMap);
+
+            Assert.AreEqual(1, slackMessages.Length);
+            Assert.AreEqual("U999ABC", slackMessages[0].To);
+        }
+
+        [Test]
+        public void EmailMapsToSlackUserViaSlackUsers()
+        {
+            var jira = Substitute.For<IJiraService>();
+            jira.GetIssuesForJql(Arg.Any<string>()).Returns(new[]
+            {
+                new Issue
+                {
+                    Key = "T-1",
+                    Participants = new IssueParticipants { Assignee = new User { Email = "assignee@ex.com" } }
+                }
+            });
+
+            var rule = new Preesta.Configuration.JqlRule
+            {
+                Jql = "any",
+                Notification = new NotificationSpec
+                {
+                    Subject = "Alert",
+                    RawRecipients = new[] { "assignee" },
+                    RawCc = new string[] { }
+                }
+            };
+
+            var slackUsers = new Dictionary<string, string>
+            {
+                { "assignee@ex.com", "U777" }
+            };
+
+            var supplier = new JqlSupplier(jira, new[] { rule }, Substitute.For<ILogger>());
+            var converter = new IssuePackageConverter("http://jira");
+
+            var packages = supplier.GetPackages()
+                .Cast<Package<NotificationReaction, Issue>>()
+                .ToArray();
+
+            var messages = converter.ToSlackMessages(packages, Redirector.Empty, slackUsers);
+
+            Assert.AreEqual(1, messages.Length);
+            Assert.AreEqual("U777", messages[0].To);
+        }
+
+        [Test]
+        public void SlackUserMapIsCaseInsensitive()
+        {
+            var jira = Substitute.For<IJiraService>();
+            jira.GetIssuesForJql(Arg.Any<string>()).Returns(new[]
+            {
+                new Issue
+                {
+                    Key = "T-1",
+                    Participants = new IssueParticipants { Assignee = new User { Email = "MiXeD@Ex.com" } }
+                }
+            });
+
+            var rule = new Preesta.Configuration.JqlRule
+            {
+                Jql = "any",
+                Notification = new NotificationSpec
+                {
+                    Subject = "Alert",
+                    RawRecipients = new[] { "assignee" },
+                    RawCc = new string[] { }
+                }
+            };
+
+            var slackUsers = new Dictionary<string, string>
+            {
+                { "mixed@ex.com", "U555" }
+            };
+
+            var supplier = new JqlSupplier(jira, new[] { rule }, Substitute.For<ILogger>());
+            var converter = new IssuePackageConverter("http://jira");
+
+            var packages = supplier.GetPackages()
+                .Cast<Package<NotificationReaction, Issue>>()
+                .ToArray();
+
+            var messages = converter.ToSlackMessages(packages, Redirector.Empty, slackUsers);
+
+            Assert.AreEqual(1, messages.Length);
+            Assert.AreEqual("U555", messages[0].To);
+        }
+
+        [Test]
+        public void SameUserIdAcrossPackagesIsDeduplicated()
+        {
+            var jira = Substitute.For<IJiraService>();
+            jira.GetIssuesForJql(Arg.Any<string>()).Returns(new[]
+            {
+                new Issue
+                {
+                    Key = "T-1",
+                    Participants = new IssueParticipants { Assignee = new User { Email = "a@ex.com" } }
+                },
+                new Issue
+                {
+                    Key = "T-2",
+                    Participants = new IssueParticipants { Assignee = new User { Email = "b@ex.com" } }
+                }
+            });
+
+            var rule = new Preesta.Configuration.JqlRule
+            {
+                Jql = "any",
+                Notification = new NotificationSpec
+                {
+                    Subject = "Alert",
+                    RawRecipients = new[] { "assignee" },
+                    RawCc = new string[] { }
+                }
+            };
+
+            var slackUsers = new Dictionary<string, string>
+            {
+                { "a@ex.com", "U777" },
+                { "b@ex.com", "U777" }
+            };
+
+            var supplier = new JqlSupplier(jira, new[] { rule }, Substitute.For<ILogger>());
+            var converter = new IssuePackageConverter("http://jira");
+
+            var packages = supplier.GetPackages()
+                .Cast<Package<NotificationReaction, Issue>>()
+                .ToArray();
+
+            var messages = converter.ToSlackMessages(packages, Redirector.Empty, slackUsers);
+
+            // Both packages collapse onto the single Slack user — exactly one message,
+            // delivered once, even though two distinct Issues / two distinct Addressees.
+            Assert.AreEqual(1, messages.Length);
+            Assert.AreEqual("U777", messages[0].To);
         }
     }
 }

@@ -23,6 +23,14 @@ namespace Preesta.Extensions
             return converter.ToTelegramMessages(packages, redirector, telegramUserMap);
         }
 
+        public static IEnumerable<Message> ToSlackMessages<TIssueType>(this IEnumerable<Package<NotificationReaction, TIssueType>> packages,
+            IPackageConverter<TIssueType> converter,
+            Redirector redirector,
+            IReadOnlyDictionary<string, string> slackUserMap)
+        {
+            return converter.ToSlackMessages(packages, redirector, slackUserMap);
+        }
+
         public static IEnumerable<HttpRequest> ToHttpRequests<TIssueType>(this IEnumerable<Package<SelfUpdate, TIssueType>> packages,
             IPackageConverter<TIssueType> converter)
         {

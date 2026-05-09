@@ -81,5 +81,10 @@ namespace Preesta.Data.Supplying.Convert
         {
             return IssueFormatter.ToText(packages, _rootUri, _linearWorkspace);
         }
+
+        protected internal override string FormatMrkdwn(IEnumerable<Package<NotificationReaction, Issue>> packages)
+        {
+            return IssueFormatter.ToSlackMrkdwn(packages, _rootUri, _linearWorkspace);
+        }
     }
 }

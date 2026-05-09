@@ -37,6 +37,12 @@ namespace Preesta.Formatting
         public static string ToText(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri, string? linearWorkspace = null) =>
             Render(TextTemplate.Value, BuildModel(packages, rootUri, linearWorkspace, htmlMode: false));
 
+        // Phase 10 (Slack): real Slack mrkdwn rendering arrives in commit 4. Stubbed
+        // here so PackageConverterBase.FormatMrkdwn / IPackageConverter.ToSlackMessages
+        // compile in commit 3.
+        public static string ToSlackMrkdwn(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri, string? linearWorkspace = null) =>
+            string.Empty;
+
         private static DigestModel BuildModel(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri, string? linearWorkspace, bool htmlMode)
         {
             var sections = packages.Select(package =>

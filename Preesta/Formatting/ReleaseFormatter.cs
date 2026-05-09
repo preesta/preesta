@@ -23,6 +23,11 @@ namespace Preesta.Formatting
         public static string ToText(IEnumerable<Package<NotificationReaction, Release>> packages) =>
             Render(TextTemplate.Value, BuildModel(packages));
 
+        // Phase 10 (Slack): real Slack mrkdwn arrives in commit 4. Stubbed here
+        // so PackageConverterBase.FormatMrkdwn compiles in commit 3.
+        public static string ToSlackMrkdwn(IEnumerable<Package<NotificationReaction, Release>> packages) =>
+            string.Empty;
+
         private static ReleaseDigestModel BuildModel(IEnumerable<Package<NotificationReaction, Release>> packages)
         {
             var today = DateTime.Now.Date;
