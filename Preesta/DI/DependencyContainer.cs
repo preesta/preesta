@@ -38,6 +38,11 @@ namespace Preesta.DI
             if (!string.IsNullOrEmpty(telegramToken))
                 telegramMessenger = new TelegramMessenger(telegramToken);
 
+            IMessenger? slackMessenger = null;
+            var slackToken = appSettings.SlackBotToken;
+            if (!string.IsNullOrEmpty(slackToken))
+                slackMessenger = new SlackMessenger(slackToken, logger: logger);
+
             var rulesFileName = appSettings.LocalRulesFileName;
             var rulesConfig = CreateRulesConfig(rulesFileName, logger);
 
@@ -50,6 +55,7 @@ namespace Preesta.DI
             var redirector = new Redirector(
                 rulesConfig.GetRedirectionMap(), appSettings.Supervisors, appSettings.Maintainers);
             var telegramUserMap = rulesConfig.GetTelegramUserMap();
+            var slackUserMap = rulesConfig.GetSlackUserMap();
 
             var logoFileName = appSettings.LogoFileName;
 
@@ -57,10 +63,14 @@ namespace Preesta.DI
             services.AddSingleton<IRulesConfig>(rulesConfig);
 
             services.AddKeyedSingleton("Jql", new ReactionPipeline<Issue>(
-                jqlSupplier, issueConverter, messenger, jiraService, redirector, logoFileName, telegramMessenger, telegramUserMap));
+                jqlSupplier, issueConverter, messenger, jiraService, redirector, logoFileName,
+                telegramMessenger, telegramUserMap,
+                slackMessenger: slackMessenger, slackUserMap: slackUserMap));
 
             services.AddSingleton(new ReactionPipeline<Release>(
-                buildSupplier, buildConverter, messenger, jiraService, redirector, logoFileName, telegramMessenger, telegramUserMap));
+                buildSupplier, buildConverter, messenger, jiraService, redirector, logoFileName,
+                telegramMessenger, telegramUserMap,
+                slackMessenger: slackMessenger, slackUserMap: slackUserMap));
 
             // Linear pipeline is registered only when an API key is provided.
             // Application.cs uses GetKeyedService (nullable) so the pipeline is
@@ -88,7 +98,8 @@ namespace Preesta.DI
 
                 services.AddKeyedSingleton("Linear", new ReactionPipeline<Issue>(
                     linearSupplier, linearConverter, messenger, jiraService, redirector,
-                    logoFileName, telegramMessenger, telegramUserMap, linearMutationExecutor));
+                    logoFileName, telegramMessenger, telegramUserMap, linearMutationExecutor,
+                    slackMessenger: slackMessenger, slackUserMap: slackUserMap));
             }
 
             _provider = services.BuildServiceProvider();

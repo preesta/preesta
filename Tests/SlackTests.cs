@@ -305,6 +305,44 @@ namespace Tests
         // ----- Pipeline integration -----
 
         [Test]
+        public void NoSlackBotTokenSilentlySkipsSlackDispatch()
+        {
+            // Mirror of the DI path "no Slack:botToken → SlackMessenger stays null
+            // → ReactionPipeline.Run() walks the email path normally". We verify
+            // the pipeline-level invariant directly (without bringing up the full
+            // DependencyContainer, which is internal and would try to read real
+            // appsettings.yaml off disk).
+            var jira = Substitute.For<IJiraService>();
+            jira.GetIssuesForJql(Arg.Any<string>()).Returns(new[] { new Issue { Key = "T-1" } });
+
+            var rule = new Preesta.Configuration.JqlRule
+            {
+                Jql = "any",
+                Notification = new NotificationSpec
+                {
+                    Subject = "Alert",
+                    RawRecipients = new[] { "admin" },
+                    RawCc = new string[] { },
+                    SlackUserIds = new[] { "U999" } // ← user-configured, but no SlackMessenger
+                }
+            };
+
+            var supplier = new JqlSupplier(jira, new[] { rule }, Substitute.For<ILogger>());
+            var emailMessenger = Substitute.For<IMessenger>();
+
+            var pipe = new ReactionPipeline<Issue>(
+                packageSupplier: supplier,
+                packageConverter: new IssuePackageConverter("http://jira"),
+                messenger: emailMessenger,
+                slackMessenger: null,                                  // ← simulates empty botToken
+                slackUserMap: new Dictionary<string, string>());
+
+            Assert.DoesNotThrow(() => pipe.Run());
+            // Email side still fires — Slack side simply never enters the dispatch block.
+            emailMessenger.Received(1).SendAll(Arg.Any<IEnumerable<Message>>());
+        }
+
+        [Test]
         public void ReactionPipelineSendsSlackMessages()
         {
             var jira = Substitute.For<IJiraService>();
