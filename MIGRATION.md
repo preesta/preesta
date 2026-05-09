@@ -133,6 +133,18 @@
 - Live-validated: `commentCreate` mutation against PRE-9 in workspace `preesta-dev` — comment appeared in Linear with correct timestamp + marker-substituted body
 - `filterRaw:` scalar-type preservation: YamlDotNet returns all scalars as strings when target is `object` (CoreSchema tag inference doesn't apply in this code path). `ConvertFilterRaw` now walks the `Dictionary<object, object>`/`List<object>` tree and recovers `int`/`double`/`bool` via `TryParse`. Quoted-string scalars that happen to look numeric (`"9"`) parse as numbers too — known limitation, acceptable for the power-user surface (test asserts the behaviour explicitly).
 
+### Phase 10: Slack notifications ✅
+- Personal DMs (mirror of Telegram), not channel webhooks — one workspace bot token, per-message routing to individual users
+- Same per-rule `slackUserId:` + workspace-level `slackUsers:` map (email→id) shape as Telegram
+- `chat.postMessage` Web API with `Authorization: Bearer xoxb-…` header (note the `Bearer` prefix — Linear API keys go raw, Slack doesn't)
+- Required Slack bot scopes: `chat:write`, `im:write`, plus optional `users:read.email`
+- Rich Slack mrkdwn: `*PRE-7*` bold issue keys with `<url|label>` click-through, `_..._` italic filter description, `:hourglass_flowing_sand:` / `:white_check_mark:` / `:red_circle:` etc. emoji chips for status & priority — note `*bold*` (single asterisk), not `**bold**` Markdown
+- HTTP 200 with `{ok:false, error:"..."}` treated as failure (logged at Error with the Slack error code, swallowed — one bad user ID doesn't abort the digest); HTTP-level errors and JSON parse errors also logged + swallowed
+- `SlackMessenger` lives in `Messaging/` next to `TelegramMessenger`; endpoint constant overridable for in-process WireMock testing (`MockSlackServer`)
+- DI registers `SlackMessenger` only when `Slack:botToken` is set; otherwise pipeline runs the email-only / email+telegram path with no behaviour change
+- Inline `StringBuilder` mrkdwn formatter rather than a third Scriban template — short format, Slack-specific emoji needed, fewer build inputs
+- Tests: 100 → 113 (3 SlackMessenger HTTP, 4 routing, 2 mrkdwn format, 2 ReactionPipeline integration, 2 YAML parsing — `MockSlackServer` WireMock helper)
+
 ## Remaining
 
 ## Roadmap: New Features
@@ -142,10 +154,6 @@
 - Currently use Server-style REST endpoint `/rest/structure/2.0/forest/latest`. Cloud compatibility unverified
 - Niche feature originally written for one specific project. Preesta itself works without it
 - Decision: keep for one more release cycle; if no users opt in by then, delete this rule type, supplier, XML/YAML parsing, DI registration, related tests
-
-### Phase 10: Slack notifications
-- `SlackMessenger` (incoming webhook)
-- New XML/YAML syntax for Slack channel targeting
 
 ### Phase 11: MS Teams notifications
 - `TeamsMessenger` via Incoming Webhook connector (POST JSON with Adaptive Card)

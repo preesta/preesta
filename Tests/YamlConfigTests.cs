@@ -295,6 +295,50 @@ rules:
         }
 
         [Test]
+        public void Slack_UserIds_ParsedFromCommaSeparated()
+        {
+            const string yaml = @"
+rules:
+  - type: jql
+    group: daily
+    jql: ""any""
+    notify:
+      subject: alert
+      mailTo: assignee
+      slackUserId: ""U111,U222,U333""
+";
+            var config = new YamlRulesConfig(yaml, Substitute.For<ILogger>());
+            var rules = config.GetJqlRules("daily");
+
+            Assert.AreEqual(1, rules.Length);
+            Assert.AreEqual(new[] { "U111", "U222", "U333" }, rules[0].Notification!.SlackUserIds);
+        }
+
+        [Test]
+        public void SlackUsers_MapParsed()
+        {
+            const string yaml = @"
+rules:
+  - type: jql
+    group: daily
+    jql: ""x""
+    notify:
+      subject: alert
+      mailTo: assignee
+
+slackUsers:
+  ivanov@ex.com: U111
+  petrov@ex.com: U222
+";
+            var config = new YamlRulesConfig(yaml, Substitute.For<ILogger>());
+            var map = config.GetSlackUserMap();
+
+            Assert.AreEqual(2, map.Count);
+            Assert.AreEqual("U111", map["ivanov@ex.com"]);
+            Assert.AreEqual("U222", map["petrov@ex.com"]);
+        }
+
+        [Test]
         public void Linear_RuleWithMultipleFilterSources_IsDroppedAndLogged()
         {
             const string yaml = @"

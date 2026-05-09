@@ -10,6 +10,7 @@ namespace Preesta.Configuration
         LinearRule[] GetLinearRules(string @group);
         IReadOnlyDictionary<string, string> GetRedirectionMap();
         IReadOnlyDictionary<string, string> GetTelegramUserMap();
+        IReadOnlyDictionary<string, string> GetSlackUserMap();
         void ValidateSchema();
     }
 }

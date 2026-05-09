@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using Preesta.Data;
 using Preesta.Data.Supplying;
 using Scriban;
@@ -36,6 +37,151 @@ namespace Preesta.Formatting
 
         public static string ToText(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri, string? linearWorkspace = null) =>
             Render(TextTemplate.Value, BuildModel(packages, rootUri, linearWorkspace, htmlMode: false));
+
+        // Phase 10 (Slack): renders the digest as Slack mrkdwn — *bold*, _italic_,
+        // <url|label> for links, :emoji: for status/priority. NOT plain Markdown:
+        // single-asterisk bold, no double-bracket links. Inline StringBuilder rather
+        // than a Scriban template — the format is short, fits one screen of code,
+        // and the per-issue chip rendering needs Slack-specific emoji (the existing
+        // RenderTextChip uses Unicode dots, which aren't what we want for Slack).
+        public static string ToSlackMrkdwn(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri, string? linearWorkspace = null)
+        {
+            var sb = new StringBuilder();
+            var firstSection = true;
+            foreach (var package in packages)
+            {
+                if (!firstSection) sb.AppendLine("———");
+                firstSection = false;
+
+                if (!string.IsNullOrEmpty(package.Reaction.Recommendations))
+                    sb.AppendLine(package.Reaction.Recommendations);
+
+                var filterDesc = LinearFilterDescriptionOrNull(package);
+                if (!string.IsNullOrEmpty(filterDesc))
+                    sb.AppendLine($"_{filterDesc}_");
+
+                sb.AppendLine();
+
+                var columns = (package.Reaction.Columns?.Length > 0 ? package.Reaction.Columns : DefaultColumns)
+                    .SelectMany(c => string.Equals(c, AllNonEmptyToken, StringComparison.OrdinalIgnoreCase)
+                        ? AllKnownColumns
+                        : new[] { c })
+                    .Where(c => !IsHeaderColumn(c) && IsKnownColumn(c))
+                    .Distinct()
+                    .ToArray();
+
+                foreach (var issue in package.Items)
+                {
+                    var browseUri = !string.IsNullOrEmpty(issue.Url)
+                        ? issue.Url!
+                        : new JiraRest.UriBuilder().SetRoot(rootUri).AddRelativePath($"browse/{issue.Key ?? ""}").Build().ToString();
+
+                    var key = issue.Key ?? "";
+                    var keyRendered = !string.IsNullOrEmpty(browseUri)
+                        ? $"<{browseUri}|{key}>"
+                        : key;
+
+                    sb.Append('*').Append(keyRendered).Append("* ").AppendLine(issue.Summary ?? "");
+
+                    var chips = RenderSlackChips(columns, issue);
+                    if (chips.Count > 0)
+                        sb.Append("  ").AppendLine(string.Join(" · ", chips));
+                }
+            }
+            return sb.ToString();
+        }
+
+        private static string SlackStatusChip(string? status)
+        {
+            if (string.IsNullOrEmpty(status)) return "";
+            var emoji = status.ToLowerInvariant() switch
+            {
+                "done" or "resolved" or "closed" or "verified" => ":white_check_mark:",
+                "in progress" or "in review" => ":hourglass_flowing_sand:",
+                "todo" or "to do" or "open" => ":black_square_button:",
+                "backlog" => ":open_file_folder:",
+                "cancelled" or "canceled" => ":x:",
+                "blocked" => ":no_entry:",
+                _ => ":grey_question:"
+            };
+            return $"{emoji} {status}";
+        }
+
+        private static string SlackPriorityChip(string? priority)
+        {
+            if (string.IsNullOrEmpty(priority)) return "";
+            var emoji = priority switch
+            {
+                "Urgent" or "Highest" => ":red_circle:",
+                "High" => ":large_orange_circle:",
+                "Medium" => ":large_yellow_circle:",
+                "Low" => ":large_green_circle:",
+                _ => ""
+            };
+            return string.IsNullOrEmpty(emoji) ? "" : $"{emoji} {priority}";
+        }
+
+        private static List<string> RenderSlackChips(string[] columns, Issue issue)
+        {
+            var chips = new List<string>();
+            foreach (var col in columns)
+            {
+                switch (col)
+                {
+                    case "Status":
+                        var s = SlackStatusChip(issue.Status);
+                        if (!string.IsNullOrEmpty(s)) chips.Add(s);
+                        break;
+                    case "Priority":
+                        var p = SlackPriorityChip(issue.Priority);
+                        if (!string.IsNullOrEmpty(p)) chips.Add(p);
+                        break;
+                    case "Assignee":
+                        chips.Add((issue.Participants.Assignee ?? new User { DisplayName = "UNASSIGNED" }).DisplayName ?? "");
+                        break;
+                    case "Reporter":
+                        chips.Add($"Reported by {(issue.Participants.Reporter ?? new User { DisplayName = "UNKNOWN" }).DisplayName}");
+                        break;
+                    case "Type":
+                        if (!string.IsNullOrEmpty(issue.Type)) chips.Add(issue.Type!);
+                        break;
+                    case "Components":
+                        if (!string.IsNullOrEmpty(issue.Components)) chips.Add(issue.Components!);
+                        break;
+                    case "Labels":
+                        if (!string.IsNullOrEmpty(issue.Labels)) chips.Add(issue.Labels);
+                        break;
+                    case "Time Spent (hrs)":
+                        if (issue.TimeSpent.TotalHours > 0)
+                            chips.Add($"{issue.TimeSpent.TotalHours:0.#}h spent");
+                        break;
+                    case "Affects Versions":
+                        var av = string.Join(", ", issue.AffectsVersions ?? Array.Empty<string>());
+                        if (!string.IsNullOrEmpty(av)) chips.Add($"Affects {av}");
+                        break;
+                    case "Fix Versions":
+                        var fv = string.Join(", ", issue.FixVersions ?? Array.Empty<string>());
+                        if (!string.IsNullOrEmpty(fv)) chips.Add($"Fix {fv}");
+                        break;
+                    case "Due Date":
+                        if (issue.DueDate != null) chips.Add($"Due {issue.DueDate.Value:dd.MM.yyyy}");
+                        break;
+                    case "Created":
+                        chips.Add($"Created {issue.CreatedDate:dd.MM.yyyy}");
+                        break;
+                    case "Updated":
+                        if (issue.UpdatedDate != null) chips.Add($"Updated {issue.UpdatedDate.Value:dd.MM.yyyy}");
+                        break;
+                    case "Resolution":
+                        if (!string.IsNullOrEmpty(issue.Resolution)) chips.Add($"Resolution: {issue.Resolution}");
+                        break;
+                    case "Project":
+                        if (!string.IsNullOrEmpty(issue.ProjectKey)) chips.Add(issue.ProjectKey!);
+                        break;
+                }
+            }
+            return chips;
+        }
 
         private static DigestModel BuildModel(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri, string? linearWorkspace, bool htmlMode)
         {

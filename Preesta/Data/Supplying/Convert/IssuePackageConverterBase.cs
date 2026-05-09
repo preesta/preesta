@@ -26,6 +26,13 @@ namespace Preesta.Data.Supplying.Convert
             return MessageBuilder<TItemType>.ToTelegramMessages(packages, FormatText, SubjectPrefix, redirector, telegramUserMap);
         }
 
+        public Message[] ToSlackMessages(IEnumerable<Package<NotificationReaction, TItemType>> packages,
+            Redirector redirector,
+            IReadOnlyDictionary<string, string> slackUserMap)
+        {
+            return MessageBuilder<TItemType>.ToSlackMessages(packages, FormatMrkdwn, SubjectPrefix, redirector, slackUserMap);
+        }
+
         public abstract HttpRequest[] ToHttpRequests(
             IEnumerable<Package<SelfUpdate, TItemType>> packages);
 
@@ -35,5 +42,6 @@ namespace Preesta.Data.Supplying.Convert
 
         protected internal abstract string FormatHtml(IEnumerable<Package<NotificationReaction, TItemType>> packages);
         protected internal abstract string FormatText(IEnumerable<Package<NotificationReaction, TItemType>> packages);
+        protected internal abstract string FormatMrkdwn(IEnumerable<Package<NotificationReaction, TItemType>> packages);
     }
 }

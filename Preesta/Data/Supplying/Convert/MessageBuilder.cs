@@ -70,5 +70,40 @@ namespace Preesta.Data.Supplying.Convert
                         TextBody = toText(g)
                     }).ToArray();
         }
+
+        public static Message[] ToSlackMessages(IEnumerable<Package<NotificationReaction, TIssueType>> packages,
+            Func<IEnumerable<Package<NotificationReaction, TIssueType>>, string> toMrkdwn,
+            string subjectPrefix,
+            Redirector redirector,
+            IReadOnlyDictionary<string, string> slackUserMap)
+        {
+            var userMap = new Dictionary<string, string>(slackUserMap, StringComparer.OrdinalIgnoreCase);
+            var packagesArr = packages.ToArray();
+            if (packagesArr.Length == 0)
+                return System.Array.Empty<Message>();
+
+            var packageUserIds =
+                from p in packagesArr
+                let resolvedEmails = redirector.ResolveRecipients(
+                    p.Reaction.Addressees.To.Concat(p.Reaction.Addressees.Cc))
+                let mappedUserIds = resolvedEmails
+                    .Where(userMap.ContainsKey)
+                    .Select(e => userMap[e])
+                let allUserIds = mappedUserIds
+                    .Concat(p.Reaction.SlackUserIds)
+                    .Distinct()
+                from userId in allUserIds
+                select new { Package = p, UserId = userId };
+
+            return (from pwu in packageUserIds
+                    group pwu.Package by pwu.UserId into g
+                    let subject = g.First().Reaction.Subject
+                    select new Message
+                    {
+                        To = g.Key,
+                        Subject = $"{subjectPrefix}{subject}",
+                        TextBody = toMrkdwn(g)
+                    }).ToArray();
+        }
     }
 }

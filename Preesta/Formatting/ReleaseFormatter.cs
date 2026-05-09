@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Preesta.Data;
 using Preesta.Data.Supplying;
 using Scriban;
@@ -22,6 +23,38 @@ namespace Preesta.Formatting
 
         public static string ToText(IEnumerable<Package<NotificationReaction, Release>> packages) =>
             Render(TextTemplate.Value, BuildModel(packages));
+
+        // Phase 10 (Slack): minimal Slack mrkdwn — bold version names, ⚠ for
+        // expired releases. Lives inline (no Scriban template) — release digest
+        // is shorter than the issue one and uses fewer chips.
+        public static string ToSlackMrkdwn(IEnumerable<Package<NotificationReaction, Release>> packages)
+        {
+            var today = DateTime.Now.Date;
+            var sb = new StringBuilder();
+            var first = true;
+            foreach (var package in packages)
+            {
+                if (!first) sb.AppendLine("———");
+                first = false;
+
+                if (!string.IsNullOrEmpty(package.Reaction.Recommendations))
+                    sb.AppendLine(package.Reaction.Recommendations);
+
+                sb.AppendLine();
+
+                foreach (var build in package.Items)
+                {
+                    var expired = build.ReleaseDate != null && build.ReleaseDate.Value.Date < today;
+                    var date = build.ReleaseDate?.ToString("dd.MM.yyyy") ?? "";
+                    var prefix = expired ? ":warning: " : "";
+                    sb.Append(prefix).Append('*').Append(build.Name ?? "").Append('*');
+                    if (!string.IsNullOrEmpty(date))
+                        sb.Append(" — ").Append(date);
+                    sb.AppendLine();
+                }
+            }
+            return sb.ToString();
+        }
 
         private static ReleaseDigestModel BuildModel(IEnumerable<Package<NotificationReaction, Release>> packages)
         {

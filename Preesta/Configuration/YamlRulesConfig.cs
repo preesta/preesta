@@ -160,6 +160,12 @@ namespace Preesta.Configuration
                 _config.TelegramUsers ?? new Dictionary<string, string>());
         }
 
+        public IReadOnlyDictionary<string, string> GetSlackUserMap()
+        {
+            return new ReadOnlyDictionary<string, string>(
+                _config.SlackUsers ?? new Dictionary<string, string>());
+        }
+
         private TRule[] GetRules<TRule>(string group, string type, Func<YamlRuleEntry, TRule> converter) where TRule : Rule
         {
             if (_config.Rules == null)
@@ -209,6 +215,8 @@ namespace Preesta.Configuration
                         .Split(',', StringSplitOptions.RemoveEmptyEntries),
                     TelegramChatIds = (entry.Notify.TelegramChatId ?? string.Empty)
                         .Split(',', StringSplitOptions.RemoveEmptyEntries),
+                    SlackUserIds = (entry.Notify.SlackUserId ?? string.Empty)
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries),
                     Columns = entry.Notify.Columns?.ToArray()
                 };
             }
@@ -232,6 +240,7 @@ namespace Preesta.Configuration
         public List<YamlRuleEntry>? Rules { get; set; }
         public Dictionary<string, string>? RedirectionRules { get; set; }
         public Dictionary<string, string>? TelegramUsers { get; set; }
+        public Dictionary<string, string>? SlackUsers { get; set; }
     }
 
     internal class YamlRuleEntry
@@ -270,6 +279,7 @@ namespace Preesta.Configuration
         public string? Cc { get; set; }
         public string? Recommendations { get; set; }
         public string? TelegramChatId { get; set; }
+        public string? SlackUserId { get; set; }
         public List<string>? Columns { get; set; }
     }
 

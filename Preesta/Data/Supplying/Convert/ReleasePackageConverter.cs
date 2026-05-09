@@ -25,5 +25,10 @@ namespace Preesta.Data.Supplying.Convert
         {
             return ReleaseFormatter.ToText(packages);
         }
+
+        protected internal override string FormatMrkdwn(IEnumerable<Package<NotificationReaction, Release>> packages)
+        {
+            return ReleaseFormatter.ToSlackMrkdwn(packages);
+        }
     }
 }

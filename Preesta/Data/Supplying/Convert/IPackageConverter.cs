@@ -11,6 +11,9 @@ namespace Preesta.Data.Supplying.Convert
         Message[] ToTelegramMessages(IEnumerable<Package<NotificationReaction, TIssueType>> packages,
             Redirector redirector,
             IReadOnlyDictionary<string, string> telegramUserMap);
+        Message[] ToSlackMessages(IEnumerable<Package<NotificationReaction, TIssueType>> packages,
+            Redirector redirector,
+            IReadOnlyDictionary<string, string> slackUserMap);
         HttpRequest[] ToHttpRequests(IEnumerable<Package<SelfUpdate, TIssueType>> packages);
         string[] ToGraphQLMutationBodies(IEnumerable<Package<GraphQLMutation, TIssueType>> packages);
     }

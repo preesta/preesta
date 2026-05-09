@@ -9,6 +9,7 @@ namespace Preesta.Configuration.Action
         public string[] RawRecipients { get; set; } = new string[]{};
         public string[] RawCc { get; set; } = new string[]{};
         public string[] TelegramChatIds { get; set; } = new string[]{};
+        public string[] SlackUserIds { get; set; } = new string[]{};
         public string[]? Columns { get; set; }
     }
 }
