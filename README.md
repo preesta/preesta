@@ -162,6 +162,64 @@ Preesta uses YAML as the primary configuration format. Legacy XML format is also
 Supported rule types: `jql` (Jira JQL-based filter), `build` (Jira release/version monitoring), and `linear` (Linear issue tracker via GraphQL).
 See [`Preesta/rules.yaml`](Preesta/rules.yaml) for a full example with `notify` (mailTo / cc / telegramChatId / columns / recommendations) and `mutations` actions.
 
+### Slack notifications
+
+Preesta sends Slack notifications as **personal direct messages** from a workspace bot — same shape as Telegram (one bot token, per-rule routing to individual users). Channels and incoming webhooks are not used.
+
+**1. Create a Slack app + bot token**
+
+1. https://api.slack.com/apps → *Create New App* → *From scratch* → pick your workspace.
+2. *OAuth & Permissions* → *Scopes* → *Bot Token Scopes* → add:
+   * `chat:write` — required, lets the bot post messages.
+   * `users:read.email` — only if you want Preesta to look up Slack user IDs from email (you can also paste IDs directly into rules).
+   * `im:write` — required, lets the bot open a DM channel with each user.
+3. *Install to Workspace* → copy the **Bot User OAuth Token** (`xoxb-…`).
+
+**2. Configure the token in `appsettings.secrets.yaml`**
+
+```yaml
+Slack:
+  botToken: "xoxb-1234-5678-yourtoken"
+```
+
+(`appsettings.yaml` already declares the `Slack:` section as a placeholder; the real value belongs in the secrets file.)
+
+**3. Use it in rules**
+
+Two orthogonal mechanisms — combine as needed.
+
+* **Per-rule explicit user IDs** — comma-separated list of Slack `Uxxx…` user IDs:
+
+  ```yaml
+  - type: jql
+    group: notify-all
+    jql: "DueDate < startOfDay() AND Resolution is EMPTY"
+    notify:
+      subject: DueDate expired
+      mailTo: assignee
+      slackUserId: "U01ABCDEFG,U02HIJKLMN"
+  ```
+
+* **Workspace-level email→id map** — once configured, any `assignee` / `reporter` / `creator` marker (or explicit email in `mailTo`/`cc`) that resolves to a known email gets a DM automatically:
+
+  ```yaml
+  slackUsers:
+    ivanov@ex.com: U01ABCDEFG
+    petrov@ex.com: U02HIJKLMN
+
+  rules:
+    - type: jql
+      group: notify-all
+      jql: ...
+      notify:
+        subject: ...
+        mailTo: assignee  # → DM goes to Slack user mapped from assignee email
+  ```
+
+The same digest content is delivered as: HTML email (always, when SMTP is configured), Telegram DM (when `Telegram:botToken` is set and `telegramChatId` / `telegramUsers` resolve), Slack DM (when `Slack:botToken` is set and `slackUserId` / `slackUsers` resolve).
+
+Slack-specific formatting: bold `*PRE-7*` issue keys with click-through `<url|key>` links, italic filter description (`_AI filter: "..."_`), `:emoji:` chips for status (`:hourglass_flowing_sand:` In Progress, `:white_check_mark:` Done) and priority (`:red_circle:` Urgent, `:large_orange_circle:` High, etc.).
+
 ### Linear self-update via GraphQL mutations (advanced)
 
 Power-user hook: a `linear` rule can carry a `mutations:` list of raw GraphQL mutation strings, executed against `https://api.linear.app/graphql` for each matched issue. No DSL — write the full `mutation { ... }` body, place markers (`{{@issueId}}`, `{{@assignee.email}}`, etc.) where Preesta should substitute issue context.
