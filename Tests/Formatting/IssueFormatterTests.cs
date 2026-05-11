@@ -158,7 +158,7 @@ namespace Tests.Formatting
 
             var html = converter.ToMessages(packages)[0].Body;
 
-            Assert.IsTrue(html.Contains("Critical"), "Custom field value missing from rendered HTML");
+            Assert.IsTrue(html.Contains("Severity: Critical"), "Custom field label+value missing from rendered HTML");
         }
 
         [Test]

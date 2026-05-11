@@ -317,7 +317,7 @@ namespace Preesta.Formatting
                         && issue.CustomFields.TryGetValue(cfId, out var token))
                     {
                         var v = RenderCustomFieldValue(token);
-                        return string.IsNullOrEmpty(v) ? "" : E(v);
+                        return string.IsNullOrEmpty(v) ? "" : $"{E(column)}: {E(v)}";
                     }
                     return "";
             }
@@ -364,7 +364,7 @@ namespace Preesta.Formatting
                         && issue.CustomFields.TryGetValue(cfId, out var token))
                     {
                         var v = RenderCustomFieldValue(token);
-                        return string.IsNullOrEmpty(v) ? "" : v;
+                        return string.IsNullOrEmpty(v) ? "" : $"{column}: {v}";
                     }
                     return "";
             }

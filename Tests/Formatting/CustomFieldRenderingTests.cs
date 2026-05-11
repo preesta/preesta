@@ -48,7 +48,7 @@ namespace Tests.Formatting
                 OneIssueWithColumn("Severity", WithCustomField("customfield_10001", "High")),
                 "http://jira", customFields: Map(("Severity", "customfield_10001")));
 
-            StringAssert.Contains("High", html);
+            StringAssert.Contains("Severity: High", html);
         }
 
         [Test]
@@ -58,7 +58,7 @@ namespace Tests.Formatting
                 OneIssueWithColumn("Story Points", WithCustomField("customfield_10002", new JValue(5))),
                 "http://jira", customFields: Map(("Story Points", "customfield_10002")));
 
-            StringAssert.Contains(">5", html);
+            StringAssert.Contains("Story Points: 5", html);
         }
 
         [Test]
@@ -69,7 +69,7 @@ namespace Tests.Formatting
                 OneIssueWithColumn("Tags", WithCustomField("customfield_10003", arr)),
                 "http://jira", customFields: Map(("Tags", "customfield_10003")));
 
-            StringAssert.Contains("alpha, beta, gamma", html);
+            StringAssert.Contains("Tags: alpha, beta, gamma", html);
         }
 
         [Test]
@@ -82,7 +82,7 @@ namespace Tests.Formatting
                 OneIssueWithColumn("Teams", WithCustomField("customfield_10004", arr)),
                 "http://jira", customFields: Map(("Teams", "customfield_10004")));
 
-            StringAssert.Contains("Backend, Auth", html);
+            StringAssert.Contains("Teams: Backend, Auth", html);
         }
 
         [Test]
@@ -93,7 +93,7 @@ namespace Tests.Formatting
                 OneIssueWithColumn("Department", WithCustomField("customfield_10005", obj)),
                 "http://jira", customFields: Map(("Department", "customfield_10005")));
 
-            StringAssert.Contains("Engineering", html);
+            StringAssert.Contains("Department: Engineering", html);
             StringAssert.DoesNotContain("10100", html);
         }
 
@@ -110,6 +110,8 @@ namespace Tests.Formatting
                 OneIssueWithColumn("UnknownColumn", WithCustomField("customfield_10001", "value")),
                 "http://jira", customFields: null);
 
+            // Severity has no value in this issue — label shouldn't appear in HTML
+            // (the chip filter drops empty strings before rendering).
             StringAssert.DoesNotContain("Severity:", html1);
             StringAssert.DoesNotContain("value", html2);
         }
@@ -121,7 +123,9 @@ namespace Tests.Formatting
                 OneIssueWithColumn("severity", WithCustomField("customfield_10001", "High")),
                 "http://jira", customFields: Map(("Severity", "customfield_10001")));
 
-            StringAssert.Contains("High", html);
+            // Rendered label uses whatever the rule wrote ("severity" lowercase here);
+            // the map only resolves to the id, not the canonical name.
+            StringAssert.Contains("severity: High", html);
         }
     }
 }
