@@ -62,6 +62,12 @@ namespace JiraRest
             return GetJson(uri);
         }
 
+        public dynamic GetFields()
+        {
+            var uri = new Uri(ApiRoot, "rest/api/3/field");
+            return GetJson(uri);
+        }
+
         public void HandleRequest(HttpRequest request) =>
             _inner.HandleRequest(request);
 

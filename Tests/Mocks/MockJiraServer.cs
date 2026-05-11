@@ -130,6 +130,34 @@ namespace Tests.Mocks
         }
 
         /// <summary>
+        /// Stub <c>GET /rest/api/2/field</c> (Server) / <c>/rest/api/3/field</c> (Cloud)
+        /// with the supplied JSON array. Both endpoints have the same response shape.
+        /// </summary>
+        public void StubGetFields(string jsonResponseArray)
+        {
+            _server
+                .Given(Request.Create()
+                    .WithPath(new WildcardMatcher("/rest/api/?/field"))
+                    .UsingGet())
+                .RespondWith(JsonOk(jsonResponseArray));
+        }
+
+        /// <summary>
+        /// Stub <c>GET /rest/api/?/field</c> with the given HTTP status (e.g. 403).
+        /// Used to verify HttpJiraService.GetCustomFieldMap swallows failures.
+        /// </summary>
+        public void StubGetFieldsError(int statusCode)
+        {
+            _server
+                .Given(Request.Create()
+                    .WithPath(new WildcardMatcher("/rest/api/?/field"))
+                    .UsingGet())
+                .RespondWith(Response.Create()
+                    .WithStatusCode(statusCode)
+                    .WithBody("{\"errorMessage\":\"forbidden\"}"));
+        }
+
+        /// <summary>
         /// Convenience: count recorded requests matching a method + absolute URL.
         /// </summary>
         public int CountRequests(string method, string absoluteUrl) =>

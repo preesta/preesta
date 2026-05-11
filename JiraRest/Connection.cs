@@ -82,6 +82,13 @@ namespace JiraRest
             return Decode<dynamic>(uri);
         }
 
+        public dynamic GetFields()
+        {
+            // Server-style: returns a flat array of { id, name, custom, ... } objects.
+            var uri = new Uri(RootUri, "rest/api/2/field");
+            return Decode<dynamic>(uri);
+        }
+
         public string GetPureResponse(Uri url)
         {
             return HandleResponse(Client.GetAsync(url), url);
