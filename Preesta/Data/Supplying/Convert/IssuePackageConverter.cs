@@ -15,12 +15,21 @@ namespace Preesta.Data.Supplying.Convert
         // for viewId-mode rules. Null when this converter wraps a Jira pipeline or
         // when Linear:workspace isn't configured.
         private readonly string? _linearWorkspace;
+        // Jira custom-field display name → internal id, discovered via
+        // /rest/api/?/field at startup. Empty for Linear pipelines (Linear
+        // Issues never carry Jira-style customfield_* values).
+        private readonly IReadOnlyDictionary<string, string>? _customFields;
 
-        public IssuePackageConverter(string rootUri, string subjectPrefix = "[Jira] Unprocessed Issues ", string? linearWorkspace = null)
+        public IssuePackageConverter(
+            string rootUri,
+            string subjectPrefix = "[Jira] Unprocessed Issues ",
+            string? linearWorkspace = null,
+            IReadOnlyDictionary<string, string>? customFields = null)
             : base(subjectPrefix)
         {
             _rootUri = string.IsNullOrEmpty(rootUri) || rootUri.EndsWith("/") ? rootUri : rootUri + "/";
             _linearWorkspace = linearWorkspace;
+            _customFields = customFields;
         }
 
         public override HttpRequest[] ToHttpRequests(IEnumerable<Package<SelfUpdate, Issue>> packages)
@@ -74,17 +83,17 @@ namespace Preesta.Data.Supplying.Convert
 
         protected internal override string FormatHtml(IEnumerable<Package<NotificationReaction, Issue>> packages)
         {
-            return IssueFormatter.ToHtml(packages, _rootUri, _linearWorkspace);
+            return IssueFormatter.ToHtml(packages, _rootUri, _linearWorkspace, _customFields);
         }
 
         protected internal override string FormatText(IEnumerable<Package<NotificationReaction, Issue>> packages)
         {
-            return IssueFormatter.ToText(packages, _rootUri, _linearWorkspace);
+            return IssueFormatter.ToText(packages, _rootUri, _linearWorkspace, _customFields);
         }
 
         protected internal override string FormatMrkdwn(IEnumerable<Package<NotificationReaction, Issue>> packages)
         {
-            return IssueFormatter.ToSlackMrkdwn(packages, _rootUri, _linearWorkspace);
+            return IssueFormatter.ToSlackMrkdwn(packages, _rootUri, _linearWorkspace, _customFields);
         }
     }
 }

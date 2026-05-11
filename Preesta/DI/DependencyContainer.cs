@@ -28,8 +28,13 @@ namespace Preesta.DI
                 .CreateLogger();
 
             var jiraService = !string.IsNullOrEmpty(appSettings.ApiToken)
-                ? new HttpJiraService(appSettings.JiraRootUri, appSettings.ApiToken, appSettings.MaxResults)
-                : new HttpJiraService(appSettings.JiraRootUri, appSettings.UserName, appSettings.Password, appSettings.MaxResults);
+                ? new HttpJiraService(appSettings.JiraRootUri, appSettings.ApiToken, appSettings.MaxResults, logger: logger)
+                : new HttpJiraService(appSettings.JiraRootUri, appSettings.UserName, appSettings.Password, appSettings.MaxResults, logger: logger);
+
+            // Discover custom fields once at startup. On failure (HTTP error, no permissions),
+            // HttpJiraService logs a warning and returns an empty map — custom-field columns
+            // referenced in rules.yaml will then render as empty, but nothing crashes.
+            var customFields = jiraService.GetCustomFieldMap();
 
             var messenger = new SmtpClient(appSettings.SmtpSection);
 
@@ -49,7 +54,8 @@ namespace Preesta.DI
             var jqlSupplier = new JqlSupplier(jiraService, rulesConfig.GetJqlRules(@group), logger);
             var buildSupplier = new ReleaseSupplier(jiraService, rulesConfig.GetReleaseRules(@group));
 
-            var issueConverter = new IssuePackageConverter(appSettings.JiraRootUri, appSettings.SubjectPrefix);
+            var issueConverter = new IssuePackageConverter(
+                appSettings.JiraRootUri, appSettings.SubjectPrefix, customFields: customFields);
             var buildConverter = new ReleasePackageConverter(appSettings.SubjectPrefix);
 
             var redirector = new Redirector(
@@ -94,7 +100,11 @@ namespace Preesta.DI
                 var linearRootUri = string.IsNullOrEmpty(linearWorkspace)
                     ? "https://linear.app/"
                     : $"https://linear.app/{linearWorkspace}/";
-                var linearConverter = new IssuePackageConverter(linearRootUri, appSettings.SubjectPrefix, linearWorkspace);
+                // Pass Jira's customFields map through too — Linear-sourced issues
+                // have empty Issue.CustomFields, so the map is effectively unused,
+                // but keeps construction symmetric for future reuse.
+                var linearConverter = new IssuePackageConverter(
+                    linearRootUri, appSettings.SubjectPrefix, linearWorkspace, customFields);
 
                 services.AddKeyedSingleton("Linear", new ReactionPipeline<Issue>(
                     linearSupplier, linearConverter, messenger, jiraService, redirector,

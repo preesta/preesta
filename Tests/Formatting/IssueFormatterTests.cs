@@ -128,6 +128,40 @@ namespace Tests.Formatting
         }
 
         [Test]
+        public void CustomFieldColumn_RendersThroughConverter()
+        {
+            // End-to-end: IssuePackageConverter built with a customFields map flows
+            // through into IssueFormatter, and the rendered HTML/email contains the
+            // custom-field value resolved by display name.
+            var rule = new Preesta.Configuration.JqlRule
+            {
+                Jql = "any",
+                Notification = NotifyWith(new[] { "Severity" })
+            };
+            var issue = new Issue
+            {
+                Key = "T-1",
+                Summary = "S",
+                CreatedDate = new System.DateTime(2026, 5, 1),
+                CustomFields = new System.Collections.Generic.Dictionary<string, Newtonsoft.Json.Linq.JToken?>
+                {
+                    ["customfield_10001"] = "Critical"
+                }
+            };
+            var supplier = new JqlSupplier(JiraReturning(issue), new[] { rule }, Substitute.For<ILogger>());
+            var map = new System.Collections.Generic.Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase)
+            {
+                ["Severity"] = "customfield_10001"
+            };
+            var converter = new IssuePackageConverter("http://jira", subjectPrefix: "", customFields: map);
+            var packages = supplier.GetPackages().Cast<Package<NotificationReaction, Issue>>().ToArray();
+
+            var html = converter.ToMessages(packages)[0].Body;
+
+            Assert.IsTrue(html.Contains("Critical"), "Custom field value missing from rendered HTML");
+        }
+
+        [Test]
         public void StatusRendersWithProgressColor()
         {
             var html = Render(NotifyWith(new[] { "Status" }),
