@@ -41,6 +41,7 @@ namespace JiraRest
                     .AddRelativePath("rest/api/2/search")
                     .AddParam("jql", query, true)
                     .AddParam("maxResults", maxResults ?? int.MaxValue) // Jira API returns 50 items if the parameter is not set
+                    .AddParam("fields", "*all") // ensure custom fields are included; Cloud already requests "*all" in CloudConnection
                     .AddParamIf(includeHistory, "expand", "changelog")
                 ;
 

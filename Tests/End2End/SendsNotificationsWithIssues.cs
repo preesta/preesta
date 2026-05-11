@@ -155,7 +155,7 @@ namespace End2End.Tests
 			};
 			pipe.Run();
 
-			Assert.AreEqual(1, server.CountRequests("GET", $"{server.Url}/rest/api/2/search?jql=any&maxResults=50"));
+			Assert.AreEqual(1, server.CountRequests("GET", $"{server.Url}/rest/api/2/search?jql=any&maxResults=50&fields=*all"));
 
 			messenger.Received(1).SendAll(Arg.Is<IEnumerable<Message>>(
 				msgs => msgs.Single().Subject.Contains("subject")
@@ -202,7 +202,7 @@ namespace End2End.Tests
 			};
 			pipe.Run();
 
-			Assert.AreEqual(1, server.CountRequests("GET", $"{server.Url}/rest/api/2/search?jql=any&maxResults=50"));
+			Assert.AreEqual(1, server.CountRequests("GET", $"{server.Url}/rest/api/2/search?jql=any&maxResults=50&fields=*all"));
 		}
 	}
 }
