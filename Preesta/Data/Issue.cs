@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 using static System.String;
 
 namespace Preesta.Data
@@ -36,5 +38,14 @@ namespace Preesta.Data
         /// Used by <c>{{@issueId}}</c> marker in mutation templates.
         /// </summary>
         public string? LinearId { get; set; }
+
+        /// <summary>
+        /// Raw Jira custom-field payload keyed by the internal field id
+        /// (<c>customfield_10001</c> etc.). Each value is the unmodified
+        /// <see cref="JToken"/> Jira returned — string / number / array /
+        /// object — so the formatter can decide how to render based on shape.
+        /// Empty for Linear-sourced issues (Linear has no flat custom-field scheme).
+        /// </summary>
+        public Dictionary<string, JToken?> CustomFields { get; set; } = new Dictionary<string, JToken?>();
     }
 }

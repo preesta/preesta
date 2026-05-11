@@ -34,8 +34,21 @@ namespace Preesta.Data.Convert
 
         public static Issue ToIssue(dynamic issue)
         {
+            var fields = (Newtonsoft.Json.Linq.JObject)issue.fields;
+            var customFields = new Dictionary<string, Newtonsoft.Json.Linq.JToken?>();
+            foreach (var prop in fields.Properties())
+            {
+                if (prop.Name.StartsWith("customfield_", StringComparison.Ordinal))
+                {
+                    customFields[prop.Name] = prop.Value.Type == Newtonsoft.Json.Linq.JTokenType.Null
+                        ? null
+                        : prop.Value;
+                }
+            }
+
             return new Issue
             {
+                CustomFields = customFields,
                 Key = (string)issue.key,
                 Summary = (string)issue.fields.summary,
 
