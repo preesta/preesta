@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Preesta.Data;
 using Preesta.Data.Supplying;
 using Scriban;
@@ -32,11 +34,19 @@ namespace Preesta.Formatting
         private static readonly Lazy<Template> TextTemplate =
             new(() => LoadTemplate("IssueDigest.scriban-text"));
 
-        public static string ToHtml(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri, string? linearWorkspace = null) =>
-            Render(HtmlTemplate.Value, BuildModel(packages, rootUri, linearWorkspace, htmlMode: true));
+        public static string ToHtml(
+            IEnumerable<Package<NotificationReaction, Issue>> packages,
+            string rootUri,
+            string? linearWorkspace = null,
+            IReadOnlyDictionary<string, string>? customFields = null) =>
+            Render(HtmlTemplate.Value, BuildModel(packages, rootUri, linearWorkspace, customFields, htmlMode: true));
 
-        public static string ToText(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri, string? linearWorkspace = null) =>
-            Render(TextTemplate.Value, BuildModel(packages, rootUri, linearWorkspace, htmlMode: false));
+        public static string ToText(
+            IEnumerable<Package<NotificationReaction, Issue>> packages,
+            string rootUri,
+            string? linearWorkspace = null,
+            IReadOnlyDictionary<string, string>? customFields = null) =>
+            Render(TextTemplate.Value, BuildModel(packages, rootUri, linearWorkspace, customFields, htmlMode: false));
 
         // Phase 10 (Slack): renders the digest as Slack mrkdwn — *bold*, _italic_,
         // <url|label> for links, :emoji: for status/priority. NOT plain Markdown:
@@ -44,8 +54,13 @@ namespace Preesta.Formatting
         // than a Scriban template — the format is short, fits one screen of code,
         // and the per-issue chip rendering needs Slack-specific emoji (the existing
         // RenderTextChip uses Unicode dots, which aren't what we want for Slack).
-        public static string ToSlackMrkdwn(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri, string? linearWorkspace = null)
+        public static string ToSlackMrkdwn(
+            IEnumerable<Package<NotificationReaction, Issue>> packages,
+            string rootUri,
+            string? linearWorkspace = null,
+            IReadOnlyDictionary<string, string>? customFields = null)
         {
+            var cf = customFields ?? EmptyMap;
             var sb = new StringBuilder();
             var firstSection = true;
             foreach (var package in packages)
@@ -62,13 +77,7 @@ namespace Preesta.Formatting
 
                 sb.AppendLine();
 
-                var columns = (package.Reaction.Columns?.Length > 0 ? package.Reaction.Columns : DefaultColumns)
-                    .SelectMany(c => string.Equals(c, AllNonEmptyToken, StringComparison.OrdinalIgnoreCase)
-                        ? AllKnownColumns
-                        : new[] { c })
-                    .Where(c => !IsHeaderColumn(c) && IsKnownColumn(c))
-                    .Distinct()
-                    .ToArray();
+                var columns = ResolveColumns(package.Reaction.Columns, cf);
 
                 foreach (var issue in package.Items)
                 {
@@ -83,12 +92,33 @@ namespace Preesta.Formatting
 
                     sb.Append('*').Append(keyRendered).Append("* ").AppendLine(issue.Summary ?? "");
 
-                    var chips = RenderSlackChips(columns, issue);
+                    var chips = RenderSlackChips(columns, issue, cf);
                     if (chips.Count > 0)
                         sb.Append("  ").AppendLine(string.Join(" · ", chips));
                 }
             }
             return sb.ToString();
+        }
+
+        private static readonly IReadOnlyDictionary<string, string> EmptyMap =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        // Apply column resolution shared by all three render paths:
+        //   - "all-non-empty" magic → expand to AllKnownColumns + custom-field display names
+        //   - filter out header columns (Key/Summary) and unknown ones (not standard, not a custom field)
+        //   - dedupe
+        private static string[] ResolveColumns(
+            string[]? columns,
+            IReadOnlyDictionary<string, string> customFields)
+        {
+            var requested = columns?.Length > 0 ? columns : DefaultColumns;
+            return requested
+                .SelectMany(c => string.Equals(c, AllNonEmptyToken, StringComparison.OrdinalIgnoreCase)
+                    ? AllKnownColumns.Concat(customFields.Keys)
+                    : new[] { c })
+                .Where(c => !IsHeaderColumn(c) && (IsKnownColumn(c) || customFields.ContainsKey(c)))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
         }
 
         private static string SlackStatusChip(string? status)
@@ -121,7 +151,7 @@ namespace Preesta.Formatting
             return string.IsNullOrEmpty(emoji) ? "" : $"{emoji} {priority}";
         }
 
-        private static List<string> RenderSlackChips(string[] columns, Issue issue)
+        private static List<string> RenderSlackChips(string[] columns, Issue issue, IReadOnlyDictionary<string, string> customFields)
         {
             var chips = new List<string>();
             foreach (var col in columns)
@@ -178,27 +208,36 @@ namespace Preesta.Formatting
                     case "Project":
                         if (!string.IsNullOrEmpty(issue.ProjectKey)) chips.Add(issue.ProjectKey!);
                         break;
+                    default:
+                        // Custom field: resolve display name → internal id → JToken, stringify.
+                        if (customFields.TryGetValue(col, out var cfId)
+                            && issue.CustomFields.TryGetValue(cfId, out var token))
+                        {
+                            var cfStr = RenderCustomFieldValue(token);
+                            if (!string.IsNullOrEmpty(cfStr)) chips.Add($"{col}: {cfStr}");
+                        }
+                        break;
                 }
             }
             return chips;
         }
 
-        private static DigestModel BuildModel(IEnumerable<Package<NotificationReaction, Issue>> packages, string rootUri, string? linearWorkspace, bool htmlMode)
+        private static DigestModel BuildModel(
+            IEnumerable<Package<NotificationReaction, Issue>> packages,
+            string rootUri,
+            string? linearWorkspace,
+            IReadOnlyDictionary<string, string>? customFields,
+            bool htmlMode)
         {
+            var cf = customFields ?? EmptyMap;
             var sections = packages.Select(package =>
             {
-                var columns = (package.Reaction.Columns?.Length > 0 ? package.Reaction.Columns : DefaultColumns)
-                    .SelectMany(c => string.Equals(c, AllNonEmptyToken, System.StringComparison.OrdinalIgnoreCase)
-                        ? AllKnownColumns
-                        : new[] { c })
-                    .Where(c => !IsHeaderColumn(c) && IsKnownColumn(c))
-                    .Distinct()
-                    .ToArray();
+                var columns = ResolveColumns(package.Reaction.Columns, cf);
 
                 var items = package.Items.Select(issue =>
                 {
                     var chips = columns
-                        .Select(col => htmlMode ? RenderHtmlChip(col, issue) : RenderTextChip(col, issue))
+                        .Select(col => htmlMode ? RenderHtmlChip(col, issue, cf) : RenderTextChip(col, issue, cf))
                         .Where(s => !string.IsNullOrEmpty(s))
                         .ToList();
                     // Prefer the canonical URL from the source (e.g. Linear) over the
@@ -232,7 +271,7 @@ namespace Preesta.Formatting
         private const string PillBase = "display:inline-block;padding:2px 9px;border-radius:11px;font-weight:500;font-size:11px;line-height:1.4";
         private const string DotBase = "display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin-right:5px";
 
-        private static string RenderHtmlChip(string column, Issue issue)
+        private static string RenderHtmlChip(string column, Issue issue, IReadOnlyDictionary<string, string> customFields)
         {
             string E(string? s) => WebUtility.HtmlEncode(s ?? "");
             switch (column)
@@ -273,11 +312,18 @@ namespace Preesta.Formatting
                 case "Project":
                     return string.IsNullOrEmpty(issue.ProjectKey) ? "" : E(issue.ProjectKey);
                 default:
+                    // Custom field branch — resolve display name through the map.
+                    if (customFields.TryGetValue(column, out var cfId)
+                        && issue.CustomFields.TryGetValue(cfId, out var token))
+                    {
+                        var v = RenderCustomFieldValue(token);
+                        return string.IsNullOrEmpty(v) ? "" : E(v);
+                    }
                     return "";
             }
         }
 
-        private static string RenderTextChip(string column, Issue issue)
+        private static string RenderTextChip(string column, Issue issue, IReadOnlyDictionary<string, string> customFields)
         {
             switch (column)
             {
@@ -314,7 +360,67 @@ namespace Preesta.Formatting
                 case "Project":
                     return issue.ProjectKey ?? "";
                 default:
+                    if (customFields.TryGetValue(column, out var cfId)
+                        && issue.CustomFields.TryGetValue(cfId, out var token))
+                    {
+                        var v = RenderCustomFieldValue(token);
+                        return string.IsNullOrEmpty(v) ? "" : v;
+                    }
                     return "";
+            }
+        }
+
+        /// <summary>
+        /// Renders a Jira custom-field JToken as a human-readable string.
+        /// Handles common shapes:
+        ///   JValue       → ToString()
+        ///   JArray of strings → comma-join
+        ///   JArray of {name|value} objects → comma-joined names
+        ///   JObject with name/value/displayName → that string
+        ///   Sprint legacy (JArray of base64-encoded GreenHopper strings) → returned as-is
+        ///   Anything else → compact JSON for power users to debug.
+        /// </summary>
+        private static string RenderCustomFieldValue(JToken? token)
+        {
+            if (token == null || token.Type == JTokenType.Null) return "";
+
+            switch (token.Type)
+            {
+                case JTokenType.String:
+                case JTokenType.Integer:
+                case JTokenType.Float:
+                case JTokenType.Boolean:
+                case JTokenType.Date:
+                    return token.ToString();
+
+                case JTokenType.Array:
+                    var arr = (JArray)token;
+                    if (arr.Count == 0) return "";
+                    // First sniff: array of objects with name/value (multi-select, components-like).
+                    if (arr.First!.Type == JTokenType.Object)
+                    {
+                        var names = arr
+                            .OfType<JObject>()
+                            .Select(o => (string?)(o["name"] ?? o["value"] ?? o["displayName"]))
+                            .Where(s => !string.IsNullOrEmpty(s))
+                            .ToArray();
+                        return names.Length > 0
+                            ? string.Join(", ", names)
+                            : arr.ToString(Newtonsoft.Json.Formatting.None);
+                    }
+                    // Array of scalars (strings, numbers) — or the Sprint legacy case where
+                    // each element is a base64-encoded GreenHopper string; render as-is.
+                    return string.Join(", ", arr.Select(t => t.ToString()));
+
+                case JTokenType.Object:
+                    var obj = (JObject)token;
+                    var single = (string?)(obj["name"] ?? obj["value"] ?? obj["displayName"]);
+                    return !string.IsNullOrEmpty(single)
+                        ? single!
+                        : obj.ToString(Newtonsoft.Json.Formatting.None);
+
+                default:
+                    return token.ToString(Newtonsoft.Json.Formatting.None);
             }
         }
 
@@ -412,6 +518,8 @@ namespace Preesta.Formatting
         private static bool IsHeaderColumn(string column) =>
             column is "Key" or "Summary";
 
+        // Standard columns we know how to render. Custom fields are NOT in this set —
+        // they're handled separately via the per-call customFields map.
         private static bool IsKnownColumn(string column) => column switch
         {
             "Type" or "Assignee" or "Reporter" or "Status" or "Priority"
