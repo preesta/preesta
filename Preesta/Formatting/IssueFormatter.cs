@@ -326,9 +326,13 @@ namespace Preesta.Formatting
             _ => ("#DFE1E6", "#42526E")
         };
 
+        // Jira and Linear use different priority label sets:
+        //   Jira:   Lowest / Low / Medium / High / Highest
+        //   Linear: None  / Low / Medium / High / Urgent
+        // We map them onto the same colour ladder so the digest stays consistent.
         private static string PriorityColor(string? priority) => priority switch
         {
-            "Highest" => "#DE350B",
+            "Urgent" or "Highest" => "#DE350B",
             "High" => "#FF5630",
             "Medium" => "#FFAB00",
             "Low" => "#36B37E",
@@ -338,7 +342,7 @@ namespace Preesta.Formatting
 
         private static string PriorityIcon(string? priority) => priority switch
         {
-            "Highest" => "🔴",
+            "Urgent" or "Highest" => "🔴",
             "High" => "🟠",
             "Medium" => "🟡",
             "Low" => "🟢",

@@ -115,6 +115,19 @@ namespace Tests.Formatting
         }
 
         [Test]
+        public void PriorityUrgent_RendersWithMaxRedDot()
+        {
+            // Linear uses "Urgent" instead of Jira's "Highest" — both must render the
+            // same maximum-severity red, not the fallback grey.
+            var html = Render(NotifyWith(new[] { "Priority" }),
+                new Issue { Key = "T-1", Summary = "x", Priority = "Urgent" })[0].Body;
+
+            Assert.IsTrue(html.Contains("background:#DE350B"), "Urgent priority dot color must match Highest (red)");
+            Assert.IsFalse(html.Contains("background:#97A0AF"), "Urgent must not fall back to grey");
+            Assert.IsTrue(html.Contains("Urgent"));
+        }
+
+        [Test]
         public void StatusRendersWithProgressColor()
         {
             var html = Render(NotifyWith(new[] { "Status" }),
