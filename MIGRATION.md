@@ -145,6 +145,17 @@
 - Inline `StringBuilder` mrkdwn formatter rather than a third Scriban template — short format, Slack-specific emoji needed, fewer build inputs
 - Tests: 100 → 113 (3 SlackMessenger HTTP, 4 routing, 2 mrkdwn format, 2 ReactionPipeline integration, 2 YAML parsing — `MockSlackServer` WireMock helper)
 
+### Custom Fields (Jira) ✅
+- User just writes `columns: [Status, Priority, Severity, "Story point estimate"]` in `rules.yaml` — no `customfield_NNNNN` ids in any config. Auto-discovery via `GET /rest/api/?/field` at startup builds a case-insensitive display-name → id map
+- `Issue.CustomFields: Dictionary<string, JToken?>` carries the raw payload (shape preserved — scalar/array/object) so the formatter can decide rendering. Linear-sourced issues leave it empty
+- `JToken.ToIssue` filters `issue.fields.Properties()` by `customfield_` prefix
+- New `IssueFormatter.RenderCustomFieldValue` helper handles common Jira shapes: scalar, `JArray<string>` (commaj-oined), `JArray<JObject>` with `name`/`value`/`displayName` keys (multi-select), single-select `JObject`, fallback compact JSON
+- `all-non-empty` magic expansion now also includes discovered custom field names; rule columns referencing custom field names by display name resolve through the map; empty/missing values render as nothing (no crash)
+- Server Jira parity: `Connection.GetIssuesFromJql` now explicit `fields=*all` (Cloud already had this in POST body)
+- Duplicate display names: log warning, first id wins. Endpoint failure (HTTP error / network): log warning, empty map, pipeline keeps working
+- Tests: 114 → 126 (CustomFieldDiscoveryTests x3, CustomFieldRenderingTests x7, JTokenConvertTests x1, IssueFormatter e2e x1)
+- Live-validated against `valevitov.atlassian.net` — SCRUM-7's `Story point estimate` shows up in the e2etest digest after a one-time auto-discovery, no user configuration required
+
 ## Remaining
 
 ## Roadmap: New Features
