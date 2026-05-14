@@ -14,6 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Preesta\Preesta.csproj" />
     <ProjectReference Include="..\LinearGraphQL\LinearGraphQL.csproj" />
+    <ProjectReference Include="..\GitlabGraphQL\GitlabGraphQL.csproj" />
     <ProjectReference Include="..\Messaging\Messaging.csproj" />
   </ItemGroup>
 </Project>

@@ -412,6 +412,134 @@ rules:
                 "Expected ILogger.Error when a GitHub rule has no filter");
         }
 
+        // ----- GitLab rules -----
+
+        [Test]
+        public void Gitlab_FilterChipsParsedIntoStructuredObject()
+        {
+            const string yaml = @"
+rules:
+  - type: gitlab
+    group: gl
+    filter:
+      state: opened
+      labelName: [urgent, blocker]
+      assigneeUsernames: [alice, bob]
+      authorUsername: carol
+      milestoneTitle: ['v1.0']
+      search: ""checkout flow""
+      confidential: false
+    notify:
+      subject: ""GL open""
+      mailTo: assignee
+";
+            var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>())
+                .GetGitlabRules("gl");
+
+            Assert.AreEqual(1, rules.Length);
+            var f = rules[0].Filter;
+            Assert.AreEqual("opened", f.State);
+            CollectionAssert.AreEqual(new[] { "urgent", "blocker" }, f.LabelName);
+            CollectionAssert.AreEqual(new[] { "alice", "bob" }, f.AssigneeUsernames);
+            Assert.AreEqual("carol", f.AuthorUsername);
+            CollectionAssert.AreEqual(new[] { "v1.0" }, f.MilestoneTitle);
+            Assert.AreEqual("checkout flow", f.Search);
+            Assert.AreEqual(false, f.Confidential);
+            // Notification markers still flow through ToBaseRule (assignee for routing).
+            Assert.Contains("assignee", rules[0].Notification!.RawRecipients);
+        }
+
+        [Test]
+        public void Gitlab_GraphQLMutations_ParsedFromMutationsKey()
+        {
+            const string yaml = @"
+rules:
+  - type: gitlab
+    group: gl
+    filter:
+      state: opened
+      labelName: [stale]
+    mutations:
+      - mutation: |
+          mutation { createNote(input: { noteableId: ""{{@issueId}}"", body: ""ping"" }) { note { id } } }
+      - mutation: |
+          mutation { updateIssue(input: { id: ""{{@issueId}}"", stateEvent: CLOSE }) { issue { state } } }
+";
+            var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>())
+                .GetGitlabRules("gl");
+
+            Assert.AreEqual(1, rules.Length);
+            Assert.AreEqual(2, rules[0].GraphQLMutations.Length);
+            Assert.IsTrue(rules[0].GraphQLMutations[0].MutationBody.Contains("createNote"));
+            Assert.IsTrue(rules[0].GraphQLMutations[1].MutationBody.Contains("updateIssue"));
+            // REST Mutations array is empty for gitlab rules — `mutations:` is GraphQL.
+            Assert.AreEqual(0, rules[0].Mutations.Length);
+        }
+
+        [Test]
+        public void Gitlab_RuleWithNoFilterFields_IsDroppedAndLogged()
+        {
+            // GitLab's GraphQL Query.issues requires at least one filter; an empty
+            // filter object would scan the entire instance and is rejected. Same
+            // contract on our side — drop + log.
+            const string yaml = @"
+rules:
+  - type: gitlab
+    group: gl-bad
+    filter: {}
+    notify:
+      subject: x
+      mailTo: assignee
+";
+            var logger = Substitute.For<ILogger>();
+            var rules = new YamlRulesConfig(yaml, logger).GetGitlabRules("gl-bad");
+
+            Assert.AreEqual(0, rules.Length);
+            Assert.IsTrue(
+                logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"),
+                "Expected ILogger.Error when a GitLab rule's filter is empty");
+        }
+
+        [Test]
+        public void Gitlab_RuleWithoutFilter_IsDroppedAndLogged()
+        {
+            const string yaml = @"
+rules:
+  - type: gitlab
+    group: gl-bad
+    notify:
+      subject: x
+      mailTo: assignee
+";
+            var logger = Substitute.For<ILogger>();
+            var rules = new YamlRulesConfig(yaml, logger).GetGitlabRules("gl-bad");
+
+            Assert.AreEqual(0, rules.Length);
+            Assert.IsTrue(
+                logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"),
+                "Expected ILogger.Error when a GitLab rule has no filter");
+        }
+
+        [Test]
+        public void Gitlab_FilterScalarString_AcceptedAsSingleEntryArray()
+        {
+            // YAML lets users write `labelName: urgent` instead of `labelName: [urgent]`
+            // for the one-label case. The converter should normalise either form.
+            const string yaml = @"
+rules:
+  - type: gitlab
+    group: gl
+    filter:
+      labelName: urgent
+";
+            var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>()).GetGitlabRules("gl");
+
+            Assert.AreEqual(1, rules.Length);
+            CollectionAssert.AreEqual(new[] { "urgent" }, rules[0].Filter.LabelName);
+        }
+
+        // ----- continue: -----
+
         [Test]
         public void Linear_RuleWithMultipleFilterSources_IsDroppedAndLogged()
         {
