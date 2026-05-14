@@ -49,6 +49,15 @@ namespace Preesta.Data
         public string? GithubNodeId { get; set; }
 
         /// <summary>
+        /// GitLab GraphQL global ID for this issue (the <c>gid://gitlab/Issue/1234</c>
+        /// form returned by <c>Issue.id</c>). Populated by <c>GitlabIssueSource</c>;
+        /// other sources leave this null. Used by <c>{{@issueId}}</c> marker in
+        /// mutation templates — GitLab's GraphQL mutations identify issues via this
+        /// opaque global id.
+        /// </summary>
+        public string? GitlabGlobalId { get; set; }
+
+        /// <summary>
         /// Raw Jira custom-field payload keyed by the internal field id
         /// (<c>customfield_10001</c> etc.). Each value is the unmodified
         /// <see cref="JToken"/> Jira returned — string / number / array /
