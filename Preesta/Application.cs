@@ -30,6 +30,11 @@ namespace Preesta
             if (githubPipe != null)
                 tasks.Add(githubPipe.RunAsync());
 
+            // GitLab pipeline runs only when registered (i.e. Gitlab:token is set).
+            var gitlabPipe = container.TryResolveNotificationPipe<Issue>("Gitlab");
+            if (gitlabPipe != null)
+                tasks.Add(gitlabPipe.RunAsync());
+
             Task.WaitAll(tasks.ToArray());
         }
     }

@@ -112,6 +112,34 @@ namespace Preesta.DI
                     slackMessenger: slackMessenger, slackUserMap: slackUserMap));
             }
 
+            // GitLab pipeline mirrors GitHub — registered only when a token is provided.
+            if (!string.IsNullOrEmpty(appSettings.GitlabToken))
+            {
+                // GitlabConnection picks the default https://gitlab.com/api/graphql
+                // endpoint when apiBase is empty; self-hosted instances override it.
+                var gitlabApiBase = appSettings.GitlabApiBase;
+                var gitlabConnection = string.IsNullOrEmpty(gitlabApiBase)
+                    ? new GitlabGraphQL.GitlabConnection(appSettings.GitlabToken!)
+                    : new GitlabGraphQL.GitlabConnection(appSettings.GitlabToken!, gitlabApiBase!);
+                var gitlabSource = new GitlabIssueSource(gitlabConnection, logger);
+                var gitlabSupplier = new GitlabIssueSupplier(
+                    gitlabSource, jiraService, rulesConfig.GetGitlabRules(@group), logger);
+                var gitlabMutationExecutor = new GitlabMutationExecutor(gitlabConnection, logger);
+
+                // For GitLab-sourced issues, Issue.Url is populated by GitlabIssueSource
+                // and the formatter prefers it — rootUri is a fallback only. We derive
+                // a workspace-style root from the configured endpoint (strip /api/graphql)
+                // so the fallback URL still points to the right host for self-hosted.
+                var gitlabRootUri = DeriveGitlabRoot(gitlabApiBase);
+                var gitlabConverter = new IssuePackageConverter(
+                    gitlabRootUri, appSettings.SubjectPrefix, customFields: customFields);
+
+                services.AddKeyedSingleton("Gitlab", new ReactionPipeline<Issue>(
+                    gitlabSupplier, gitlabConverter, messenger, jiraService, redirector,
+                    logoFileName, telegramMessenger, telegramUserMap, gitlabMutationExecutor,
+                    slackMessenger: slackMessenger, slackUserMap: slackUserMap));
+            }
+
             // GitHub pipeline mirrors Linear — registered only when a token is provided.
             if (!string.IsNullOrEmpty(appSettings.GithubToken))
             {
@@ -154,6 +182,26 @@ namespace Preesta.DI
         internal void ValidateRules()
         {
             _provider.GetRequiredService<IRulesConfig>().ValidateSchema();
+        }
+
+        /// <summary>
+        /// Strips the <c>/api/graphql</c> suffix off the configured endpoint so the
+        /// formatter has a usable host root for the fallback "Open in GitLab →" link
+        /// on self-hosted instances. Returns <c>https://gitlab.com/</c> when nothing
+        /// is configured.
+        /// </summary>
+        private static string DeriveGitlabRoot(string? apiBase)
+        {
+            if (string.IsNullOrEmpty(apiBase)) return "https://gitlab.com/";
+            try
+            {
+                var uri = new Uri(apiBase);
+                return $"{uri.Scheme}://{uri.Authority}/";
+            }
+            catch
+            {
+                return "https://gitlab.com/";
+            }
         }
 
         private static IRulesConfig CreateRulesConfig(string path, ILogger logger)
