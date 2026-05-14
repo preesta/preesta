@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinearGraphQL", "LinearGrap
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GithubGraphQL", "GithubGraphQL\GithubGraphQL.csproj", "{3DFB1C1D-8A7C-45C4-8D1A-3BE32C9BAD39}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitlabGraphQL", "GitlabGraphQL\GitlabGraphQL.csproj", "{4E1A2B3C-7D8E-4F5A-9B0C-1D2E3F4A5B6C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -100,5 +102,17 @@ Global
 		{3DFB1C1D-8A7C-45C4-8D1A-3BE32C9BAD39}.Release|x64.Build.0 = Release|Any CPU
 		{3DFB1C1D-8A7C-45C4-8D1A-3BE32C9BAD39}.Release|x86.ActiveCfg = Release|Any CPU
 		{3DFB1C1D-8A7C-45C4-8D1A-3BE32C9BAD39}.Release|x86.Build.0 = Release|Any CPU
+		{4E1A2B3C-7D8E-4F5A-9B0C-1D2E3F4A5B6C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E1A2B3C-7D8E-4F5A-9B0C-1D2E3F4A5B6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E1A2B3C-7D8E-4F5A-9B0C-1D2E3F4A5B6C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4E1A2B3C-7D8E-4F5A-9B0C-1D2E3F4A5B6C}.Debug|x64.Build.0 = Debug|Any CPU
+		{4E1A2B3C-7D8E-4F5A-9B0C-1D2E3F4A5B6C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4E1A2B3C-7D8E-4F5A-9B0C-1D2E3F4A5B6C}.Debug|x86.Build.0 = Debug|Any CPU
+		{4E1A2B3C-7D8E-4F5A-9B0C-1D2E3F4A5B6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E1A2B3C-7D8E-4F5A-9B0C-1D2E3F4A5B6C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E1A2B3C-7D8E-4F5A-9B0C-1D2E3F4A5B6C}.Release|x64.ActiveCfg = Release|Any CPU
+		{4E1A2B3C-7D8E-4F5A-9B0C-1D2E3F4A5B6C}.Release|x64.Build.0 = Release|Any CPU
+		{4E1A2B3C-7D8E-4F5A-9B0C-1D2E3F4A5B6C}.Release|x86.ActiveCfg = Release|Any CPU
+		{4E1A2B3C-7D8E-4F5A-9B0C-1D2E3F4A5B6C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
