@@ -89,6 +89,8 @@ namespace Preesta.AppConfig
 
         public string? LinearWorkspace => _configuration["Linear:workspace"];
 
+        public string? GithubToken => _configuration["Github:token"];
+
         public IConfigurationSection SmtpSection => _configuration.GetSection("Smtp");
 
         public IConfigurationSection LoggerSection => _configuration.GetSection("Logger");
