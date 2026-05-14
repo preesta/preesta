@@ -49,3 +49,11 @@ Github:
                     # Classic PAT needs `repo` (or `public_repo`) + `user:email` (or `read:user`).
                     # The email scope is required — GraphQL refuses the search query
                     # entirely (INSUFFICIENT_SCOPES) when `user.email` is unreadable.
+
+Plane:
+  apiKey: ""        # Personal API token from Plane → Profile → Personal Access Tokens.
+                    # Format: plane_api_<random>. Sent as X-API-Key header.
+  workspaceSlug: "" # Workspace URL slug (the segment in app.plane.so/<slug>/...).
+                    # Same value for every rule — per-rule scoping uses `projectId` in rules.yaml.
+  apiBase: ""       # Optional. Leave blank for Plane Cloud (https://api.plane.so/).
+                    # Self-hosted: set to your host with trailing slash, e.g. https://plane.example.com/

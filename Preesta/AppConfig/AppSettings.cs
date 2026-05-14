@@ -91,6 +91,17 @@ namespace Preesta.AppConfig
 
         public string? GithubToken => _configuration["Github:token"];
 
+        public string? PlaneApiKey => _configuration["Plane:apiKey"];
+
+        public string? PlaneWorkspaceSlug => _configuration["Plane:workspaceSlug"];
+
+        /// <summary>
+        /// Optional override of Plane's API base URL — defaults to Plane Cloud
+        /// (<c>https://api.plane.so/</c>) when blank. Self-hosted instances set
+        /// this to their own host (e.g. <c>https://plane.example.com/</c>).
+        /// </summary>
+        public string? PlaneApiBase => _configuration["Plane:apiBase"];
+
         public IConfigurationSection SmtpSection => _configuration.GetSection("Smtp");
 
         public IConfigurationSection LoggerSection => _configuration.GetSection("Logger");
