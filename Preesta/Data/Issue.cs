@@ -49,6 +49,13 @@ namespace Preesta.Data
         public string? GithubNodeId { get; set; }
 
         /// <summary>
+        /// Plane work-item UUID. Populated by <c>PlaneIssueSource</c>; other sources
+        /// leave this null. Used by <c>{{@issueId}}</c> marker in REST mutation
+        /// templates — Plane's PATCH / DELETE endpoints address items by this UUID.
+        /// </summary>
+        public string? PlaneId { get; set; }
+
+        /// <summary>
         /// Raw Jira custom-field payload keyed by the internal field id
         /// (<c>customfield_10001</c> etc.). Each value is the unmodified
         /// <see cref="JToken"/> Jira returned — string / number / array /
