@@ -112,6 +112,26 @@ namespace Preesta.DI
                     slackMessenger: slackMessenger, slackUserMap: slackUserMap));
             }
 
+            // GitHub pipeline mirrors Linear — registered only when a token is provided.
+            if (!string.IsNullOrEmpty(appSettings.GithubToken))
+            {
+                var githubConnection = new GithubGraphQL.GithubConnection(appSettings.GithubToken!);
+                var githubSource = new GithubIssueSource(githubConnection, logger);
+                var githubSupplier = new GithubIssueSupplier(
+                    githubSource, jiraService, rulesConfig.GetGithubRules(@group), logger);
+                var githubMutationExecutor = new GithubMutationExecutor(githubConnection, logger);
+
+                // For GitHub-sourced issues, Issue.Url is populated by GithubIssueSource and
+                // the formatter prefers it — rootUri is a fallback only.
+                var githubConverter = new IssuePackageConverter(
+                    "https://github.com/", appSettings.SubjectPrefix, customFields: customFields);
+
+                services.AddKeyedSingleton("Github", new ReactionPipeline<Issue>(
+                    githubSupplier, githubConverter, messenger, jiraService, redirector,
+                    logoFileName, telegramMessenger, telegramUserMap, githubMutationExecutor,
+                    slackMessenger: slackMessenger, slackUserMap: slackUserMap));
+            }
+
             _provider = services.BuildServiceProvider();
         }
 

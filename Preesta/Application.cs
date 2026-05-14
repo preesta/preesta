@@ -25,6 +25,11 @@ namespace Preesta
             if (linearPipe != null)
                 tasks.Add(linearPipe.RunAsync());
 
+            // GitHub pipeline runs only when registered (i.e. Github:token is set).
+            var githubPipe = container.TryResolveNotificationPipe<Issue>("Github");
+            if (githubPipe != null)
+                tasks.Add(githubPipe.RunAsync());
+
             Task.WaitAll(tasks.ToArray());
         }
     }
