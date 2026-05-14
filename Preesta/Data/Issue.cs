@@ -40,6 +40,15 @@ namespace Preesta.Data
         public string? LinearId { get; set; }
 
         /// <summary>
+        /// GitHub GraphQL node ID for this issue/PR (opaque base64 string from the
+        /// <c>id</c> field). Populated by <c>GithubIssueSource</c>; Jira and Linear
+        /// issues leave this null. Used by <c>{{@issueId}}</c> marker in mutation
+        /// templates — the GraphQL endpoint expects this for <c>updateIssue</c>,
+        /// <c>addComment</c>, <c>closeIssue</c>, etc.
+        /// </summary>
+        public string? GithubNodeId { get; set; }
+
+        /// <summary>
         /// Raw Jira custom-field payload keyed by the internal field id
         /// (<c>customfield_10001</c> etc.). Each value is the unmodified
         /// <see cref="JToken"/> Jira returned — string / number / array /
