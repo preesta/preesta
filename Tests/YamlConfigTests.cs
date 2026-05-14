@@ -412,6 +412,124 @@ rules:
                 "Expected ILogger.Error when a GitHub rule has no filter");
         }
 
+        // ----- Plane rules -----
+
+        [Test]
+        public void Plane_ProjectIdAndFilterParsed()
+        {
+            const string yaml = @"
+rules:
+  - type: plane
+    group: plane-group
+    projectId: ""550e8400-e29b-41d4-a716-446655440000""
+    filter:
+      priority: ""urgent,high""
+      search: ""memory leak""
+    notify:
+      subject: ""Plane open""
+      mailTo: assignee
+";
+            var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>())
+                .GetPlaneRules("plane-group");
+
+            Assert.AreEqual(1, rules.Length);
+            Assert.AreEqual("550e8400-e29b-41d4-a716-446655440000", rules[0].ProjectId);
+            Assert.AreEqual(2, rules[0].Filter.Count);
+            Assert.AreEqual("urgent,high", rules[0].Filter["priority"]);
+            Assert.AreEqual("memory leak", rules[0].Filter["search"]);
+            // Notification markers still flow through ToBaseRule (assignee for routing).
+            Assert.Contains("assignee", rules[0].Notification!.RawRecipients);
+        }
+
+        [Test]
+        public void Plane_RestMutationsParsedFromMutationsKey()
+        {
+            const string yaml = @"
+rules:
+  - type: plane
+    group: plane-mut
+    projectId: ""proj-1""
+    mutations:
+      - verb: PATCH
+        urlPattern: ""https://api.plane.so/api/v1/workspaces/x/projects/proj-1/work-items/{{@issueId}}""
+        body: |
+          {""priority"": ""medium""}
+";
+            var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>())
+                .GetPlaneRules("plane-mut");
+
+            Assert.AreEqual(1, rules.Length);
+            Assert.AreEqual(1, rules[0].Mutations.Length);
+            Assert.AreEqual("PATCH", rules[0].Mutations[0].Verb);
+            Assert.IsTrue(rules[0].Mutations[0].UrlPattern.Contains("{{@issueId}}"));
+            Assert.IsTrue(rules[0].Mutations[0].BodyPattern!.Contains("medium"));
+        }
+
+        [Test]
+        public void Plane_RuleWithoutProjectId_IsDroppedAndLogged()
+        {
+            const string yaml = @"
+rules:
+  - type: plane
+    group: plane-bad
+    filter:
+      priority: urgent
+    notify:
+      subject: x
+      mailTo: assignee
+";
+            var logger = Substitute.For<ILogger>();
+            var rules = new YamlRulesConfig(yaml, logger).GetPlaneRules("plane-bad");
+
+            Assert.AreEqual(0, rules.Length);
+            Assert.IsTrue(
+                logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"),
+                "Expected ILogger.Error when a Plane rule has no projectId");
+        }
+
+        [Test]
+        public void Plane_EmptyFilterAllowed_DefaultsToWholeProject()
+        {
+            const string yaml = @"
+rules:
+  - type: plane
+    group: plane-allitems
+    projectId: ""proj-1""
+    notify:
+      subject: ""All Plane items""
+      mailTo: assignee
+";
+            var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>())
+                .GetPlaneRules("plane-allitems");
+
+            Assert.AreEqual(1, rules.Length);
+            Assert.AreEqual("proj-1", rules[0].ProjectId);
+            Assert.AreEqual(0, rules[0].Filter.Count);
+        }
+
+        [Test]
+        public void Plane_FilterAsString_IsRejected()
+        {
+            // filter must be a YAML mapping; if the user writes a bare string by
+            // mistake we want a clear error rather than silently dropping the filter.
+            const string yaml = @"
+rules:
+  - type: plane
+    group: plane-strfilter
+    projectId: ""proj-1""
+    filter: ""priority=urgent""
+";
+            var logger = Substitute.For<ILogger>();
+            var rules = new YamlRulesConfig(yaml, logger).GetPlaneRules("plane-strfilter");
+
+            Assert.AreEqual(0, rules.Length);
+            Assert.IsTrue(
+                logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"),
+                "Expected ILogger.Error when Plane 'filter' is a string instead of a mapping");
+        }
+
+        // ----- end Plane -----
+
         [Test]
         public void Linear_RuleWithMultipleFilterSources_IsDroppedAndLogged()
         {
