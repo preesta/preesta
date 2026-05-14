@@ -3,10 +3,10 @@ using System.Collections.Generic;
 namespace Preesta
 {
     /// <summary>
-    /// Executes GraphQL mutations produced by rule pipelines (Linear today).
+    /// Executes GraphQL mutations produced by rule pipelines (Linear, GitHub).
     /// Parallel to <see cref="IHttpHandler"/>, which executes REST requests for Jira.
     /// </summary>
-    public interface ILinearMutationHandler
+    public interface IGraphQLMutationHandler
     {
         /// <summary>
         /// Issue every mutation body, in order. Each body is a complete GraphQL

@@ -17,7 +17,7 @@ namespace Preesta
     /// logged and swallowed — one bad mutation must not stop the others, just
     /// like Jira's <c>callRest</c> path.
     /// </remarks>
-    internal class LinearMutationExecutor : ILinearMutationHandler
+    internal class LinearMutationExecutor : IGraphQLMutationHandler
     {
         private readonly ILinearGateway _gateway;
         private readonly ILogger _logger;
