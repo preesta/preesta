@@ -76,7 +76,10 @@ namespace Preesta.Configuration
             return GetRules<Action.LinearRule>(@group, "linear", entry =>
             {
                 var rule = ToBaseRule<Action.LinearRule>(entry);
-                rule.Filter = string.IsNullOrWhiteSpace(entry.Filter) ? null : entry.Filter;
+                // Linear's `filter:` is an AI-prompt string. We accept only string-typed
+                // YAML scalars here; a mapping would be `filterRaw:` instead.
+                var filterStr = entry.Filter as string;
+                rule.Filter = string.IsNullOrWhiteSpace(filterStr) ? null : filterStr;
                 rule.FilterRaw = ConvertFilterRaw(entry.FilterRaw);
                 rule.ViewId = string.IsNullOrWhiteSpace(entry.ViewId) ? null : entry.ViewId;
 
@@ -99,12 +102,100 @@ namespace Preesta.Configuration
             });
         }
 
+        public Action.GitlabRule[] GetGitlabRules(string @group)
+        {
+            return GetRules<Action.GitlabRule>(@group, "gitlab", entry =>
+            {
+                var rule = ToBaseRule<Action.GitlabRule>(entry);
+
+                rule.Filter = ConvertGitlabFilter(entry.Filter);
+
+                // GitLab rules use GraphQL mutations, not REST — drop the REST array
+                // that ToBaseRule eagerly populates and re-read the same entries as
+                // GraphQL specs, exactly like Linear / GitHub do.
+                rule.Mutations = Array.Empty<Action.RestMutationSpec>();
+                if (entry.Mutations != null)
+                {
+                    rule.GraphQLMutations = entry.Mutations
+                        .Where(m => !string.IsNullOrEmpty(m.Mutation))
+                        .Select(m => new Action.GraphQLMutationSpec { MutationBody = m.Mutation! })
+                        .ToArray();
+                }
+
+                if (!rule.Filter.HasAnyField)
+                {
+                    _logger.Error("GitLab rule must specify at least one filter field "
+                        + "(state, labelName, assigneeUsernames, authorUsername, milestoneTitle, "
+                        + "search, createdAfter/Before, updatedAfter/Before, confidential, iids)");
+                    return null!;
+                }
+
+                return rule;
+            });
+        }
+
+        /// <summary>
+        /// Maps the YAML <c>filter:</c> sub-mapping onto <see cref="Action.GitlabFilter"/>.
+        /// Each chip from GitLab's web UI is a named property — fields not present in
+        /// YAML stay null and are omitted from the GraphQL request. The conversion is
+        /// pure mapping (no DSL): the YAML keys are identical to the field names of
+        /// GraphQL's <c>Query.issues</c> arguments.
+        /// </summary>
+        private static Action.GitlabFilter ConvertGitlabFilter(object? raw)
+        {
+            var f = new Action.GitlabFilter();
+            if (raw is not IDictionary<object, object> map)
+                return f;
+
+            string? GetString(string key) =>
+                map.TryGetValue(key, out var v) && v != null && !string.IsNullOrWhiteSpace(v.ToString())
+                    ? v.ToString()!.Trim()
+                    : null;
+
+            bool? GetBool(string key) =>
+                map.TryGetValue(key, out var v) && v != null
+                    && bool.TryParse(v.ToString(), out var b)
+                    ? b
+                    : (bool?)null;
+
+            string[]? GetStringArray(string key)
+            {
+                if (!map.TryGetValue(key, out var v) || v == null) return null;
+                // YAML "labels: [a, b]" → IList<object>; YAML "labels: a" → scalar string.
+                if (v is IList<object> list)
+                    return list.Select(x => x?.ToString() ?? string.Empty)
+                        .Where(s => !string.IsNullOrWhiteSpace(s))
+                        .Select(s => s.Trim())
+                        .ToArray();
+                var single = v.ToString();
+                return string.IsNullOrWhiteSpace(single) ? null : new[] { single!.Trim() };
+            }
+
+            f.State = GetString("state");
+            f.LabelName = GetStringArray("labelName");
+            f.AssigneeUsernames = GetStringArray("assigneeUsernames");
+            f.AuthorUsername = GetString("authorUsername");
+            f.MilestoneTitle = GetStringArray("milestoneTitle");
+            f.Search = GetString("search");
+            f.CreatedAfter = GetString("createdAfter");
+            f.CreatedBefore = GetString("createdBefore");
+            f.UpdatedAfter = GetString("updatedAfter");
+            f.UpdatedBefore = GetString("updatedBefore");
+            f.Confidential = GetBool("confidential");
+            f.Iids = GetStringArray("iids");
+            return f;
+        }
+
         public Action.GithubRule[] GetGithubRules(string @group)
         {
             return GetRules<Action.GithubRule>(@group, "github", entry =>
             {
                 var rule = ToBaseRule<Action.GithubRule>(entry);
-                rule.Filter = string.IsNullOrWhiteSpace(entry.Filter) ? null : entry.Filter!.Trim();
+                // GitHub's `filter:` is a raw search-string scalar. A mapping there would
+                // be a config mistake; we coerce non-string to null and let the empty-filter
+                // branch below log+drop the rule.
+                var filterStr = entry.Filter as string;
+                rule.Filter = string.IsNullOrWhiteSpace(filterStr) ? null : filterStr!.Trim();
 
                 // GitHub rules use GraphQL mutations, not REST — drop the REST array
                 // that ToBaseRule eagerly populates and read the same entries again
@@ -288,11 +379,13 @@ namespace Preesta.Configuration
         public bool? ExpiredOnly { get; set; }
         public string? ProjectCode { get; set; }
 
-        // Linear — three mutually exclusive filter modes (validated in GetLinearRules):
-        //   filter:    string — AI prompt (primary, user-facing)
-        //   filterRaw: nested mapping — raw Linear GraphQL filter object (escape hatch)
-        //   viewId:    string — Linear saved-view ID (escape hatch)
-        public string? Filter { get; set; }
+        // Linear / GitHub / GitLab — `filter:` shape depends on rule type:
+        //   linear (filter):  string — AI prompt
+        //   github (filter):  string — raw GitHub search query
+        //   gitlab (filter):  mapping — structured chips (state, labelName, …)
+        // Type is therefore `object?` and each rule-type converter casts/inspects it.
+        // FilterRaw / ViewId are Linear-only escape hatches (kept as their own keys).
+        public object? Filter { get; set; }
         public object? FilterRaw { get; set; }
         public string? ViewId { get; set; }
 

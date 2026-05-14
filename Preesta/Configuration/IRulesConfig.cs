@@ -9,6 +9,7 @@ namespace Preesta.Configuration
         ReleaseRule[] GetReleaseRules(string @group);
         LinearRule[] GetLinearRules(string @group);
         GithubRule[] GetGithubRules(string @group);
+        GitlabRule[] GetGitlabRules(string @group);
         IReadOnlyDictionary<string, string> GetRedirectionMap();
         IReadOnlyDictionary<string, string> GetTelegramUserMap();
         IReadOnlyDictionary<string, string> GetSlackUserMap();
