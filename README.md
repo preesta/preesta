@@ -226,11 +226,11 @@ A `github` rule fetches issues and pull requests via GitHub's GraphQL `search` A
 
 **1. Create a Personal Access Token**
 
-https://github.com/settings/tokens → *Generate new token (classic)* → scope:
-* `repo` — required for private repositories
-* `public_repo` — sufficient if you only monitor public repositories
+https://github.com/settings/tokens → *Generate new token (classic)* → scopes (need **both**):
+* **`repo`** (or `public_repo` if you only monitor public repositories) — required to read issues/PRs and run mutations
+* **`user:email`** (or `read:user`) — **required**: GitHub's GraphQL refuses to return the `user.email` field without this scope, and Preesta needs it to route digests by `assignee` / `reporter` marker through the `slackUsers:` / `telegramUsers:` (email → ID) maps. Without it the whole `search` query returns `INSUFFICIENT_SCOPES` errors.
 
-(Fine-grained PATs also work — give them read access to the repos/orgs you want to monitor.)
+(Fine-grained PATs also work — give them read access to the repos/orgs you want to monitor, plus the equivalent email-read permission.)
 
 **2. Configure the token in `appsettings.secrets.yaml`**
 

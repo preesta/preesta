@@ -157,6 +157,7 @@
 - `GithubIssueSupplier` extends `IssueSupplier<GithubRule>` exactly like Linear's; `GithubMutationExecutor` mirrors `LinearMutationExecutor` against the new gateway
 - DI registers a `"Github"` keyed pipeline iff `Github:token` is set; `Application.cs` resolves it via the same `TryResolveNotificationPipe` pattern as Linear. No behaviour change when token is absent
 - Tests: 126 → 150 (3 Linear grouping regression + 3 YAML config parse + 14 IssueSource mapping + 4 MutationExecutor)
+- **Required PAT scopes** (live-discovered): `repo` (or `public_repo`) + `user:email` (or `read:user`). GitHub's GraphQL fails the entire `search` query with `INSUFFICIENT_SCOPES` if `user.email` is requested without the email scope — there is no per-field fallback. Documented in README; secrets stub in `appsettings.yaml` carries the same hint
 
 ### Custom Fields (Jira) ✅
 - User just writes `columns: [Status, Priority, Severity, "Story point estimate"]` in `rules.yaml` — no `customfield_NNNNN` ids in any config. Auto-discovery via `GET /rest/api/?/field` at startup builds a case-insensitive display-name → id map

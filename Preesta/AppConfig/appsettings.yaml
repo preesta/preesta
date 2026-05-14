@@ -46,4 +46,6 @@ Linear:
 
 Github:
   token: ""         # Personal Access Token from GitHub → Settings → Developer settings → PAT
-                    # Classic PAT needs `repo` (private repos) or `public_repo` scope.
+                    # Classic PAT needs `repo` (or `public_repo`) + `user:email` (or `read:user`).
+                    # The email scope is required — GraphQL refuses the search query
+                    # entirely (INSUFFICIENT_SCOPES) when `user.email` is unreadable.

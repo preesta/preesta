@@ -18,11 +18,16 @@ namespace Preesta.Formatting
         // have no canonical URL (Linear stores filter state in localStorage), so
         // we deliberately leave this null rather than fall back to "My Issues".
         public string? LinearViewUri { get; set; }
-        // Linear (Phase 12.2): human-readable description of what produced the list,
-        // shown under the recommendations. Format depends on the rule's filter mode:
-        //   AI prompt   → "AI filter: «<prompt>»"
-        //   raw filter  → "Filter: <compact JSON, truncated to 200 chars>"
-        //   saved view  → "View: <name or id>"
+        // GitHub: deep-link to https://github.com/search?q=<filter>&type=issues so the
+        // recipient can open the same query that produced this digest. Always set
+        // when the section came from a github rule (Filter is required there).
+        public string? GithubSearchUri { get; set; }
+        // Human-readable description of what produced the list, shown under
+        // recommendations. Format depends on the rule type:
+        //   Linear AI prompt   → "AI filter: «<prompt>»"
+        //   Linear saved view  → "View: <name or id>"
+        //   GitHub             → "Search: <filter>"
+        // (Linear filterRaw is intentionally omitted — non-actionable JSON noise.)
         public string? FilterDescription { get; set; }
         public IReadOnlyList<DigestItem> Items { get; set; } = new List<DigestItem>();
     }

@@ -260,6 +260,7 @@ namespace Preesta.Formatting
                     Recommendations = package.Reaction.Recommendations,
                     JqlUri = JqlUriOrNull(package, rootUri),
                     LinearViewUri = LinearViewUriOrNull(package, linearWorkspace),
+                    GithubSearchUri = GithubSearchUriOrNull(package),
                     FilterDescription = LinearFilterDescriptionOrNull(package),
                     Items = items
                 };
@@ -482,6 +483,16 @@ namespace Preesta.Formatting
             return $"https://linear.app/{linearWorkspace}/view/{viewId}";
         }
 
+        // GitHub: build https://github.com/search?q=<filter>&type=issues so the digest
+        // includes a one-click round-trip back to the same query.
+        private static string? GithubSearchUriOrNull(Package<NotificationReaction, Issue> package)
+        {
+            if (!package.Properties.TryGetValue("GithubFilter", out var filterObj)) return null;
+            var filter = filterObj?.ToString();
+            if (string.IsNullOrEmpty(filter)) return null;
+            return $"https://github.com/search?q={System.Uri.EscapeDataString(filter)}&type=issues";
+        }
+
         // Linear (Phase 12.2): renders a one-line, human-readable description of what
         // produced this list — shown under the recommendations in the digest header.
         // Null when no Linear filter property is set (Jira sections, mostly).
@@ -511,6 +522,13 @@ namespace Preesta.Formatting
                 var s = id?.ToString();
                 if (!string.IsNullOrEmpty(s))
                     return $"View: {s}";
+            }
+            // GitHub: raw search string — already human-readable, show verbatim.
+            if (package.Properties.TryGetValue("GithubFilter", out var ghFilter))
+            {
+                var s = ghFilter?.ToString();
+                if (!string.IsNullOrEmpty(s))
+                    return $"Search: {s}";
             }
             return null;
         }

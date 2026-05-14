@@ -11,6 +11,9 @@
 {{~ if section.linear_view_uri ~}}
 <a href="{{ section.linear_view_uri }}">Open in Linear</a>
 {{~ end ~}}
+{{~ if section.github_search_uri ~}}
+<a href="{{ section.github_search_uri }}">Open in GitHub</a>
+{{~ end ~}}
 
 {{~ for item in section.items ~}}
 <a href="{{ item.browse_uri }}">{{ item.key | html.escape }}</a> · {{ item.summary | html.escape }}
