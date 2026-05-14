@@ -99,6 +99,35 @@ namespace Preesta.Configuration
             });
         }
 
+        public Action.GithubRule[] GetGithubRules(string @group)
+        {
+            return GetRules<Action.GithubRule>(@group, "github", entry =>
+            {
+                var rule = ToBaseRule<Action.GithubRule>(entry);
+                rule.Filter = string.IsNullOrWhiteSpace(entry.Filter) ? null : entry.Filter!.Trim();
+
+                // GitHub rules use GraphQL mutations, not REST — drop the REST array
+                // that ToBaseRule eagerly populates and read the same entries again
+                // through the GraphQL field.
+                rule.Mutations = Array.Empty<RestMutationSpec>();
+                if (entry.Mutations != null)
+                {
+                    rule.GraphQLMutations = entry.Mutations
+                        .Where(m => !string.IsNullOrEmpty(m.Mutation))
+                        .Select(m => new Action.GraphQLMutationSpec { MutationBody = m.Mutation! })
+                        .ToArray();
+                }
+
+                if (rule.Filter == null)
+                {
+                    _logger.Error("GitHub rule must specify a non-empty 'filter' (raw GitHub search string)");
+                    return null!;
+                }
+
+                return rule;
+            });
+        }
+
         /// <summary>
         /// Enforces "exactly one of {filter, filterRaw, viewId}" on a Linear rule.
         /// Returns false (and logs) when zero or 2+ are set; the converter then drops the rule.

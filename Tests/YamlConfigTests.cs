@@ -338,6 +338,80 @@ slackUsers:
             Assert.AreEqual("U222", map["petrov@ex.com"]);
         }
 
+        // ----- GitHub rules -----
+
+        [Test]
+        public void Github_FilterAndMutationsParsed()
+        {
+            const string yaml = @"
+rules:
+  - type: github
+    group: gh
+    filter: ""is:open is:issue org:bigcorp label:urgent""
+    mutations:
+      - mutation: |
+          mutation { addComment(input: { subjectId: ""{{@issueId}}"", body: ""ping"" }) { clientMutationId } }
+      - mutation: |
+          mutation { closeIssue(input: { issueId: ""{{@issueId}}"" }) { clientMutationId } }
+    notify:
+      subject: ""GH open""
+      mailTo: assignee
+";
+            var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>())
+                .GetGithubRules("gh");
+
+            Assert.AreEqual(1, rules.Length);
+            Assert.AreEqual("is:open is:issue org:bigcorp label:urgent", rules[0].Filter);
+            Assert.AreEqual(2, rules[0].GraphQLMutations.Length);
+            Assert.IsTrue(rules[0].GraphQLMutations[0].MutationBody.Contains("addComment"));
+            Assert.IsTrue(rules[0].GraphQLMutations[1].MutationBody.Contains("closeIssue"));
+            // REST Mutations array is empty for github rules — `mutations:` is GraphQL.
+            Assert.AreEqual(0, rules[0].Mutations.Length);
+            // Notification markers still flow through ToBaseRule (assignee for routing).
+            Assert.Contains("assignee", rules[0].Notification!.RawRecipients);
+        }
+
+        [Test]
+        public void Github_RuleWithEmptyFilter_IsDroppedAndLogged()
+        {
+            const string yaml = @"
+rules:
+  - type: github
+    group: gh-bad
+    filter: """"
+    notify:
+      subject: x
+      mailTo: assignee
+";
+            var logger = Substitute.For<ILogger>();
+            var rules = new YamlRulesConfig(yaml, logger).GetGithubRules("gh-bad");
+
+            Assert.AreEqual(0, rules.Length);
+            Assert.IsTrue(
+                logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"),
+                "Expected ILogger.Error when a GitHub rule has an empty filter");
+        }
+
+        [Test]
+        public void Github_RuleWithoutFilter_IsDroppedAndLogged()
+        {
+            const string yaml = @"
+rules:
+  - type: github
+    group: gh-bad
+    notify:
+      subject: x
+      mailTo: assignee
+";
+            var logger = Substitute.For<ILogger>();
+            var rules = new YamlRulesConfig(yaml, logger).GetGithubRules("gh-bad");
+
+            Assert.AreEqual(0, rules.Length);
+            Assert.IsTrue(
+                logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"),
+                "Expected ILogger.Error when a GitHub rule has no filter");
+        }
+
         [Test]
         public void Linear_RuleWithMultipleFilterSources_IsDroppedAndLogged()
         {

@@ -51,8 +51,9 @@ namespace Preesta.Configuration
             return GetRules(@group, new[] { "build" }, XRuleSource.ToReleaseRule);
         }
 
-        // XML rules format is legacy; Linear rules are YAML-only.
+        // XML rules format is legacy; Linear and GitHub rules are YAML-only.
         public Action.LinearRule[] GetLinearRules(string @group) => Array.Empty<Action.LinearRule>();
+        public Action.GithubRule[] GetGithubRules(string @group) => Array.Empty<Action.GithubRule>();
 
         public IReadOnlyDictionary<string, string> GetRedirectionMap()
         {
