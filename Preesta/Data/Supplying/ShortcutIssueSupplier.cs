@@ -1,0 +1,56 @@
+using System;
+using System.Collections.Generic;
+using Preesta.Configuration.Action;
+using Serilog;
+
+namespace Preesta.Data.Supplying
+{
+    /// <summary>
+    /// Mirrors <see cref="GithubIssueSupplier"/> but pulls issues from
+    /// <see cref="ShortcutIssueSource"/>. The base <see cref="IssueSupplier{TRule}.JiraService"/>
+    /// is still required by the inherited grouping logic; it's only consulted for
+    /// <c>AdditionalPredicateName</c> resolution, which Shortcut rules don't currently use.
+    /// </summary>
+    /// <remarks>
+    /// Shortcut mutations are raw REST (verb + url + body) — exactly the shape the
+    /// inherited <see cref="IssueSupplier{TRule}.GetMutationPackages"/> already
+    /// produces from <see cref="Configuration.Rule.Mutations"/>, so no override is
+    /// needed (unlike Linear/GitHub, which switch to GraphQL packages).
+    /// </remarks>
+    internal class ShortcutIssueSupplier : IssueSupplier<ShortcutRule>
+    {
+        private readonly ShortcutIssueSource _source;
+        private readonly ILogger _logger;
+
+        public ShortcutIssueSupplier(
+            ShortcutIssueSource source,
+            IJiraService jiraService,
+            IEnumerable<ShortcutRule> rules,
+            ILogger logger)
+            : base(jiraService, rules)
+        {
+            _source = source;
+            _logger = logger;
+        }
+
+        protected override Issue[] GetIssues(ShortcutRule rule)
+        {
+            try
+            {
+                return _source.GetIssues(rule);
+            }
+            catch (Exception e)
+            {
+                _logger.Error(e, "Failed to get issues from Shortcut for rule: {@rule}", rule);
+                return Array.Empty<Issue>();
+            }
+        }
+
+        protected internal override PackageBase Enrich(PackageBase basePackage, ShortcutRule rule)
+        {
+            if (!string.IsNullOrEmpty(rule.Filter))
+                basePackage.Properties["ShortcutFilter"] = rule.Filter!;
+            return basePackage;
+        }
+    }
+}

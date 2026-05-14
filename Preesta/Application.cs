@@ -30,6 +30,11 @@ namespace Preesta
             if (githubPipe != null)
                 tasks.Add(githubPipe.RunAsync());
 
+            // Shortcut pipeline runs only when registered (i.e. Shortcut:apiToken is set).
+            var shortcutPipe = container.TryResolveNotificationPipe<Issue>("Shortcut");
+            if (shortcutPipe != null)
+                tasks.Add(shortcutPipe.RunAsync());
+
             Task.WaitAll(tasks.ToArray());
         }
     }
