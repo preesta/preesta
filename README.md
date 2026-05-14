@@ -159,7 +159,7 @@ Preesta uses YAML as the primary configuration format. Legacy XML format is also
 | Secrets | `appsettings.secrets.yaml` | `appsettings.secrets.json` |
 
 ## Rules Configuration specification
-Supported rule types: `jql` (Jira JQL-based filter), `build` (Jira release/version monitoring), and `linear` (Linear issue tracker via GraphQL).
+Supported rule types: `jql` (Jira JQL-based filter), `build` (Jira release/version monitoring), `linear` (Linear issue tracker via GraphQL), and `github` (GitHub Issues + Pull Requests via GraphQL search).
 See [`Preesta/rules.yaml`](Preesta/rules.yaml) for a full example with `notify` (mailTo / cc / telegramChatId / columns / recommendations) and `mutations` actions.
 
 ### Slack notifications
@@ -219,6 +219,71 @@ Two orthogonal mechanisms — combine as needed.
 The same digest content is delivered as: HTML email (always, when SMTP is configured), Telegram DM (when `Telegram:botToken` is set and `telegramChatId` / `telegramUsers` resolve), Slack DM (when `Slack:botToken` is set and `slackUserId` / `slackUsers` resolve).
 
 Slack-specific formatting: bold `*PRE-7*` issue keys with click-through `<url|key>` links, italic filter description (`_AI filter: "..."_`), `:emoji:` chips for status (`:hourglass_flowing_sand:` In Progress, `:white_check_mark:` Done) and priority (`:red_circle:` Urgent, `:large_orange_circle:` High, etc.).
+
+### GitHub Issues + Pull Requests
+
+A `github` rule fetches issues and pull requests via GitHub's GraphQL `search` API. Selection is one raw GitHub search string — the same syntax you see in the web UI search bar — so multi-repo, org-wide, and PR-vs-issue filters all live inside one human-readable expression.
+
+**1. Create a Personal Access Token**
+
+https://github.com/settings/tokens → *Generate new token (classic)* → scope:
+* `repo` — required for private repositories
+* `public_repo` — sufficient if you only monitor public repositories
+
+(Fine-grained PATs also work — give them read access to the repos/orgs you want to monitor.)
+
+**2. Configure the token in `appsettings.secrets.yaml`**
+
+```yaml
+Github:
+  token: "ghp_yourClassicTokenHere"
+```
+
+**3. Use it in rules**
+
+```yaml
+rules:
+  # All open urgent issues across an org — one digest per assignee
+  - type: github
+    filter: "is:open is:issue org:bigcorp label:urgent"
+    notify:
+      subject: "Urgent GitHub issues"
+      mailTo: assignee
+
+  # Stale PRs across two specific repos
+  - type: github
+    filter: "is:open is:pr repo:foo/api repo:foo/web review:required updated:<2026-05-01"
+    notify:
+      subject: "Stale PRs waiting on review"
+      mailTo: reporter   # i.e. PR author
+```
+
+Filter strings are deliberately impersonal — `assignee:@me` or `author:@me` belong in personal saved filters, **not** in shared rules. Per-recipient routing happens at the notification step via the `assignee` / `reporter` markers in `mailTo`, combined with the workspace-level `slackUsers:` / `telegramUsers:` (email→ID) maps. One rule fans out into one digest per distinct assignee.
+
+GitHub returns an empty string for users who have hidden their email; routing simply skips that recipient for those issues (the digest still goes to other assignees as usual).
+
+### GitHub self-update via GraphQL mutations (advanced)
+
+A `github` rule can carry a `mutations:` list of raw GraphQL mutations, executed against `https://api.github.com/graphql` for each matched issue. Same shape as Linear — write the full `mutation { ... }` body and use `{{@issueId}}` (GitHub node ID), `{{@assignee.email}}`, etc. for substitution.
+
+```yaml
+- type: github
+  filter: "is:open is:issue label:stale"
+  mutations:
+    - mutation: |
+        mutation {
+          addComment(input: {
+            subjectId: "{{@issueId}}",
+            body: "This issue has been quiet for a while — please update or close."
+          }) { clientMutationId }
+        }
+    - mutation: |
+        mutation {
+          closeIssue(input: { issueId: "{{@issueId}}" }) { clientMutationId }
+        }
+```
+
+Per-mutation failures are logged and skipped, identical to the Linear path. Node IDs for labels/users/projects are not resolved by Preesta — query them once via GraphQL and paste them into the mutation body.
 
 ### Linear self-update via GraphQL mutations (advanced)
 

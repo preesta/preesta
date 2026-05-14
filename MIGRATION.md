@@ -145,6 +145,19 @@
 - Inline `StringBuilder` mrkdwn formatter rather than a third Scriban template — short format, Slack-specific emoji needed, fewer build inputs
 - Tests: 100 → 113 (3 SlackMessenger HTTP, 4 routing, 2 mrkdwn format, 2 ReactionPipeline integration, 2 YAML parsing — `MockSlackServer` WireMock helper)
 
+### Phase 12.5: GitHub Issues support ✅
+- Third tracker alongside Jira and Linear. New `GithubGraphQL/` project (mirror of `LinearGraphQL/`) with `IGithubGateway` + `GithubConnection` — single `Query()` method, `Authorization: Bearer <token>` (unlike Linear's raw header), required `User-Agent` header
+- `GithubRule.Filter` is a **single raw GitHub search string** (e.g. `"is:open is:issue org:bigcorp label:urgent"`) — no AI/raw/view trichotomy because GitHub's search syntax already covers multi-repo, org-wide, and PR-vs-issue distinctions in one human-readable expression. Multi-repo and org-wide selection live inside the string via `repo:` / `org:` / `user:` qualifiers
+- `mutations:` parsed as raw GraphQL bodies (same shape as Linear) — power-user hook with `{{@issueId}}` / `{{@assignee.email}}` markers for substitution
+- `GithubIssueSource` issues one `search(query, type: ISSUE, first: 100)` GraphQL request per rule. `type: ISSUE` covers both real issues and pull requests (a PR is an Issue subtype in GitHub's model); `__typename` discriminates and maps to `Issue.Type` of `"Issue"` or `"PR"`
+- Issue mapping: `repository.nameWithOwner + "#" + number` → `Key` (e.g. `octo/repo#42`), `id` → new `Issue.GithubNodeId` (mutation target — `{{@issueId}}` marker now falls back `LinearId ?? GithubNodeId`), `assignees.nodes[0]` → `Participants.Assignee`, `author` → `Participants.Reporter` + `Participants.Creator` (no separate reporter, mirror Linear), `labels.nodes[].name` → `Labels`, `milestone.title` → `ProjectKey`, `state` (OPEN/CLOSED) → `Status` + `Resolution="Closed"` when closed
+- Hidden email handling: GitHub returns empty string when user has hidden their email. We keep the `User` object (login + display name) but set `Email=""` so marker-resolution skips that recipient cleanly instead of producing a `To: ` line with an empty address
+- Obezlichennye-rules contract preserved — filter strings are impersonal (no `assignee:@me` / `author:@me`); per-recipient routing lives in `notification.mailTo: assignee` + the `slackUsers:` / `telegramUsers:` (email→ID) maps. Verified by `LinearGroupingByAssigneeTests` (3 tests, transferable assumption — `IssueSupplier<TRule>` is shared)
+- `ILinearMutationHandler` renamed to `IGraphQLMutationHandler` — the interface was already source-agnostic, so the GitHub executor plugs into the same `ReactionPipeline` slot via the renamed property
+- `GithubIssueSupplier` extends `IssueSupplier<GithubRule>` exactly like Linear's; `GithubMutationExecutor` mirrors `LinearMutationExecutor` against the new gateway
+- DI registers a `"Github"` keyed pipeline iff `Github:token` is set; `Application.cs` resolves it via the same `TryResolveNotificationPipe` pattern as Linear. No behaviour change when token is absent
+- Tests: 126 → 150 (3 Linear grouping regression + 3 YAML config parse + 14 IssueSource mapping + 4 MutationExecutor)
+
 ### Custom Fields (Jira) ✅
 - User just writes `columns: [Status, Priority, Severity, "Story point estimate"]` in `rules.yaml` — no `customfield_NNNNN` ids in any config. Auto-discovery via `GET /rest/api/?/field` at startup builds a case-insensitive display-name → id map
 - `Issue.CustomFields: Dictionary<string, JToken?>` carries the raw payload (shape preserved — scalar/array/object) so the formatter can decide rendering. Linear-sourced issues leave it empty
