@@ -128,6 +128,27 @@ namespace Preesta.Configuration
             });
         }
 
+        public Action.ShortcutRule[] GetShortcutRules(string @group)
+        {
+            return GetRules<Action.ShortcutRule>(@group, "shortcut", entry =>
+            {
+                var rule = ToBaseRule<Action.ShortcutRule>(entry);
+                rule.Filter = string.IsNullOrWhiteSpace(entry.Filter) ? null : entry.Filter!.Trim();
+
+                // Shortcut rules use REST mutations (same shape as Jira), so the
+                // RestMutationSpec array eagerly populated by ToBaseRule is exactly
+                // what we want — no GraphQL field to re-read.
+
+                if (rule.Filter == null)
+                {
+                    _logger.Error("Shortcut rule must specify a non-empty 'filter' (raw Shortcut search string)");
+                    return null!;
+                }
+
+                return rule;
+            });
+        }
+
         /// <summary>
         /// Enforces "exactly one of {filter, filterRaw, viewId}" on a Linear rule.
         /// Returns false (and logs) when zero or 2+ are set; the converter then drops the rule.
