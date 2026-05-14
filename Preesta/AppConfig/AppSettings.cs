@@ -91,6 +91,8 @@ namespace Preesta.AppConfig
 
         public string? GithubToken => _configuration["Github:token"];
 
+        public string? ShortcutApiToken => _configuration["Shortcut:apiToken"];
+
         public IConfigurationSection SmtpSection => _configuration.GetSection("Smtp");
 
         public IConfigurationSection LoggerSection => _configuration.GetSection("Logger");

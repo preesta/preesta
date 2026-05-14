@@ -49,3 +49,8 @@ Github:
                     # Classic PAT needs `repo` (or `public_repo`) + `user:email` (or `read:user`).
                     # The email scope is required — GraphQL refuses the search query
                     # entirely (INSUFFICIENT_SCOPES) when `user.email` is unreadable.
+
+Shortcut:
+  apiToken: ""      # API token from app.shortcut.com/settings/account/api-tokens
+                    # Workspace-scoped; the token's owner determines which stories
+                    # are visible. Sent as `Shortcut-Token: <token>` header.

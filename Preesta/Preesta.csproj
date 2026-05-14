@@ -3,6 +3,7 @@
     <ProjectReference Include="..\JiraRest\JiraRest.csproj" />
     <ProjectReference Include="..\LinearGraphQL\LinearGraphQL.csproj" />
     <ProjectReference Include="..\GithubGraphQL\GithubGraphQL.csproj" />
+    <ProjectReference Include="..\ShortcutRest\ShortcutRest.csproj" />
     <ProjectReference Include="..\Messaging\Messaging.csproj" />
   </ItemGroup>
   <ItemGroup>
