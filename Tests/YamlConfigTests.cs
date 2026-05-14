@@ -412,6 +412,84 @@ rules:
                 "Expected ILogger.Error when a GitHub rule has no filter");
         }
 
+        // ----- Shortcut rules -----
+
+        [Test]
+        public void Shortcut_FilterAndRestMutationsParsed()
+        {
+            const string yaml = @"
+rules:
+  - type: shortcut
+    group: sc
+    filter: ""state:\""In Progress\"" type:bug""
+    mutations:
+      - verb: POST
+        urlPattern: ""https://api.app.shortcut.com/api/v3/stories/{{@issueId}}/comments""
+        body: |
+          {""text"": ""ping""}
+      - verb: PUT
+        urlPattern: ""https://api.app.shortcut.com/api/v3/stories/{{@issueId}}""
+        body: |
+          {""archived"": true}
+    notify:
+      subject: ""SC bugs""
+      mailTo: assignee
+";
+            var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>())
+                .GetShortcutRules("sc");
+
+            Assert.AreEqual(1, rules.Length);
+            Assert.AreEqual("state:\"In Progress\" type:bug", rules[0].Filter);
+            Assert.AreEqual(2, rules[0].Mutations.Length);
+            Assert.AreEqual("POST", rules[0].Mutations[0].Verb);
+            Assert.IsTrue(rules[0].Mutations[0].UrlPattern.Contains("/comments"));
+            Assert.IsTrue(rules[0].Mutations[0].BodyPattern!.Contains("ping"));
+            Assert.AreEqual("PUT", rules[0].Mutations[1].Verb);
+            Assert.IsTrue(rules[0].Mutations[1].BodyPattern!.Contains("archived"));
+            Assert.Contains("assignee", rules[0].Notification!.RawRecipients);
+        }
+
+        [Test]
+        public void Shortcut_RuleWithEmptyFilter_IsDroppedAndLogged()
+        {
+            const string yaml = @"
+rules:
+  - type: shortcut
+    group: sc-bad
+    filter: """"
+    notify:
+      subject: x
+      mailTo: assignee
+";
+            var logger = Substitute.For<ILogger>();
+            var rules = new YamlRulesConfig(yaml, logger).GetShortcutRules("sc-bad");
+
+            Assert.AreEqual(0, rules.Length);
+            Assert.IsTrue(
+                logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"),
+                "Expected ILogger.Error when a Shortcut rule has an empty filter");
+        }
+
+        [Test]
+        public void Shortcut_RuleWithoutFilter_IsDroppedAndLogged()
+        {
+            const string yaml = @"
+rules:
+  - type: shortcut
+    group: sc-bad
+    notify:
+      subject: x
+      mailTo: assignee
+";
+            var logger = Substitute.For<ILogger>();
+            var rules = new YamlRulesConfig(yaml, logger).GetShortcutRules("sc-bad");
+
+            Assert.AreEqual(0, rules.Length);
+            Assert.IsTrue(
+                logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"),
+                "Expected ILogger.Error when a Shortcut rule has no filter");
+        }
+
         [Test]
         public void Linear_RuleWithMultipleFilterSources_IsDroppedAndLogged()
         {
