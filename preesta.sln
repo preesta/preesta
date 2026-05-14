@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinearGraphQL", "LinearGraphQL\LinearGraphQL.csproj", "{D286F9C2-4B4A-48D4-94C6-4D7F1F4A0F3F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GithubGraphQL", "GithubGraphQL\GithubGraphQL.csproj", "{3DFB1C1D-8A7C-45C4-8D1A-3BE32C9BAD39}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -86,5 +88,17 @@ Global
 		{D286F9C2-4B4A-48D4-94C6-4D7F1F4A0F3F}.Release|x64.Build.0 = Release|Any CPU
 		{D286F9C2-4B4A-48D4-94C6-4D7F1F4A0F3F}.Release|x86.ActiveCfg = Release|Any CPU
 		{D286F9C2-4B4A-48D4-94C6-4D7F1F4A0F3F}.Release|x86.Build.0 = Release|Any CPU
+		{3DFB1C1D-8A7C-45C4-8D1A-3BE32C9BAD39}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3DFB1C1D-8A7C-45C4-8D1A-3BE32C9BAD39}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3DFB1C1D-8A7C-45C4-8D1A-3BE32C9BAD39}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3DFB1C1D-8A7C-45C4-8D1A-3BE32C9BAD39}.Debug|x64.Build.0 = Debug|Any CPU
+		{3DFB1C1D-8A7C-45C4-8D1A-3BE32C9BAD39}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3DFB1C1D-8A7C-45C4-8D1A-3BE32C9BAD39}.Debug|x86.Build.0 = Debug|Any CPU
+		{3DFB1C1D-8A7C-45C4-8D1A-3BE32C9BAD39}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3DFB1C1D-8A7C-45C4-8D1A-3BE32C9BAD39}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3DFB1C1D-8A7C-45C4-8D1A-3BE32C9BAD39}.Release|x64.ActiveCfg = Release|Any CPU
+		{3DFB1C1D-8A7C-45C4-8D1A-3BE32C9BAD39}.Release|x64.Build.0 = Release|Any CPU
+		{3DFB1C1D-8A7C-45C4-8D1A-3BE32C9BAD39}.Release|x86.ActiveCfg = Release|Any CPU
+		{3DFB1C1D-8A7C-45C4-8D1A-3BE32C9BAD39}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
