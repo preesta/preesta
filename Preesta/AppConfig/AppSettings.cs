@@ -91,6 +91,15 @@ namespace Preesta.AppConfig
 
         public string? GithubToken => _configuration["Github:token"];
 
+        public string? GitlabToken => _configuration["Gitlab:token"];
+
+        /// <summary>
+        /// Base GraphQL endpoint URL for GitLab. Defaults to <c>https://gitlab.com/api/graphql</c>
+        /// when not set, so users targeting GitLab.com need only configure the token.
+        /// Self-hosted instances point this at <c>https://gitlab.example.com/api/graphql</c>.
+        /// </summary>
+        public string? GitlabApiBase => _configuration["Gitlab:apiBase"];
+
         public IConfigurationSection SmtpSection => _configuration.GetSection("Smtp");
 
         public IConfigurationSection LoggerSection => _configuration.GetSection("Logger");
