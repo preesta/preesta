@@ -159,7 +159,7 @@ Preesta uses YAML as the primary configuration format. Legacy XML format is also
 | Secrets | `appsettings.secrets.yaml` | `appsettings.secrets.json` |
 
 ## Rules Configuration specification
-Supported rule types: `jql` (Jira JQL-based filter), `build` (Jira release/version monitoring), `linear` (Linear issue tracker via GraphQL), and `github` (GitHub Issues + Pull Requests via GraphQL search).
+Supported rule types: `jql` (Jira JQL-based filter), `build` (Jira release/version monitoring), `linear` (Linear issue tracker via GraphQL), `github` (GitHub Issues + Pull Requests via GraphQL search), and `gitlab` (GitLab Issues via GraphQL).
 See [`Preesta/rules.yaml`](Preesta/rules.yaml) for a full example with `notify` (mailTo / cc / telegramChatId / columns / recommendations) and `mutations` actions.
 
 ### Slack notifications
@@ -284,6 +284,88 @@ A `github` rule can carry a `mutations:` list of raw GraphQL mutations, executed
 ```
 
 Per-mutation failures are logged and skipped, identical to the Linear path. Node IDs for labels/users/projects are not resolved by Preesta — query them once via GraphQL and paste them into the mutation body.
+
+### GitLab Issues
+
+A `gitlab` rule fetches issues via GitLab's GraphQL `Query.issues` field. Unlike GitHub, GitLab has no single human-readable search-string language for issues — the web UI builds queries by stacking filter chips (Assignee, Author, Label, Milestone, State, …). Preesta mirrors that taxonomy directly: each chip is a named field on a structured `filter:` mapping, with names matching GraphQL's `Query.issues` arguments exactly.
+
+**1. Create a Personal Access Token**
+
+GitLab → top-right user menu → **Edit profile** → **Access Tokens** → *Add new token*. Required scopes:
+
+* **`read_api`** — read-only digests
+* **`api`** — only if you also configure `mutations:` (write side)
+
+**2. Configure the token in `appsettings.secrets.yaml`**
+
+```yaml
+Gitlab:
+  token: "glpat-yourTokenHere"
+  # apiBase: "https://gitlab.example.com/api/graphql"   # only for self-hosted
+```
+
+Leave `apiBase` unset for GitLab.com SaaS — it defaults to `https://gitlab.com/api/graphql`.
+
+**3. Use it in rules**
+
+```yaml
+rules:
+  # All open urgent issues across visible projects — one digest per assignee
+  - type: gitlab
+    filter:
+      state: opened
+      labelName: [urgent, blocker]
+    notify:
+      subject: "Urgent GitLab issues"
+      mailTo: assignee
+
+  # Stale issues in a specific milestone, by author, with free-text search
+  - type: gitlab
+    filter:
+      state: opened
+      milestoneTitle: ["Sprint 12"]
+      authorUsername: alice
+      search: "checkout"
+      updatedBefore: "2026-05-01T00:00:00Z"
+    notify:
+      subject: "Stale checkout-flow issues"
+      mailTo: reporter
+```
+
+Available chip fields: `state` (`opened` / `closed` / `all`), `labelName` (array — AND), `assigneeUsernames` (array — OR), `authorUsername`, `milestoneTitle` (array), `search` (free-text in title/description), `confidential` (true/false), `createdAfter`, `createdBefore`, `updatedAfter`, `updatedBefore`, `iids` (per-project numeric ids). At least one must be set — GitLab's GraphQL refuses unfiltered scans, and Preesta drops empty rules with an Error log.
+
+Filters are deliberately impersonal — there's no "current user" placeholder. Per-recipient routing happens at the notification step via the `assignee` / `reporter` markers in `mailTo`, combined with the workspace-level `slackUsers:` / `telegramUsers:` (email → ID) maps. One rule fans out into one digest per distinct assignee.
+
+GitLab returns `null` for `User.publicEmail` when the user hasn't exposed it in profile settings; routing simply skips that recipient for those issues (the digest still reaches other assignees).
+
+Issues only in this phase — Merge Requests are deferred (GitLab's GraphQL exposes MR listings only under `Project.mergeRequests` / `Group.mergeRequests`, which requires a different rule shape with mandatory project/group scope).
+
+### GitLab self-update via GraphQL mutations (advanced)
+
+A `gitlab` rule can carry a `mutations:` list of raw GraphQL mutations, executed against `https://gitlab.com/api/graphql` (or your self-hosted endpoint) for each matched issue. Same shape as Linear / GitHub — write the full `mutation { ... }` body and use `{{@issueId}}` (GitLab global ID, `gid://gitlab/Issue/N`), `{{@assignee.email}}`, etc. for substitution.
+
+```yaml
+- type: gitlab
+  filter:
+    state: opened
+    labelName: [stale]
+  mutations:
+    - mutation: |
+        mutation {
+          createNote(input: {
+            noteableId: "{{@issueId}}",
+            body: "This issue has been quiet for a while — please update or close."
+          }) { note { id } }
+        }
+    - mutation: |
+        mutation {
+          updateIssue(input: { id: "{{@issueId}}", stateEvent: CLOSE }) {
+            issue { state }
+          }
+        }
+```
+
+Per-mutation failures (HTTP error or GraphQL `errors` envelope) are logged and skipped — one bad mutation does not stop the others. Note: this requires the `api` scope on the PAT (the read-only `read_api` scope is sufficient for fetching but not for mutations).
 
 ### Linear self-update via GraphQL mutations (advanced)
 
