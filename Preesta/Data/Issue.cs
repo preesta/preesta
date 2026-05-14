@@ -49,6 +49,15 @@ namespace Preesta.Data
         public string? GithubNodeId { get; set; }
 
         /// <summary>
+        /// Shortcut story public ID (integer, stringified) — populated by
+        /// <c>ShortcutIssueSource</c>. Jira / Linear / GitHub leave this null.
+        /// Used by <c>{{@issueId}}</c> marker in Shortcut REST mutation templates
+        /// (<c>PUT /api/v3/stories/{{@issueId}}</c>,
+        /// <c>POST /api/v3/stories/{{@issueId}}/comments</c>).
+        /// </summary>
+        public string? ShortcutId { get; set; }
+
+        /// <summary>
         /// Raw Jira custom-field payload keyed by the internal field id
         /// (<c>customfield_10001</c> etc.). Each value is the unmodified
         /// <see cref="JToken"/> Jira returned — string / number / array /
