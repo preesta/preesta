@@ -105,7 +105,11 @@ namespace Preesta
                 // route to anything sensible. Leave Url null and let the converter
                 // build it from the workspace slug + project + sequence_id.
                 Url = null,
-                Status = NormaliseStatus((JObject?)node["state_detail"], (string?)node["state"]),
+                // Plane returns `state` as a UUID string by default. With expand=state
+                // it inlines the full state object into the same key (not a separate
+                // state_detail field as the docs suggest). Handle both shapes.
+                Status = NormaliseStatus(node["state"] as JObject ?? node["state_detail"] as JObject,
+                    node["state"]?.Type == JTokenType.String ? (string?)node["state"] : null),
                 Priority = NormalisePriority((string?)node["priority"]),
                 Participants = new IssueParticipants
                 {

@@ -50,7 +50,7 @@ query(
   $updatedAfter: Time,
   $updatedBefore: Time,
   $confidential: Boolean,
-  $iids: [ID!]
+  $iids: [String!]
 ) {
   issues(
     state: $state,

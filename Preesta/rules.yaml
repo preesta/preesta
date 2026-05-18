@@ -64,6 +64,62 @@ rules:
       telegramChatId: "12345678"
       columns: [Status, Priority, Updated]
 
+  - type: plane
+    group: e2etest-plane
+    projectId: "bca7d3ea-c84c-4b66-a40c-5522196c35c5"
+    filter:
+      expand: state
+    notify:
+      subject: "Plane digest"
+      recommendations: "Open work items in your Plane project."
+      mailTo: you@example.com
+      cc: ""
+      telegramChatId: "12345678"
+      columns: [Type, Status, Updated]
+
+  - type: gitlab
+    group: e2etest-gitlab
+    filter:
+      state: opened
+      assigneeUsernames: [your-username]
+    notify:
+      subject: "GitLab digest"
+      recommendations: "Open issues across your GitLab projects."
+      mailTo: you@example.com
+      cc: ""
+      telegramChatId: "12345678"
+      columns: [Status, Updated, Labels]
+
+  - type: shortcut
+    group: e2etest-shortcut
+    filter: "!is:archived !state:completed"
+    notify:
+      subject: "Shortcut digest"
+      recommendations: "Open Shortcut stories assigned to you."
+      mailTo: you@example.com
+      cc: ""
+      telegramChatId: "12345678"
+      columns: [Type, Status, Updated]
+
+  - type: github
+    group: e2etest-gh
+    filter: "is:open is:issue repo:your-org/your-repo"
+    notify:
+      subject: "GitHub digest"
+      recommendations: "Open issues and PRs in your personal repos."
+      mailTo: you@example.com
+      cc: ""
+      telegramChatId: "12345678"
+      columns: [Type, Status, Updated, Labels]
+    mutations:
+      - mutation: |
+          mutation {
+            addComment(input: {
+              subjectId: "{{@issueId}}",
+              body: "Hi from Preesta live e2e — automated comment via GitHub GraphQL mutation pipeline. Posted for `{{@issueKey}}`: _{{@title}}_."
+            }) { clientMutationId commentEdge { node { url } } }
+          }
+
   - type: linear
     group: morning-standup
     filterRaw:
