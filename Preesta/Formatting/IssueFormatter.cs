@@ -530,6 +530,15 @@ namespace Preesta.Formatting
                 if (!string.IsNullOrEmpty(s))
                     return $"Search: {s}";
             }
+            // Plane: rendered as "k=v, k=v" by the supplier — show verbatim. When the
+            // rule has no filter at all (whole project), say so explicitly.
+            if (package.Properties.TryGetValue("PlaneProjectId", out var planeProj))
+            {
+                var pf = package.Properties.TryGetValue("PlaneFilter", out var f) ? f?.ToString() : null;
+                return string.IsNullOrEmpty(pf)
+                    ? $"Plane project: {planeProj}"
+                    : $"Plane filter: {pf}";
+            }
             return null;
         }
 

@@ -30,6 +30,11 @@ namespace Preesta
             if (githubPipe != null)
                 tasks.Add(githubPipe.RunAsync());
 
+            // Plane pipeline runs only when registered (i.e. Plane:apiKey + workspaceSlug are set).
+            var planePipe = container.TryResolveNotificationPipe<Issue>("Plane");
+            if (planePipe != null)
+                tasks.Add(planePipe.RunAsync());
+
             Task.WaitAll(tasks.ToArray());
         }
     }

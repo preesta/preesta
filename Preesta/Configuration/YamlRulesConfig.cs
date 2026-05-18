@@ -76,7 +76,8 @@ namespace Preesta.Configuration
             return GetRules<Action.LinearRule>(@group, "linear", entry =>
             {
                 var rule = ToBaseRule<Action.LinearRule>(entry);
-                rule.Filter = string.IsNullOrWhiteSpace(entry.Filter) ? null : entry.Filter;
+                var filterString = entry.Filter as string;
+                rule.Filter = string.IsNullOrWhiteSpace(filterString) ? null : filterString;
                 rule.FilterRaw = ConvertFilterRaw(entry.FilterRaw);
                 rule.ViewId = string.IsNullOrWhiteSpace(entry.ViewId) ? null : entry.ViewId;
 
@@ -99,12 +100,51 @@ namespace Preesta.Configuration
             });
         }
 
+        public Action.PlaneRule[] GetPlaneRules(string @group)
+        {
+            return GetRules<Action.PlaneRule>(@group, "plane", entry =>
+            {
+                var rule = ToBaseRule<Action.PlaneRule>(entry);
+                rule.ProjectId = string.IsNullOrWhiteSpace(entry.ProjectId) ? null : entry.ProjectId!.Trim();
+
+                // Filter is a small YAML mapping of Plane query-param keys to values.
+                // Numeric / boolean scalars are unlikely here (Plane params are
+                // strings or comma-separated UUID lists), but normalise everything
+                // through the existing ToJson walker so we get consistent string
+                // values regardless of how the user quoted them in YAML.
+                rule.Filter = new System.Collections.Generic.Dictionary<string, string>();
+                if (entry.Filter is System.Collections.Generic.IDictionary<object, object> filterMap)
+                {
+                    foreach (var kv in filterMap)
+                    {
+                        var key = kv.Key?.ToString();
+                        if (string.IsNullOrEmpty(key)) continue;
+                        rule.Filter[key!] = kv.Value?.ToString() ?? string.Empty;
+                    }
+                }
+                else if (entry.Filter is string)
+                {
+                    _logger.Error("Plane rule 'filter' must be a YAML mapping (key: value pairs), not a string");
+                    return null!;
+                }
+
+                if (rule.ProjectId == null)
+                {
+                    _logger.Error("Plane rule must specify 'projectId' (project UUID); skipping");
+                    return null!;
+                }
+
+                return rule;
+            });
+        }
+
         public Action.GithubRule[] GetGithubRules(string @group)
         {
             return GetRules<Action.GithubRule>(@group, "github", entry =>
             {
                 var rule = ToBaseRule<Action.GithubRule>(entry);
-                rule.Filter = string.IsNullOrWhiteSpace(entry.Filter) ? null : entry.Filter!.Trim();
+                var filterString = entry.Filter as string;
+                rule.Filter = string.IsNullOrWhiteSpace(filterString) ? null : filterString.Trim();
 
                 // GitHub rules use GraphQL mutations, not REST — drop the REST array
                 // that ToBaseRule eagerly populates and read the same entries again
@@ -292,9 +332,14 @@ namespace Preesta.Configuration
         //   filter:    string — AI prompt (primary, user-facing)
         //   filterRaw: nested mapping — raw Linear GraphQL filter object (escape hatch)
         //   viewId:    string — Linear saved-view ID (escape hatch)
-        public string? Filter { get; set; }
+        // Typed as object so Plane rules (which want filter as a YAML map) can
+        // share the same key; Linear/GitHub converters coerce to string via ToString().
+        public object? Filter { get; set; }
         public object? FilterRaw { get; set; }
         public string? ViewId { get; set; }
+
+        // Plane
+        public string? ProjectId { get; set; }
 
         // Actions
         public YamlNotifyEntry? Notify { get; set; }
