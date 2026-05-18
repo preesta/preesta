@@ -91,5 +91,18 @@ rules:
       slackUserId: "U01ABCDEFG"
       columns: [Status, Priority, DueDate, Updated]
 
+  - type: gitlab
+    group: e2etest
+    filter:
+      state: opened
+      labelName: [urgent]
+    notify:
+      subject: "GitLab digest"
+      recommendations: "Open GitLab issues with urgent label across visible projects."
+      mailTo: you@example.com
+      cc: ""
+      telegramChatId: "12345678"
+      columns: [Status, Labels, Updated]
+
 # Email alias mappings
 redirectionRules: {}

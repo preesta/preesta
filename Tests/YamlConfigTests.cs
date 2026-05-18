@@ -437,7 +437,6 @@ rules:
             Assert.AreEqual(2, rules[0].Filter.Count);
             Assert.AreEqual("urgent,high", rules[0].Filter["priority"]);
             Assert.AreEqual("memory leak", rules[0].Filter["search"]);
-            // Notification markers still flow through ToBaseRule (assignee for routing).
             Assert.Contains("assignee", rules[0].Notification!.RawRecipients);
         }
 
@@ -529,6 +528,127 @@ rules:
         }
 
         // ----- end Plane -----
+
+        // ----- GitLab rules -----
+
+        [Test]
+        public void Gitlab_FilterChipsParsedIntoStructuredObject()
+        {
+            const string yaml = @"
+rules:
+  - type: gitlab
+    group: gl
+    filter:
+      state: opened
+      labelName: [urgent, blocker]
+      assigneeUsernames: [alice, bob]
+      authorUsername: carol
+      milestoneTitle: ['v1.0']
+      search: ""checkout flow""
+      confidential: false
+    notify:
+      subject: ""GL open""
+      mailTo: assignee
+";
+            var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>())
+                .GetGitlabRules("gl");
+
+            Assert.AreEqual(1, rules.Length);
+            var f = rules[0].Filter;
+            Assert.AreEqual("opened", f.State);
+            CollectionAssert.AreEqual(new[] { "urgent", "blocker" }, f.LabelName);
+            CollectionAssert.AreEqual(new[] { "alice", "bob" }, f.AssigneeUsernames);
+            Assert.AreEqual("carol", f.AuthorUsername);
+            CollectionAssert.AreEqual(new[] { "v1.0" }, f.MilestoneTitle);
+            Assert.AreEqual("checkout flow", f.Search);
+            Assert.AreEqual(false, f.Confidential);
+            Assert.Contains("assignee", rules[0].Notification!.RawRecipients);
+        }
+
+        [Test]
+        public void Gitlab_GraphQLMutations_ParsedFromMutationsKey()
+        {
+            const string yaml = @"
+rules:
+  - type: gitlab
+    group: gl
+    filter:
+      state: opened
+      labelName: [stale]
+    mutations:
+      - mutation: |
+          mutation { createNote(input: { noteableId: ""{{@issueId}}"", body: ""ping"" }) { note { id } } }
+      - mutation: |
+          mutation { updateIssue(input: { id: ""{{@issueId}}"", stateEvent: CLOSE }) { issue { state } } }
+";
+            var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>())
+                .GetGitlabRules("gl");
+
+            Assert.AreEqual(1, rules.Length);
+            Assert.AreEqual(2, rules[0].GraphQLMutations.Length);
+            Assert.IsTrue(rules[0].GraphQLMutations[0].MutationBody.Contains("createNote"));
+            Assert.IsTrue(rules[0].GraphQLMutations[1].MutationBody.Contains("updateIssue"));
+            Assert.AreEqual(0, rules[0].Mutations.Length);
+        }
+
+        [Test]
+        public void Gitlab_RuleWithNoFilterFields_IsDroppedAndLogged()
+        {
+            const string yaml = @"
+rules:
+  - type: gitlab
+    group: gl-bad
+    filter: {}
+    notify:
+      subject: x
+      mailTo: assignee
+";
+            var logger = Substitute.For<ILogger>();
+            var rules = new YamlRulesConfig(yaml, logger).GetGitlabRules("gl-bad");
+
+            Assert.AreEqual(0, rules.Length);
+            Assert.IsTrue(
+                logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"),
+                "Expected ILogger.Error when a GitLab rule's filter is empty");
+        }
+
+        [Test]
+        public void Gitlab_RuleWithoutFilter_IsDroppedAndLogged()
+        {
+            const string yaml = @"
+rules:
+  - type: gitlab
+    group: gl-bad
+    notify:
+      subject: x
+      mailTo: assignee
+";
+            var logger = Substitute.For<ILogger>();
+            var rules = new YamlRulesConfig(yaml, logger).GetGitlabRules("gl-bad");
+
+            Assert.AreEqual(0, rules.Length);
+            Assert.IsTrue(
+                logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"),
+                "Expected ILogger.Error when a GitLab rule has no filter");
+        }
+
+        [Test]
+        public void Gitlab_FilterScalarString_AcceptedAsSingleEntryArray()
+        {
+            const string yaml = @"
+rules:
+  - type: gitlab
+    group: gl
+    filter:
+      labelName: urgent
+";
+            var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>()).GetGitlabRules("gl");
+
+            Assert.AreEqual(1, rules.Length);
+            CollectionAssert.AreEqual(new[] { "urgent" }, rules[0].Filter.LabelName);
+        }
+
+        // ----- end GitLab -----
 
         [Test]
         public void Linear_RuleWithMultipleFilterSources_IsDroppedAndLogged()

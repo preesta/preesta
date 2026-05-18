@@ -539,6 +539,13 @@ namespace Preesta.Formatting
                     ? $"Plane project: {planeProj}"
                     : $"Plane filter: {pf}";
             }
+            // GitLab: pre-stringified chip list ("state=opened  label=urgent  …").
+            if (package.Properties.TryGetValue("GitlabFilter", out var glFilter))
+            {
+                var s = glFilter?.ToString();
+                if (!string.IsNullOrEmpty(s))
+                    return $"Filter: {s}";
+            }
             return null;
         }
 

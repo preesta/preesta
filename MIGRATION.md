@@ -172,6 +172,27 @@
 - Tests: 126 → 150 (3 Linear grouping regression + 3 YAML config parse + 14 IssueSource mapping + 4 MutationExecutor)
 - **Required PAT scopes** (live-discovered): `repo` (or `public_repo`) + `user:email` (or `read:user`). GitHub's GraphQL fails the entire `search` query with `INSUFFICIENT_SCOPES` if `user.email` is requested without the email scope — there is no per-field fallback. Documented in README; secrets stub in `appsettings.yaml` carries the same hint
 
+### Phase 13: GitLab Issues support ✅
+- Fourth tracker alongside Jira, Linear, and GitHub. New `GitlabGraphQL/` project (mirror of `GithubGraphQL/`) with `IGitlabGateway` + `GitlabConnection` — single `Query()` method, `Authorization: Bearer <token>` header. Default endpoint `https://gitlab.com/api/graphql`; self-hosted instances override via `Gitlab:apiBase`
+- **Filter shape: structured chips, not a search string.** GitLab — unlike GitHub — does not expose a single human-readable search-string language for issues. The web UI builds queries by stacking filter chips (state, label, assignee, milestone, …); we mirror that taxonomy directly into YAML as a sub-mapping where each chip is a named field on `GitlabFilter` (`state`, `labelName`, `assigneeUsernames`, `authorUsername`, `milestoneTitle`, `search`, `confidential`, `createdAfter`/`Before`, `updatedAfter`/`Before`, `iids`). Field names match GraphQL's `Query.issues` argument names exactly so the parsed filter object is forwarded verbatim as GraphQL variables — no DSL translation step. At least one chip must be set: GitLab refuses unfiltered scans
+- **Issue vs MR**: covers **Issues only** in this phase. GitLab's GraphQL has no top-level `Query.mergeRequests` field — MR listings live under `Project.mergeRequests` / `Group.mergeRequests`, which would require a different rule shape (mandatory `groupFullPath:` etc.). Deferred to a follow-up so the MVP lands cleanly with one query + one rule shape. `Issue.Type` always `"Issue"` for `type: gitlab` rules
+- `mutations:` parsed as raw GraphQL bodies (same shape as Linear / GitHub) — power-user hook with `{{@issueId}}` falling back through `LinearId ?? GithubNodeId ?? GitlabGlobalId`. GitLab's global IDs are `gid://gitlab/Issue/N` strings returned by `Issue.id`
+- `GitlabIssueSource` issues one `issues(...)` GraphQL request per rule with only the configured chip fields materialised into `$variables` (no `null` clutter). Issue mapping:
+  - `reference(full: true)` → `Key` as `group/project#42` (mirror of GitHub's `owner/repo#number`)
+  - `webUrl` → `Url`; `state` → `Status` (title-case, "Opened" / "Closed"); closed → `Resolution="Closed"`
+  - `id` (gid://) → `Issue.GitlabGlobalId` for `{{@issueId}}` mutations
+  - `author` → `Reporter` + `Creator` (no separate reporter in GitLab); `assignees.nodes[0]` → `Assignee`
+  - `labels.nodes[].title` → `Labels` (note: GitLab's `Label` type uses `title`, not `name`)
+  - `milestone.title` → `ProjectKey`
+- **Hidden email handling**: GitLab returns `null` for `User.publicEmail` when the user hasn't exposed it in profile settings. We keep the User object (login/displayName useful for the digest header) but set `Email=""` so the marker resolver simply skips routing for that issue — same contract as GitHub's hidden-email behaviour
+- Obezlichennye-rules contract preserved — filter chips are impersonal (no `assignee:@me` equivalent); per-recipient routing lives in `notification.mailTo: assignee` + the workspace-level `slackUsers:` / `telegramUsers:` (email→ID) maps. `IssueSupplier<TRule>` grouping is shared with Jira/Linear/GitHub so no extra regression test needed
+- `GitlabIssueSupplier` extends `IssueSupplier<GitlabRule>` exactly like Linear / GitHub; `GitlabMutationExecutor` mirrors `LinearMutationExecutor` / `GithubMutationExecutor` against the new gateway
+- DI registers a `"Gitlab"` keyed pipeline iff `Gitlab:token` is set; `Application.cs` resolves it via the same `TryResolveNotificationPipe` pattern as Linear / GitHub. Self-hosted root URI for the fallback "Open in GitLab" link derived from `Gitlab:apiBase` (strip `/api/graphql`). No behaviour change when token is absent
+- Digest header gets a `Filter: state=opened  label=urgent  assignee=alice  …` chip line via `GitlabFilter.ToHumanString()` (mirror of GitHub's `Search: …` and Linear's `AI filter: «…»`)
+- `YamlRuleEntry.Filter` loosened from `string?` to `object?` so the same `filter:` YAML key carries either a scalar (Linear AI prompt / GitHub search string) or a mapping (GitLab chips); Linear/GitHub paths cast to string and treat non-string as missing
+- Required PAT scope: `read_api` for read-only digests; `api` if `mutations:` are also configured. `Gitlab:apiBase` defaults to `https://gitlab.com/api/graphql` so SaaS users only configure the token
+- Tests: 150 → 175 (16 IssueSource mapping + 4 MutationExecutor + 5 YAML config parsing)
+
 ### Custom Fields (Jira) ✅
 - User just writes `columns: [Status, Priority, Severity, "Story point estimate"]` in `rules.yaml` — no `customfield_NNNNN` ids in any config. Auto-discovery via `GET /rest/api/?/field` at startup builds a case-insensitive display-name → id map
 - `Issue.CustomFields: Dictionary<string, JToken?>` carries the raw payload (shape preserved — scalar/array/object) so the formatter can decide rendering. Linear-sourced issues leave it empty

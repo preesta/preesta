@@ -57,3 +57,13 @@ Plane:
                     # Same value for every rule — per-rule scoping uses `projectId` in rules.yaml.
   apiBase: ""       # Optional. Leave blank for Plane Cloud (https://api.plane.so/).
                     # Self-hosted: set to your host with trailing slash, e.g. https://plane.example.com/
+
+Gitlab:
+  token: ""         # Personal Access Token from GitLab → User → Edit profile → Access Tokens.
+                    # Scope `read_api` is enough for read-only digests; add `api` only if
+                    # you also want to run `mutations:` (write side).
+                    # Recipient emails come from `User.publicEmail` — users who haven't
+                    # exposed their email in profile settings appear with empty Email, so
+                    # routing via `mailTo: assignee` skips them cleanly.
+  apiBase: ""       # Defaults to https://gitlab.com/api/graphql. Override for self-hosted,
+                    # e.g. https://gitlab.example.com/api/graphql.
