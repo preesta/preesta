@@ -24,19 +24,16 @@ namespace Preesta.Data.Supplying
     {
         private readonly PlaneIssueSource _source;
         private readonly ILogger _logger;
-        private readonly string _workspaceSlug;
 
         public PlaneIssueSupplier(
             PlaneIssueSource source,
             IJiraService jiraService,
             IEnumerable<PlaneRule> rules,
-            ILogger logger,
-            string workspaceSlug)
+            ILogger logger)
             : base(jiraService, rules)
         {
             _source = source;
             _logger = logger;
-            _workspaceSlug = workspaceSlug;
         }
 
         protected override Issue[] GetIssues(PlaneRule rule)
@@ -54,13 +51,16 @@ namespace Preesta.Data.Supplying
 
         protected internal override PackageBase Enrich(PackageBase basePackage, PlaneRule rule)
         {
+            // Deliberately no PlaneSearchUri — Plane stores active filter chips in a
+            // base64 URL fragment that can't be round-tripped from outside the web
+            // app, so a link to "/projects/<id>/issues/" would silently drop the
+            // chips and land the recipient on every work item in the project.
+            // Mirror Linear's AI-prompt / raw-filter modes: keep the textual
+            // filter description in the header, omit the deep link entirely.
+            // (Plane Views — when we add support — will have canonical shareable
+            // URLs and can populate this property.)
             if (!string.IsNullOrEmpty(rule.ProjectId))
-            {
                 basePackage.Properties["PlaneProjectId"] = rule.ProjectId!;
-                if (!string.IsNullOrEmpty(_workspaceSlug))
-                    basePackage.Properties["PlaneSearchUri"] =
-                        $"https://app.plane.so/{_workspaceSlug}/projects/{rule.ProjectId}/issues/";
-            }
             if (rule.Filter != null && rule.Filter.Count > 0)
             {
                 // Render only the chips that represent actual user-facing filters in
