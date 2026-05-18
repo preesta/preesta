@@ -263,10 +263,15 @@ namespace Tests.Plane
             });
             source.GetIssues(rule);
 
+            // Source augments the user filter with `expand=state` so the response
+            // carries readable state names — verify the user's chips survive verbatim
+            // alongside the implicit expand directive.
             gateway.Received(1).ListWorkItems(
                 ProjectId,
                 Arg.Is<IReadOnlyDictionary<string, string>>(d =>
-                    d.Count == 2 && d["priority"] == "urgent,high" && d["search"] == "memory leak"));
+                    d["priority"] == "urgent,high"
+                    && d["search"] == "memory leak"
+                    && d["expand"] == "state"));
         }
 
         [Test]

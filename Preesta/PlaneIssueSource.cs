@@ -59,7 +59,13 @@ namespace Preesta
             JObject response;
             try
             {
-                response = _gateway.ListWorkItems(rule.ProjectId!, rule.Filter ?? new Dictionary<string, string>());
+                // Always request `expand=state` so the response carries the full state
+                // object (with name) instead of just a UUID. It's an API-shape directive,
+                // not a user filter — user-supplied chips win on conflict but for the
+                // common case the user shouldn't have to know about it.
+                var query = new Dictionary<string, string>(rule.Filter ?? new Dictionary<string, string>());
+                if (!query.ContainsKey("expand")) query["expand"] = "state";
+                response = _gateway.ListWorkItems(rule.ProjectId!, query);
             }
             catch (Exception ex)
             {

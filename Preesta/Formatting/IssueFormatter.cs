@@ -545,12 +545,16 @@ namespace Preesta.Formatting
             }
             // Plane: rendered as "k=v, k=v" by the supplier — show verbatim. When the
             // rule has no filter at all (whole project), say so explicitly.
-            if (package.Properties.TryGetValue("PlaneProjectId", out var planeProj))
+            // Plane: only render a description when the rule has real user-facing
+            // filter chips. "Plane project: <UUID>" is meaningless in the digest
+            // (the project name lives behind another API call), and an unfiltered
+            // section title would just be visual noise — the "Open in Plane →" link
+            // already says where the items come from.
+            if (package.Properties.TryGetValue("PlaneFilter", out var planeFilter))
             {
-                var pf = package.Properties.TryGetValue("PlaneFilter", out var f) ? f?.ToString() : null;
-                return string.IsNullOrEmpty(pf)
-                    ? $"Plane project: {planeProj}"
-                    : $"Plane filter: {pf}";
+                var s = planeFilter?.ToString();
+                if (!string.IsNullOrEmpty(s))
+                    return $"Plane filter: {s}";
             }
             // GitLab: pre-stringified chip list ("state=opened  label=urgent  …").
             if (package.Properties.TryGetValue("GitlabFilter", out var glFilter))

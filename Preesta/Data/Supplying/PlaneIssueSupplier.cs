@@ -57,24 +57,23 @@ namespace Preesta.Data.Supplying
             if (!string.IsNullOrEmpty(rule.ProjectId))
             {
                 basePackage.Properties["PlaneProjectId"] = rule.ProjectId!;
-                // Round-trip link to the project's work-items page. Plane encodes
-                // active filters in a URL fragment (display_filters base64) that
-                // isn't documented for external generation, so the link drops the
-                // chip filters and just points at the project — the recipient sees
-                // the project's current state and can filter in the UI.
                 if (!string.IsNullOrEmpty(_workspaceSlug))
                     basePackage.Properties["PlaneSearchUri"] =
                         $"https://app.plane.so/{_workspaceSlug}/projects/{rule.ProjectId}/issues/";
             }
             if (rule.Filter != null && rule.Filter.Count > 0)
             {
-                // Render the filter as a one-line "k=v, k=v" string for the
-                // human-readable digest header. Keys are sorted so the output is
-                // deterministic regardless of YAML mapping order.
+                // Render only the chips that represent actual user-facing filters in
+                // the digest header. `expand` is an API-shape directive (asks the
+                // source to inline the state object) — confusing to surface.
                 var parts = new List<string>();
                 foreach (var k in new System.Collections.Generic.SortedSet<string>(rule.Filter.Keys))
+                {
+                    if (string.Equals(k, "expand", StringComparison.OrdinalIgnoreCase)) continue;
                     parts.Add($"{k}={rule.Filter[k]}");
-                basePackage.Properties["PlaneFilter"] = string.Join(", ", parts);
+                }
+                if (parts.Count > 0)
+                    basePackage.Properties["PlaneFilter"] = string.Join(", ", parts);
             }
             return basePackage;
         }

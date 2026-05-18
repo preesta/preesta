@@ -67,8 +67,6 @@ rules:
   - type: plane
     group: e2etest-plane
     projectId: "bca7d3ea-c84c-4b66-a40c-5522196c35c5"
-    filter:
-      expand: state
     notify:
       subject: "Plane digest"
       recommendations: "Open work items in your Plane project."
