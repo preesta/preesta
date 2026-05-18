@@ -12,6 +12,13 @@ namespace PlaneRest
     public interface IPlaneGateway
     {
         /// <summary>
+        /// Workspace URL slug (segment in app.plane.so/&lt;slug&gt;/...). Exposed so the
+        /// source can build canonical browse URLs from response payload (which itself
+        /// carries no URL field).
+        /// </summary>
+        string WorkspaceSlug { get; }
+
+        /// <summary>
         /// GET <c>/api/v1/workspaces/{slug}/projects/{projectId}/work-items/</c>
         /// with the given query parameters merged into the URL. Returns the raw
         /// paginated envelope (<c>{ results: [...], next_cursor, ... }</c>).

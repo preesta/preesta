@@ -23,7 +23,7 @@ namespace PlaneRest
 
         internal HttpClient Client { get; }
         internal Uri ApiBase { get; }
-        internal string WorkspaceSlug { get; }
+        public string WorkspaceSlug { get; }
 
         public PlaneConnection(string apiKey, string workspaceSlug, HttpClient? httpClient = null)
             : this(apiKey, workspaceSlug, DefaultApiBase, httpClient)

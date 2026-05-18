@@ -89,6 +89,14 @@ namespace Preesta
             var projectId = (string?)node["project"];
             var key = sequenceId == null ? (projectId ?? string.Empty) : $"#{sequenceId}";
 
+            // Plane's REST payload has no canonical browse URL field. Build one from
+            // the workspace slug + project UUID + work-item UUID — same path the UI
+            // uses to deep-link to a single work item.
+            var workItemId = (string?)node["id"];
+            var browseUrl = !string.IsNullOrEmpty(projectId) && !string.IsNullOrEmpty(workItemId)
+                ? $"https://app.plane.so/{_gateway.WorkspaceSlug}/projects/{projectId}/issues/{workItemId}/"
+                : null;
+
             var assigneeIds = (node["assignees"] as JArray)?.Select(t => (string?)t).Where(s => !string.IsNullOrEmpty(s)).ToArray()
                               ?? Array.Empty<string?>();
             var createdById = (string?)node["created_by"];
@@ -98,13 +106,9 @@ namespace Preesta
             return new Issue
             {
                 Key = key,
-                PlaneId = (string?)node["id"],
+                PlaneId = workItemId,
                 Summary = (string?)node["name"] ?? string.Empty,
-                // Plane's REST payload does not include a canonical browse URL — the
-                // formatter would fall back to "<root>/browse/{key}", which doesn't
-                // route to anything sensible. Leave Url null and let the converter
-                // build it from the workspace slug + project + sequence_id.
-                Url = null,
+                Url = browseUrl,
                 // Plane returns `state` as a UUID string by default. With expand=state
                 // it inlines the full state object into the same key (not a separate
                 // state_detail field as the docs suggest). Handle both shapes.
