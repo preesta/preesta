@@ -67,3 +67,8 @@ Gitlab:
                     # routing via `mailTo: assignee` skips them cleanly.
   apiBase: ""       # Defaults to https://gitlab.com/api/graphql. Override for self-hosted,
                     # e.g. https://gitlab.example.com/api/graphql.
+
+Shortcut:
+  apiToken: ""      # API token from app.shortcut.com/settings/account/api-tokens
+                    # Workspace-scoped; the token's owner determines which stories
+                    # are visible. Sent as `Shortcut-Token: <token>` header.

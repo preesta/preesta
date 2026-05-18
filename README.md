@@ -159,7 +159,7 @@ Preesta uses YAML as the primary configuration format. Legacy XML format is also
 | Secrets | `appsettings.secrets.yaml` | `appsettings.secrets.json` |
 
 ## Rules Configuration specification
-Supported rule types: `jql` (Jira JQL-based filter), `build` (Jira release/version monitoring), `linear` (Linear issue tracker via GraphQL), `github` (GitHub Issues + Pull Requests via GraphQL search), `plane` (Plane work items via REST), and `gitlab` (GitLab Issues via GraphQL).
+Supported rule types: `jql` (Jira JQL-based filter), `build` (Jira release/version monitoring), `linear` (Linear issue tracker via GraphQL), `github` (GitHub Issues + Pull Requests via GraphQL search), `plane` (Plane work items via REST), `gitlab` (GitLab Issues via GraphQL), and `shortcut` (Shortcut stories via REST search).
 See [`Preesta/rules.yaml`](Preesta/rules.yaml) for a full example with `notify` (mailTo / cc / telegramChatId / columns / recommendations) and `mutations` actions.
 
 ### Slack notifications
@@ -436,6 +436,64 @@ A `gitlab` rule can carry a `mutations:` list of raw GraphQL mutations, executed
 ```
 
 Per-mutation failures (HTTP error or GraphQL `errors` envelope) are logged and skipped — one bad mutation does not stop the others. Note: this requires the `api` scope on the PAT (the read-only `read_api` scope is sufficient for fetching but not for mutations).
+
+### Shortcut
+
+A `shortcut` rule fetches Shortcut stories via the REST `/api/v3/search/stories` endpoint. Selection is one raw Shortcut search string — the same syntax you see in the Shortcut web search bar — so projects, teams, labels, owners and dates all live inside one human-readable expression.
+
+**1. Create an API token**
+
+https://app.shortcut.com/settings/account/api-tokens → *Generate Token* → copy the value. Tokens are per-user and scoped to the workspace; the token owner determines which stories Preesta can see.
+
+**2. Configure the token in `appsettings.secrets.yaml`**
+
+```yaml
+Shortcut:
+  apiToken: "your-shortcut-api-token"
+```
+
+**3. Use it in rules**
+
+```yaml
+rules:
+  # All in-progress bugs across the workspace — one digest per owner
+  - type: shortcut
+    filter: "state:\"In Progress\" type:bug !is:archived"
+    notify:
+      subject: "Open Shortcut bugs"
+      mailTo: assignee
+
+  # Overdue stories in a specific team — escalate to the requester
+  - type: shortcut
+    filter: "team:platform !state:completed has:deadline deadline:<today"
+    notify:
+      subject: "Overdue Shortcut stories"
+      mailTo: reporter
+```
+
+Filter strings are deliberately impersonal — `owner:me` or `requester:me` belong in personal saved filters, **not** in shared rules. Per-recipient routing happens at the notification step via the `assignee` / `reporter` markers in `mailTo`, combined with the workspace-level `slackUsers:` / `telegramUsers:` (email → ID) maps. One rule fans out into one digest per distinct owner.
+
+Workflow-state names (e.g. *In Progress*, *Backlog*, *Completed*) and owner emails are resolved automatically against Shortcut's `/api/v3/workflows` and `/api/v3/members` endpoints. Both are cached for the lifetime of the process (one roundtrip each at first use), so large workspaces stay well within rate limits. If a member's email isn't visible on the token, routing for that owner simply skips — the digest still goes to other owners as usual.
+
+### Shortcut self-update via REST mutations (advanced)
+
+A `shortcut` rule can carry a `mutations:` list of raw REST requests, executed against `https://api.app.shortcut.com` for each matched story. Same `verb` / `urlPattern` / `body` shape as Jira — Shortcut has no GraphQL, so REST is the only path. Use `{{@issueId}}` (Shortcut story public ID), `{{@title}}`, `{{@assignee.email}}`, etc. for substitution.
+
+```yaml
+- type: shortcut
+  filter: "state:\"Ready for Review\" updated:<-7d"
+  mutations:
+    - verb: POST
+      urlPattern: "https://api.app.shortcut.com/api/v3/stories/{{@issueId}}/comments"
+      body: |
+        { "text": "Stale — please update or close." }
+    - verb: PUT
+      urlPattern: "https://api.app.shortcut.com/api/v3/stories/{{@issueId}}"
+      body: |
+        { "archived": true }
+```
+
+Per-mutation failures are logged and skipped, identical to the Linear/GitHub paths. Workflow-state / label / project / member IDs are not resolved by Preesta — fetch them once via the REST API and paste them into the mutation body.
 
 ### Linear self-update via GraphQL mutations (advanced)
 

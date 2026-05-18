@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlaneRest", "PlaneRest\Plan
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitlabGraphQL", "GitlabGraphQL\GitlabGraphQL.csproj", "{4E1A2B3C-7D8E-4F5A-9B0C-1D2E3F4A5B6C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShortcutRest", "ShortcutRest\ShortcutRest.csproj", "{7D99921F-6B36-4AF7-99E4-9905C9EBE7D0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -128,5 +130,17 @@ Global
 		{4E1A2B3C-7D8E-4F5A-9B0C-1D2E3F4A5B6C}.Release|x64.Build.0 = Release|Any CPU
 		{4E1A2B3C-7D8E-4F5A-9B0C-1D2E3F4A5B6C}.Release|x86.ActiveCfg = Release|Any CPU
 		{4E1A2B3C-7D8E-4F5A-9B0C-1D2E3F4A5B6C}.Release|x86.Build.0 = Release|Any CPU
+		{7D99921F-6B36-4AF7-99E4-9905C9EBE7D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D99921F-6B36-4AF7-99E4-9905C9EBE7D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D99921F-6B36-4AF7-99E4-9905C9EBE7D0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7D99921F-6B36-4AF7-99E4-9905C9EBE7D0}.Debug|x64.Build.0 = Debug|Any CPU
+		{7D99921F-6B36-4AF7-99E4-9905C9EBE7D0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7D99921F-6B36-4AF7-99E4-9905C9EBE7D0}.Debug|x86.Build.0 = Debug|Any CPU
+		{7D99921F-6B36-4AF7-99E4-9905C9EBE7D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D99921F-6B36-4AF7-99E4-9905C9EBE7D0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D99921F-6B36-4AF7-99E4-9905C9EBE7D0}.Release|x64.ActiveCfg = Release|Any CPU
+		{7D99921F-6B36-4AF7-99E4-9905C9EBE7D0}.Release|x64.Build.0 = Release|Any CPU
+		{7D99921F-6B36-4AF7-99E4-9905C9EBE7D0}.Release|x86.ActiveCfg = Release|Any CPU
+		{7D99921F-6B36-4AF7-99E4-9905C9EBE7D0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

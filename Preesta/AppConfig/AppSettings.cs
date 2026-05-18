@@ -111,6 +111,8 @@ namespace Preesta.AppConfig
         /// </summary>
         public string? GitlabApiBase => _configuration["Gitlab:apiBase"];
 
+        public string? ShortcutApiToken => _configuration["Shortcut:apiToken"];
+
         public IConfigurationSection SmtpSection => _configuration.GetSection("Smtp");
 
         public IConfigurationSection LoggerSection => _configuration.GetSection("Logger");

@@ -191,6 +191,29 @@ namespace Preesta.DI
                     slackMessenger: slackMessenger, slackUserMap: slackUserMap));
             }
 
+            // Shortcut pipeline mirrors GitHub — registered only when an API token is provided.
+            // Shortcut is REST-only (no GraphQL), so the mutation executor plugs into the
+            // same IHttpHandler slot as Jira (not the IGraphQLMutationHandler slot).
+            if (!string.IsNullOrEmpty(appSettings.ShortcutApiToken))
+            {
+                var shortcutConnection = new ShortcutRest.ShortcutConnection(appSettings.ShortcutApiToken!);
+                var shortcutSource = new ShortcutIssueSource(shortcutConnection, logger);
+                var shortcutSupplier = new ShortcutIssueSupplier(
+                    shortcutSource, jiraService, rulesConfig.GetShortcutRules(@group), logger);
+                var shortcutMutationExecutor = new ShortcutMutationExecutor(shortcutConnection, logger);
+
+                // Issue.Url is populated by ShortcutIssueSource (app_url); rootUri is a
+                // fallback only. The base URL also lets {{@jiraRoot}} marker resolve to
+                // the Shortcut API root for rule-supplied mutation urlPattern templates.
+                var shortcutConverter = new IssuePackageConverter(
+                    "https://api.app.shortcut.com/", appSettings.SubjectPrefix, customFields: customFields);
+
+                services.AddKeyedSingleton("Shortcut", new ReactionPipeline<Issue>(
+                    shortcutSupplier, shortcutConverter, messenger, shortcutMutationExecutor, redirector,
+                    logoFileName, telegramMessenger, telegramUserMap,
+                    slackMessenger: slackMessenger, slackUserMap: slackUserMap));
+            }
+
             _provider = services.BuildServiceProvider();
         }
 
