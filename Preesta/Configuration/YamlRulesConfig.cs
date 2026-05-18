@@ -138,9 +138,13 @@ namespace Preesta.Configuration
 
                 // Mirror GitLab's "no scan-everything rules" rule: a Plane rule with
                 // no actual user-facing filter chips will pull every work item in the
-                // project, which is virtually never what the user wants in a digest
-                // (and is misleading because the "Open in Plane" link can't carry
-                // chips so it points at the project either way). Drop + log.
+                // project, which is virtually never what the user wants in a digest.
+                // KNOWN LIMITATION: Plane's public REST list endpoint ignores filter
+                // query params server-side (verified live 2026-05-18 — `?priority=…`
+                // and `?state__group=…` return the full project). This guardrail
+                // still keeps users from writing a rule that promises filtering and
+                // then silently mails everything; once client-side filtering is added
+                // it'll start enforcing the chips for real.
                 var userChips = rule.Filter.Keys
                     .Where(k => !string.Equals(k, "expand", StringComparison.OrdinalIgnoreCase))
                     .ToArray();

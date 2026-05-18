@@ -76,6 +76,11 @@ rules:
       cc: ""
       telegramChatId: "12345678"
       columns: [Type, Status, Updated]
+    mutations:
+      - verb: POST
+        urlPattern: "https://api.plane.so/api/v1/workspaces/preesta-test/projects/bca7d3ea-c84c-4b66-a40c-5522196c35c5/work-items/{{@issueId}}/comments/"
+        body: |
+          {"comment_html": "<p>Hi from Preesta live e2e — Plane REST mutation pipeline. Posted on <code>{{@issueKey}}</code>: <em>{{@title}}</em>.</p>"}
 
   - type: gitlab
     group: e2etest-gitlab
@@ -89,10 +94,18 @@ rules:
       cc: ""
       telegramChatId: "12345678"
       columns: [Status, Updated, Labels]
+    mutations:
+      - mutation: |
+          mutation {
+            createNote(input: {
+              noteableId: "{{@issueId}}",
+              body: "Hi from Preesta live e2e — GitLab GraphQL mutation pipeline. Posted on `{{@issueKey}}`: _{{@title}}_."
+            }) { note { id } }
+          }
 
   - type: shortcut
     group: e2etest-shortcut
-    filter: "!is:archived !state:completed"
+    filter: "id:26"
     notify:
       subject: "Shortcut digest"
       recommendations: "Open Shortcut stories assigned to you."
@@ -100,6 +113,11 @@ rules:
       cc: ""
       telegramChatId: "12345678"
       columns: [Type, Status, Updated]
+    mutations:
+      - verb: POST
+        urlPattern: "https://api.app.shortcut.com/api/v3/stories/{{@issueId}}/comments"
+        body: |
+          {"text": "Hi from Preesta live e2e — Shortcut REST mutation pipeline. Posted on `{{@issueKey}}`: *{{@title}}*."}
 
   - type: github
     group: e2etest-gh
