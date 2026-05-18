@@ -17,9 +17,6 @@
 {{~ if section.gitlab_search_uri ~}}
 <a href="{{ section.gitlab_search_uri }}">Open in GitLab</a>
 {{~ end ~}}
-{{~ if section.plane_search_uri ~}}
-<a href="{{ section.plane_search_uri }}">Open in Plane</a>
-{{~ end ~}}
 {{~ if section.shortcut_search_uri ~}}
 <a href="{{ section.shortcut_search_uri }}">Open in Shortcut</a>
 {{~ end ~}}

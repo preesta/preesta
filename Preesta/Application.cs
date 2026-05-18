@@ -30,11 +30,6 @@ namespace Preesta
             if (githubPipe != null)
                 tasks.Add(githubPipe.RunAsync());
 
-            // Plane pipeline runs only when registered (i.e. Plane:apiKey + workspaceSlug are set).
-            var planePipe = container.TryResolveNotificationPipe<Issue>("Plane");
-            if (planePipe != null)
-                tasks.Add(planePipe.RunAsync());
-
             // GitLab pipeline runs only when registered (i.e. Gitlab:token is set).
             var gitlabPipe = container.TryResolveNotificationPipe<Issue>("Gitlab");
             if (gitlabPipe != null)

@@ -51,10 +51,9 @@ namespace Preesta.Configuration
             return GetRules(@group, new[] { "build" }, XRuleSource.ToReleaseRule);
         }
 
-        // XML rules format is legacy; Linear, GitHub, GitLab, Plane and Shortcut rules are YAML-only.
+        // XML rules format is legacy; Linear, GitHub, GitLab and Shortcut rules are YAML-only.
         public Action.LinearRule[] GetLinearRules(string @group) => Array.Empty<Action.LinearRule>();
         public Action.GithubRule[] GetGithubRules(string @group) => Array.Empty<Action.GithubRule>();
-        public Action.PlaneRule[] GetPlaneRules(string @group) => Array.Empty<Action.PlaneRule>();
         public Action.GitlabRule[] GetGitlabRules(string @group) => Array.Empty<Action.GitlabRule>();
         public Action.ShortcutRule[] GetShortcutRules(string @group) => Array.Empty<Action.ShortcutRule>();
 

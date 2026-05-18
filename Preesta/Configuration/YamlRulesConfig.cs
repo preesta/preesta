@@ -102,65 +102,6 @@ namespace Preesta.Configuration
             });
         }
 
-        public Action.PlaneRule[] GetPlaneRules(string @group)
-        {
-            return GetRules<Action.PlaneRule>(@group, "plane", entry =>
-            {
-                var rule = ToBaseRule<Action.PlaneRule>(entry);
-                rule.ProjectId = string.IsNullOrWhiteSpace(entry.ProjectId) ? null : entry.ProjectId!.Trim();
-
-                // Filter is a small YAML mapping of Plane query-param keys to values.
-                // Numeric / boolean scalars are unlikely here (Plane params are
-                // strings or comma-separated UUID lists), but normalise everything
-                // through the existing ToJson walker so we get consistent string
-                // values regardless of how the user quoted them in YAML.
-                rule.Filter = new System.Collections.Generic.Dictionary<string, string>();
-                if (entry.Filter is System.Collections.Generic.IDictionary<object, object> filterMap)
-                {
-                    foreach (var kv in filterMap)
-                    {
-                        var key = kv.Key?.ToString();
-                        if (string.IsNullOrEmpty(key)) continue;
-                        rule.Filter[key!] = kv.Value?.ToString() ?? string.Empty;
-                    }
-                }
-                else if (entry.Filter is string)
-                {
-                    _logger.Error("Plane rule 'filter' must be a YAML mapping (key: value pairs), not a string");
-                    return null!;
-                }
-
-                if (rule.ProjectId == null)
-                {
-                    _logger.Error("Plane rule must specify 'projectId' (project UUID); skipping");
-                    return null!;
-                }
-
-                // Mirror GitLab's "no scan-everything rules" rule: a Plane rule with
-                // no actual user-facing filter chips will pull every work item in the
-                // project, which is virtually never what the user wants in a digest.
-                // KNOWN LIMITATION: Plane's public REST list endpoint ignores filter
-                // query params server-side (verified live 2026-05-18 — `?priority=…`
-                // and `?state__group=…` return the full project). This guardrail
-                // still keeps users from writing a rule that promises filtering and
-                // then silently mails everything; once client-side filtering is added
-                // it'll start enforcing the chips for real.
-                var userChips = rule.Filter.Keys
-                    .Where(k => !string.Equals(k, "expand", StringComparison.OrdinalIgnoreCase))
-                    .ToArray();
-                if (userChips.Length == 0)
-                {
-                    _logger.Error("Plane rule on project '{ProjectId}' has no user-facing filter chip "
-                        + "(state_group, priority, assignees, labels, search, created_after, target_date_after, …). "
-                        + "An unfiltered rule would pull every work item in the project; specify at least one chip.",
-                        rule.ProjectId);
-                    return null!;
-                }
-
-                return rule;
-            });
-        }
-
         public Action.GitlabRule[] GetGitlabRules(string @group)
         {
             return GetRules<Action.GitlabRule>(@group, "gitlab", entry =>
@@ -466,15 +407,12 @@ namespace Preesta.Configuration
         //   linear (filter):  string — AI prompt
         //   github (filter):  string — raw GitHub search query
         //   gitlab (filter):  mapping — structured chips (state, labelName, …)
-        //   plane  (filter):  mapping — query-param key/value pairs
         // Type is therefore `object?` and each rule-type converter casts/inspects it.
         // FilterRaw / ViewId are Linear-only escape hatches (kept as their own keys).
         public object? Filter { get; set; }
         public object? FilterRaw { get; set; }
         public string? ViewId { get; set; }
 
-        // Plane
-        public string? ProjectId { get; set; }
 
         // Actions
         public YamlNotifyEntry? Notify { get; set; }

@@ -22,9 +22,6 @@ namespace Preesta.Formatting
         // recipient can open the same query that produced this digest. Always set
         // when the section came from a github rule (Filter is required there).
         public string? GithubSearchUri { get; set; }
-        // Plane: link to the project's work-items page; no filter chips encoded
-        // (Plane stores them in a base64 URL fragment, not query params).
-        public string? PlaneSearchUri { get; set; }
         // GitLab: link to /dashboard/issues pre-filtered with the same chips.
         public string? GitlabSearchUri { get; set; }
         // Shortcut: link to /<workspace>/stories?query=… with the raw search string.

@@ -49,13 +49,6 @@ namespace Preesta.Data
         public string? GithubNodeId { get; set; }
 
         /// <summary>
-        /// Plane work-item UUID. Populated by <c>PlaneIssueSource</c>; other sources
-        /// leave this null. Used by <c>{{@issueId}}</c> marker in REST mutation
-        /// templates — Plane's PATCH / DELETE endpoints address items by this UUID.
-        /// </summary>
-        public string? PlaneId { get; set; }
-
-        /// <summary>
         /// GitLab GraphQL global ID for this issue (the <c>gid://gitlab/Issue/1234</c>
         /// form returned by <c>Issue.id</c>). Populated by <c>GitlabIssueSource</c>;
         /// other sources leave this null. Used by <c>{{@issueId}}</c> marker in

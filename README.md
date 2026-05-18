@@ -159,7 +159,7 @@ Preesta uses YAML as the primary configuration format. Legacy XML format is also
 | Secrets | `appsettings.secrets.yaml` | `appsettings.secrets.json` |
 
 ## Rules Configuration specification
-Supported rule types: `jql` (Jira JQL-based filter), `build` (Jira release/version monitoring), `linear` (Linear issue tracker via GraphQL), `github` (GitHub Issues + Pull Requests via GraphQL search), `plane` (Plane work items via REST), `gitlab` (GitLab Issues via GraphQL), and `shortcut` (Shortcut stories via REST search).
+Supported rule types: `jql` (Jira JQL-based filter), `build` (Jira release/version monitoring), `linear` (Linear issue tracker via GraphQL), `github` (GitHub Issues + Pull Requests via GraphQL search), `gitlab` (GitLab Issues via GraphQL), and `shortcut` (Shortcut stories via REST search).
 See [`Preesta/rules.yaml`](Preesta/rules.yaml) for a full example with `notify` (mailTo / cc / telegramChatId / columns / recommendations) and `mutations` actions.
 
 ### Slack notifications
@@ -284,76 +284,6 @@ A `github` rule can carry a `mutations:` list of raw GraphQL mutations, executed
 ```
 
 Per-mutation failures are logged and skipped, identical to the Linear path. Node IDs for labels/users/projects are not resolved by Preesta — query them once via GraphQL and paste them into the mutation body.
-
-### Plane
-
-A `plane` rule fetches work items from [Plane](https://plane.so) via its REST API. Plane's list endpoint is project-scoped (there is no org-wide search), so every rule names a single project via `projectId`. Selection inside the project happens through a small `filter:` mapping whose keys are Plane's documented list-issues query params verbatim (`state`, `priority`, `search`, …) — no DSL invented, no JSON blobs in `rules.yaml`.
-
-**1. Get an API key**
-
-Plane web app → *Profile* → *Personal Access Tokens* → *Create token*. The token format is `plane_api_<random>`. Sent as the custom `X-API-Key` header (not `Authorization: Bearer`).
-
-**2. Configure in `appsettings.secrets.yaml`**
-
-```yaml
-Plane:
-  apiKey: "plane_api_yourTokenHere"
-  workspaceSlug: "your-workspace"   # the segment in app.plane.so/<slug>/...
-  apiBase: ""                       # leave blank for Plane Cloud; self-hosted: https://plane.example.com/
-```
-
-**3. Use it in rules**
-
-```yaml
-rules:
-  # Open urgent items in one project — one digest per assignee
-  - type: plane
-    projectId: "550e8400-e29b-41d4-a716-446655440000"
-    filter:
-      priority: "urgent,high"
-    notify:
-      subject: "Urgent Plane items"
-      mailTo: assignee
-
-  # Free-text search across a project
-  - type: plane
-    projectId: "550e8400-e29b-41d4-a716-446655440000"
-    filter:
-      search: "memory leak"
-    notify:
-      subject: "Memory-leak triage queue"
-      mailTo: assignee
-```
-
-Omit `filter:` entirely (or leave it empty) to digest every work item in the project — handy for small projects where you want full visibility.
-
-Filter mappings are deliberately impersonal — there is no "me" marker. Per-recipient routing happens at the notification step via the `assignee` / `reporter` markers in `mailTo`, combined with the workspace-level `slackUsers:` / `telegramUsers:` (email→ID) maps. Preesta resolves Plane's UUID-based assignees against the workspace members list (`GET /workspaces/{slug}/members/`) once at startup and caches the UUID → email map for the run.
-
-If the members lookup fails (HTTP error, restricted token, or self-hosted Plane that doesn't expose the endpoint), assignee email routing degrades gracefully — the digest still goes out via any direct addresses or `slackUsers:` map entries the rule set, just without per-assignee fan-out.
-
-### Plane self-update via REST mutations (advanced)
-
-A `plane` rule can carry a `mutations:` list of raw REST requests, executed for each matched work item. Same shape as a Jira `mutations:` entry — verb / urlPattern / body — and the same marker substitution: `{{@issueId}}` resolves to the Plane work-item UUID, `{{@assignee.email}}` etc. work as usual.
-
-```yaml
-- type: plane
-  projectId: "550e8400-e29b-41d4-a716-446655440000"
-  filter:
-    priority: "low"
-  mutations:
-    # Bump priority on all "low" items to "medium"
-    - verb: PATCH
-      urlPattern: "https://api.plane.so/api/v1/workspaces/your-workspace/projects/550e8400-e29b-41d4-a716-446655440000/work-items/{{@issueId}}"
-      body: |
-        {"priority": "medium"}
-    # Add a comment
-    - verb: POST
-      urlPattern: "https://api.plane.so/api/v1/workspaces/your-workspace/projects/550e8400-e29b-41d4-a716-446655440000/work-items/{{@issueId}}/comments/"
-      body: |
-        {"comment_html": "<p>Reprioritised automatically.</p>"}
-```
-
-Write the absolute URL — the Plane mutation path doesn't substitute a `{{@root}}` marker (there's no equivalent of Jira's `{{@jiraRoot}}` in this surface). Per-mutation failures are logged and skipped, identical to the Linear / GitHub mutation path. State / label / user IDs are not resolved by Preesta — query them once via Plane's list endpoints (`/states/`, `/labels/`, `/workspaces/{slug}/members/`) and paste them into the body.
 
 ### GitLab Issues
 

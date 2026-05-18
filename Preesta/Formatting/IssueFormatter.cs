@@ -261,7 +261,6 @@ namespace Preesta.Formatting
                     JqlUri = JqlUriOrNull(package, rootUri),
                     LinearViewUri = LinearViewUriOrNull(package, linearWorkspace),
                     GithubSearchUri = GithubSearchUriOrNull(package),
-                    PlaneSearchUri = PropertyOrNull(package, "PlaneSearchUri"),
                     GitlabSearchUri = PropertyOrNull(package, "GitlabSearchUri"),
                     ShortcutSearchUri = PropertyOrNull(package, "ShortcutSearchUri"),
                     FilterDescription = LinearFilterDescriptionOrNull(package),
@@ -496,7 +495,7 @@ namespace Preesta.Formatting
             return $"https://github.com/search?q={System.Uri.EscapeDataString(filter)}&type=issues";
         }
 
-        // Plane / GitLab / Shortcut: the supplier builds the full deep-link in Enrich
+        // GitLab / Shortcut: the supplier builds the full deep-link in Enrich
         // (it has the workspace slug or filter-to-querystring logic, which the
         // formatter shouldn't), so we just forward the cached value here.
         private static string? PropertyOrNull(Package<NotificationReaction, Issue> package, string key)
@@ -542,19 +541,6 @@ namespace Preesta.Formatting
                 var s = ghFilter?.ToString();
                 if (!string.IsNullOrEmpty(s))
                     return $"Search: {s}";
-            }
-            // Plane: rendered as "k=v, k=v" by the supplier — show verbatim. When the
-            // rule has no filter at all (whole project), say so explicitly.
-            // Plane: only render a description when the rule has real user-facing
-            // filter chips. "Plane project: <UUID>" is meaningless in the digest
-            // (the project name lives behind another API call), and an unfiltered
-            // section title would just be visual noise — the "Open in Plane →" link
-            // already says where the items come from.
-            if (package.Properties.TryGetValue("PlaneFilter", out var planeFilter))
-            {
-                var s = planeFilter?.ToString();
-                if (!string.IsNullOrEmpty(s))
-                    return $"Plane filter: {s}";
             }
             // GitLab: pre-stringified chip list ("state=opened  label=urgent  …").
             if (package.Properties.TryGetValue("GitlabFilter", out var glFilter))

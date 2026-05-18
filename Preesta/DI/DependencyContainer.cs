@@ -3,7 +3,6 @@ using System.IO;
 using System.Xml.Linq;
 using LinearGraphQL;
 using Microsoft.Extensions.DependencyInjection;
-using PlaneRest;
 using Messaging;
 using Preesta.AppConfig;
 using Preesta.Configuration;
@@ -113,36 +112,6 @@ namespace Preesta.DI
                     slackMessenger: slackMessenger, slackUserMap: slackUserMap));
             }
 
-            // Plane pipeline — REST tracker, registered only when an API key and
-            // workspace slug are both configured (one identity at appsettings level,
-            // many rules in rules.yaml each scoped to a Plane project via projectId).
-            if (!string.IsNullOrEmpty(appSettings.PlaneApiKey)
-                && !string.IsNullOrEmpty(appSettings.PlaneWorkspaceSlug))
-            {
-                var planeApiBase = string.IsNullOrEmpty(appSettings.PlaneApiBase)
-                    ? PlaneConnection.DefaultApiBase
-                    : appSettings.PlaneApiBase!;
-                var planeConnection = new PlaneConnection(
-                    appSettings.PlaneApiKey!, appSettings.PlaneWorkspaceSlug!, planeApiBase);
-                var planeSource = new PlaneIssueSource(planeConnection, logger);
-                var planeSupplier = new PlaneIssueSupplier(
-                    planeSource, jiraService, rulesConfig.GetPlaneRules(@group), logger);
-                var planeMutationExecutor = new PlaneMutationExecutor(planeConnection, logger);
-
-                // For Plane-sourced issues, Issue.Url is null (Plane's API doesn't return
-                // a browse URL). Pass the workspace web root as rootUri so the formatter
-                // builds /<slug>/projects/<projectId>/issues/<sequence_id> links via the
-                // PlaneIssueUriOrNull helper.
-                var planeWebRoot = ResolvePlaneWebRoot(planeApiBase);
-                var planeConverter = new IssuePackageConverter(
-                    planeWebRoot, appSettings.SubjectPrefix, customFields: customFields);
-
-                services.AddKeyedSingleton("Plane", new ReactionPipeline<Issue>(
-                    planeSupplier, planeConverter, messenger, planeMutationExecutor, redirector,
-                    logoFileName, telegramMessenger, telegramUserMap,
-                    slackMessenger: slackMessenger, slackUserMap: slackUserMap));
-            }
-
             // GitLab pipeline mirrors GitHub — registered only when a token is provided.
             if (!string.IsNullOrEmpty(appSettings.GitlabToken))
             {
@@ -236,21 +205,6 @@ namespace Preesta.DI
         internal void ValidateRules()
         {
             _provider.GetRequiredService<IRulesConfig>().ValidateSchema();
-        }
-
-        /// <summary>
-        /// Derives the user-facing web app root from Plane's API base. Plane Cloud
-        /// uses <c>api.plane.so</c> for API and <c>app.plane.so</c> for the UI;
-        /// self-hosted instances commonly serve both from the same host. We try
-        /// the api→app substitution first (cloud convention); when that doesn't
-        /// apply we fall back to the API base, which works for self-hosted setups
-        /// where /workspaces/... is also the UI path.
-        /// </summary>
-        private static string ResolvePlaneWebRoot(string apiBase)
-        {
-            if (apiBase.Contains("api.plane.so", StringComparison.OrdinalIgnoreCase))
-                return apiBase.Replace("api.plane.so", "app.plane.so", StringComparison.OrdinalIgnoreCase);
-            return apiBase;
         }
 
         /// <summary>

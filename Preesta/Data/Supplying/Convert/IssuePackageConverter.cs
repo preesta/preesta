@@ -63,7 +63,7 @@ namespace Preesta.Data.Supplying.Convert
             : template
                 .Replace("{{@jiraRoot}}", rootUri)
                 .Replace("{{@issueKey}}", issue.Key)
-                .Replace("{{@issueId}}", issue.LinearId ?? issue.GithubNodeId ?? issue.PlaneId ?? issue.GitlabGlobalId ?? issue.ShortcutId ?? string.Empty)
+                .Replace("{{@issueId}}", issue.LinearId ?? issue.GithubNodeId ?? issue.GitlabGlobalId ?? issue.ShortcutId ?? string.Empty)
                 .Replace("{{@title}}", issue.Summary)
                 .Replace("{{@assignee.email}}", issue.Participants.Assignee?.Email)
                 .Replace("{{@assignee.key}}", issue.Participants.Assignee?.Key)

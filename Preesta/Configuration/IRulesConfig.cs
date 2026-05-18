@@ -9,7 +9,6 @@ namespace Preesta.Configuration
         ReleaseRule[] GetReleaseRules(string @group);
         LinearRule[] GetLinearRules(string @group);
         GithubRule[] GetGithubRules(string @group);
-        PlaneRule[] GetPlaneRules(string @group);
         GitlabRule[] GetGitlabRules(string @group);
         ShortcutRule[] GetShortcutRules(string @group);
         IReadOnlyDictionary<string, string> GetRedirectionMap();

@@ -64,24 +64,6 @@ rules:
       telegramChatId: "12345678"
       columns: [Status, Priority, Updated]
 
-  - type: plane
-    group: e2etest-plane
-    projectId: "bca7d3ea-c84c-4b66-a40c-5522196c35c5"
-    filter:
-      state_group: "started"
-    notify:
-      subject: "Plane digest"
-      recommendations: "Open work items in your Plane project."
-      mailTo: you@example.com
-      cc: ""
-      telegramChatId: "12345678"
-      columns: [Type, Status, Updated]
-    mutations:
-      - verb: POST
-        urlPattern: "https://api.plane.so/api/v1/workspaces/preesta-test/projects/bca7d3ea-c84c-4b66-a40c-5522196c35c5/work-items/{{@issueId}}/comments/"
-        body: |
-          {"comment_html": "<p>Hi from Preesta live e2e — Plane REST mutation pipeline. Posted on <code>{{@issueKey}}</code>: <em>{{@title}}</em>.</p>"}
-
   - type: gitlab
     group: e2etest-gitlab
     filter:

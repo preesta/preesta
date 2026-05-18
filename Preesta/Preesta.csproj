@@ -3,7 +3,6 @@
     <ProjectReference Include="..\JiraRest\JiraRest.csproj" />
     <ProjectReference Include="..\LinearGraphQL\LinearGraphQL.csproj" />
     <ProjectReference Include="..\GithubGraphQL\GithubGraphQL.csproj" />
-    <ProjectReference Include="..\PlaneRest\PlaneRest.csproj" />
     <ProjectReference Include="..\GitlabGraphQL\GitlabGraphQL.csproj" />
     <ProjectReference Include="..\ShortcutRest\ShortcutRest.csproj" />
     <ProjectReference Include="..\Messaging\Messaging.csproj" />
