@@ -49,7 +49,17 @@ namespace Preesta.Data.Supplying
         protected internal override PackageBase Enrich(PackageBase basePackage, ShortcutRule rule)
         {
             if (!string.IsNullOrEmpty(rule.Filter))
+            {
                 basePackage.Properties["ShortcutFilter"] = rule.Filter!;
+                // Round-trip link to the Shortcut stories page pre-filtered with the
+                // same query string. Slug resolved lazily via /api/v3/member —
+                // returns null when the call fails, in which case we just skip the
+                // link rather than producing a broken one.
+                var slug = _source.WorkspaceSlug;
+                if (!string.IsNullOrEmpty(slug))
+                    basePackage.Properties["ShortcutSearchUri"] =
+                        $"https://app.shortcut.com/{slug}/stories?query={System.Uri.EscapeDataString(rule.Filter!)}";
+            }
             return basePackage;
         }
     }

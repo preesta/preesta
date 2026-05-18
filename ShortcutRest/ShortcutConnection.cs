@@ -62,6 +62,12 @@ namespace ShortcutRest
             return JArray.Parse(text);
         }
 
+        public JObject GetCurrentMember()
+        {
+            var text = Get("api/v3/member");
+            return JObject.Parse(text);
+        }
+
         public void Send(string verb, string path, string? body)
         {
             var trimmedPath = path.StartsWith("/") ? path.Substring(1) : path;

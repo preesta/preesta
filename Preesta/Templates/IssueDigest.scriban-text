@@ -14,6 +14,15 @@
 {{~ if section.github_search_uri ~}}
 <a href="{{ section.github_search_uri }}">Open in GitHub</a>
 {{~ end ~}}
+{{~ if section.gitlab_search_uri ~}}
+<a href="{{ section.gitlab_search_uri }}">Open in GitLab</a>
+{{~ end ~}}
+{{~ if section.plane_search_uri ~}}
+<a href="{{ section.plane_search_uri }}">Open in Plane</a>
+{{~ end ~}}
+{{~ if section.shortcut_search_uri ~}}
+<a href="{{ section.shortcut_search_uri }}">Open in Shortcut</a>
+{{~ end ~}}
 
 {{~ for item in section.items ~}}
 <a href="{{ item.browse_uri }}">{{ item.key | html.escape }}</a> · {{ item.summary | html.escape }}

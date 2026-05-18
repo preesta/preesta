@@ -24,16 +24,19 @@ namespace Preesta.Data.Supplying
     {
         private readonly PlaneIssueSource _source;
         private readonly ILogger _logger;
+        private readonly string _workspaceSlug;
 
         public PlaneIssueSupplier(
             PlaneIssueSource source,
             IJiraService jiraService,
             IEnumerable<PlaneRule> rules,
-            ILogger logger)
+            ILogger logger,
+            string workspaceSlug)
             : base(jiraService, rules)
         {
             _source = source;
             _logger = logger;
+            _workspaceSlug = workspaceSlug;
         }
 
         protected override Issue[] GetIssues(PlaneRule rule)
@@ -52,7 +55,17 @@ namespace Preesta.Data.Supplying
         protected internal override PackageBase Enrich(PackageBase basePackage, PlaneRule rule)
         {
             if (!string.IsNullOrEmpty(rule.ProjectId))
+            {
                 basePackage.Properties["PlaneProjectId"] = rule.ProjectId!;
+                // Round-trip link to the project's work-items page. Plane encodes
+                // active filters in a URL fragment (display_filters base64) that
+                // isn't documented for external generation, so the link drops the
+                // chip filters and just points at the project — the recipient sees
+                // the project's current state and can filter in the UI.
+                if (!string.IsNullOrEmpty(_workspaceSlug))
+                    basePackage.Properties["PlaneSearchUri"] =
+                        $"https://app.plane.so/{_workspaceSlug}/projects/{rule.ProjectId}/issues/";
+            }
             if (rule.Filter != null && rule.Filter.Count > 0)
             {
                 // Render the filter as a one-line "k=v, k=v" string for the

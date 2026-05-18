@@ -68,7 +68,17 @@ namespace Preesta.Data.Supplying
         protected internal override PackageBase Enrich(PackageBase basePackage, GitlabRule rule)
         {
             if (rule.Filter != null && rule.Filter.HasAnyField)
+            {
                 basePackage.Properties["GitlabFilter"] = rule.Filter.ToHumanString();
+                // Round-trip link to the GitLab dashboard pre-filtered to the same
+                // chips — mirror of Jira's "Open in Jira →" and GitHub's "Open in
+                // GitHub →" links. Hard-coded host: gitlab.com works for SaaS users;
+                // self-hosted is a follow-up (would need the apiBase host derived
+                // here, which the supplier currently doesn't see).
+                var qs = rule.Filter.ToDashboardQueryString();
+                if (!string.IsNullOrEmpty(qs))
+                    basePackage.Properties["GitlabSearchUri"] = $"https://gitlab.com/dashboard/issues?{qs}";
+            }
             return basePackage;
         }
     }

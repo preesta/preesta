@@ -143,5 +143,42 @@ namespace Preesta.Configuration.Action
             if (Iids != null && Iids.Length > 0) parts.Add($"iid={string.Join(",", Iids)}");
             return string.Join("  ", parts);
         }
+
+        /// <summary>
+        /// Builds the query string for GitLab's <c>/dashboard/issues</c> page so the
+        /// digest can include a one-click round-trip link. Array fields use the
+        /// <c>name[]=value</c> repeated form GitLab expects, URL-encoded.
+        /// </summary>
+        public string ToDashboardQueryString()
+        {
+            var parts = new System.Collections.Generic.List<string>();
+            void Add(string key, string? value)
+            {
+                if (string.IsNullOrEmpty(value)) return;
+                parts.Add($"{key}={System.Uri.EscapeDataString(value)}");
+            }
+            void AddArray(string key, string[]? values)
+            {
+                if (values == null) return;
+                foreach (var v in values)
+                    if (!string.IsNullOrEmpty(v))
+                        parts.Add($"{System.Uri.EscapeDataString(key + "[]")}={System.Uri.EscapeDataString(v)}");
+            }
+            Add("state", State);
+            AddArray("label_name", LabelName);
+            AddArray("assignee_username", AssigneeUsernames);
+            Add("author_username", AuthorUsername);
+            // Dashboard accepts a single milestone_title param; if the user listed
+            // several, use the first (rendering all of them isn't supported by the
+            // dashboard UI either).
+            Add("milestone_title", MilestoneTitle?.Length > 0 ? MilestoneTitle[0] : null);
+            Add("search", Search);
+            Add("created_after", CreatedAfter);
+            Add("created_before", CreatedBefore);
+            Add("updated_after", UpdatedAfter);
+            Add("updated_before", UpdatedBefore);
+            if (Confidential.HasValue) Add("confidential", Confidential.Value.ToString().ToLowerInvariant());
+            return string.Join("&", parts);
+        }
     }
 }

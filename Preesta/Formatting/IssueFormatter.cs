@@ -261,6 +261,9 @@ namespace Preesta.Formatting
                     JqlUri = JqlUriOrNull(package, rootUri),
                     LinearViewUri = LinearViewUriOrNull(package, linearWorkspace),
                     GithubSearchUri = GithubSearchUriOrNull(package),
+                    PlaneSearchUri = PropertyOrNull(package, "PlaneSearchUri"),
+                    GitlabSearchUri = PropertyOrNull(package, "GitlabSearchUri"),
+                    ShortcutSearchUri = PropertyOrNull(package, "ShortcutSearchUri"),
                     FilterDescription = LinearFilterDescriptionOrNull(package),
                     Items = items
                 };
@@ -491,6 +494,16 @@ namespace Preesta.Formatting
             var filter = filterObj?.ToString();
             if (string.IsNullOrEmpty(filter)) return null;
             return $"https://github.com/search?q={System.Uri.EscapeDataString(filter)}&type=issues";
+        }
+
+        // Plane / GitLab / Shortcut: the supplier builds the full deep-link in Enrich
+        // (it has the workspace slug or filter-to-querystring logic, which the
+        // formatter shouldn't), so we just forward the cached value here.
+        private static string? PropertyOrNull(Package<NotificationReaction, Issue> package, string key)
+        {
+            if (!package.Properties.TryGetValue(key, out var v)) return null;
+            var s = v?.ToString();
+            return string.IsNullOrEmpty(s) ? null : s;
         }
 
         // Linear (Phase 12.2): renders a one-line, human-readable description of what

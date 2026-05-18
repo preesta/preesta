@@ -28,6 +28,13 @@ namespace ShortcutRest
         JArray GetWorkflows();
 
         /// <summary>
+        /// GET <c>/api/v3/member</c> — the authenticated user's profile, including
+        /// <c>workspace2.url_slug</c> needed to build web-app deep links to the
+        /// workspace (e.g. <c>app.shortcut.com/&lt;slug&gt;/...</c>).
+        /// </summary>
+        JObject GetCurrentMember();
+
+        /// <summary>
         /// Generic REST passthrough for power-user mutations (Jira-style <c>mutations:</c>
         /// list). The verb / path / body come from the rule; the gateway just attaches
         /// the <c>Shortcut-Token</c> header and dispatches.

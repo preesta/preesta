@@ -45,6 +45,7 @@ namespace Preesta
         // warm lookups.
         private readonly Lazy<Dictionary<long, string>> _stateNames;
         private readonly Lazy<Dictionary<string, MemberInfo>> _members;
+        private readonly Lazy<string?> _workspaceSlug;
 
         public ShortcutIssueSource(IShortcutGateway gateway, ILogger? logger = null)
         {
@@ -52,6 +53,29 @@ namespace Preesta
             _logger = logger;
             _stateNames = new Lazy<Dictionary<long, string>>(LoadStateNames);
             _members = new Lazy<Dictionary<string, MemberInfo>>(LoadMembers);
+            _workspaceSlug = new Lazy<string?>(LoadWorkspaceSlug);
+        }
+
+        /// <summary>
+        /// Workspace URL slug (segment in <c>app.shortcut.com/&lt;slug&gt;/</c>).
+        /// Populated lazily from <c>/api/v3/member</c> on first access. Returns
+        /// <c>null</c> if the call fails — the supplier then skips the round-trip
+        /// link in the digest header.
+        /// </summary>
+        public virtual string? WorkspaceSlug => _workspaceSlug.Value;
+
+        private string? LoadWorkspaceSlug()
+        {
+            try
+            {
+                var member = _gateway.GetCurrentMember();
+                return (string?)member.SelectToken("workspace2.url_slug");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warning(ex, "Failed to load Shortcut workspace slug — round-trip link will be omitted");
+                return null;
+            }
         }
 
         public ShortcutIssueSource(string apiToken, HttpClient? httpClient = null, ILogger? logger = null)

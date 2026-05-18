@@ -126,7 +126,8 @@ namespace Preesta.DI
                     appSettings.PlaneApiKey!, appSettings.PlaneWorkspaceSlug!, planeApiBase);
                 var planeSource = new PlaneIssueSource(planeConnection, logger);
                 var planeSupplier = new PlaneIssueSupplier(
-                    planeSource, jiraService, rulesConfig.GetPlaneRules(@group), logger);
+                    planeSource, jiraService, rulesConfig.GetPlaneRules(@group), logger,
+                    appSettings.PlaneWorkspaceSlug!);
                 var planeMutationExecutor = new PlaneMutationExecutor(planeConnection, logger);
 
                 // For Plane-sourced issues, Issue.Url is null (Plane's API doesn't return

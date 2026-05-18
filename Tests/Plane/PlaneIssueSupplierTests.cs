@@ -62,7 +62,7 @@ namespace Tests.Plane
                 }
             };
             var supplier = new PlaneIssueSupplier(source,
-                Substitute.For<IJiraService>(), new[] { rule }, Substitute.For<ILogger>());
+                Substitute.For<IJiraService>(), new[] { rule }, Substitute.For<ILogger>(), "test-ws");
             return (supplier, rule);
         }
 
