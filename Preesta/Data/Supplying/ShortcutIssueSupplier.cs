@@ -56,9 +56,17 @@ namespace Preesta.Data.Supplying
                 // returns null when the call fails, in which case we just skip the
                 // link rather than producing a broken one.
                 var slug = _source.WorkspaceSlug;
+                // Shortcut encodes the search query as a URL fragment on /search,
+                // not as a query param on /stories (which redirects to a default
+                // space and ignores ?query=). Verified live: the web UI generates
+                // exactly this form when you type into the in-page Search Stories box.
+                // Fragment-encoding is intentionally minimal: percent-encode only
+                // whitespace + the fragment delimiter itself. Uri.EscapeDataString
+                // would escape `:` and `!` too, which Shortcut then renders back to
+                // the user as literal `%3A` / `%21` in the search box.
                 if (!string.IsNullOrEmpty(slug))
                     basePackage.Properties["ShortcutSearchUri"] =
-                        $"https://app.shortcut.com/{slug}/stories?query={System.Uri.EscapeDataString(rule.Filter!)}";
+                        $"https://app.shortcut.com/{slug}/search#{rule.Filter!.Replace("#", "%23").Replace(" ", "%20")}";
             }
             return basePackage;
         }
