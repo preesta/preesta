@@ -448,6 +448,8 @@ rules:
   - type: plane
     group: plane-mut
     projectId: ""proj-1""
+    filter:
+      priority: low
     mutations:
       - verb: PATCH
         urlPattern: ""https://api.plane.so/api/v1/workspaces/x/projects/proj-1/work-items/{{@issueId}}""
@@ -487,8 +489,12 @@ rules:
         }
 
         [Test]
-        public void Plane_EmptyFilterAllowed_DefaultsToWholeProject()
+        public void Plane_RuleWithNoUserChips_IsDroppedAndLogged()
         {
+            // Rules with no filter pull every work item in the project, which is
+            // virtually always wrong in a digest and the "Open in Plane" link can't
+            // round-trip Plane's chips either. Drop with a clear error so the user
+            // knows to add at least one chip rather than getting a giant noisy email.
             const string yaml = @"
 rules:
   - type: plane
@@ -498,12 +504,38 @@ rules:
       subject: ""All Plane items""
       mailTo: assignee
 ";
-            var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>())
-                .GetPlaneRules("plane-allitems");
+            var logger = Substitute.For<ILogger>();
+            var rules = new YamlRulesConfig(yaml, logger).GetPlaneRules("plane-allitems");
 
-            Assert.AreEqual(1, rules.Length);
-            Assert.AreEqual("proj-1", rules[0].ProjectId);
-            Assert.AreEqual(0, rules[0].Filter.Count);
+            Assert.AreEqual(0, rules.Length);
+            Assert.IsTrue(
+                logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"),
+                "Expected ILogger.Error when a Plane rule has no user-facing filter chip");
+        }
+
+        [Test]
+        public void Plane_ExpandOnlyFilter_IsDroppedAndLogged()
+        {
+            // `expand` is an API-shape directive (asks the source to inline the state
+            // object); it's not a user-facing filter chip and shouldn't satisfy the
+            // "at least one chip" requirement.
+            const string yaml = @"
+rules:
+  - type: plane
+    group: plane-expand-only
+    projectId: ""proj-1""
+    filter:
+      expand: state
+    notify:
+      subject: ""Plane""
+      mailTo: assignee
+";
+            var logger = Substitute.For<ILogger>();
+            var rules = new YamlRulesConfig(yaml, logger).GetPlaneRules("plane-expand-only");
+
+            Assert.AreEqual(0, rules.Length);
+            Assert.IsTrue(
+                logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"));
         }
 
         [Test]

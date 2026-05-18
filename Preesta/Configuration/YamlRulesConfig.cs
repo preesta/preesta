@@ -136,6 +136,23 @@ namespace Preesta.Configuration
                     return null!;
                 }
 
+                // Mirror GitLab's "no scan-everything rules" rule: a Plane rule with
+                // no actual user-facing filter chips will pull every work item in the
+                // project, which is virtually never what the user wants in a digest
+                // (and is misleading because the "Open in Plane" link can't carry
+                // chips so it points at the project either way). Drop + log.
+                var userChips = rule.Filter.Keys
+                    .Where(k => !string.Equals(k, "expand", StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
+                if (userChips.Length == 0)
+                {
+                    _logger.Error("Plane rule on project '{ProjectId}' has no user-facing filter chip "
+                        + "(state_group, priority, assignees, labels, search, created_after, target_date_after, …). "
+                        + "An unfiltered rule would pull every work item in the project; specify at least one chip.",
+                        rule.ProjectId);
+                    return null!;
+                }
+
                 return rule;
             });
         }
