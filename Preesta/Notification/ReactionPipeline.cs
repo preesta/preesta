@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -5,6 +6,7 @@ using Messaging;
 using Preesta.Data.Supplying;
 using Preesta.Data.Supplying.Convert;
 using Preesta.Extensions;
+using Serilog;
 
 namespace Preesta.Notification
 {
@@ -21,6 +23,7 @@ namespace Preesta.Notification
         public IReadOnlyDictionary<string, string> TelegramUserMap { get; set; } = new Dictionary<string, string>();
         public IReadOnlyDictionary<string, string> SlackUserMap { get; set; } = new Dictionary<string, string>();
         public string LogoFileName { get; set; } = string.Empty;
+        public ILogger? Logger { get; set; }
 
         public ReactionPipeline(
             IPackageSupplier? packageSupplier = null,
@@ -33,7 +36,8 @@ namespace Preesta.Notification
             IReadOnlyDictionary<string, string>? telegramUserMap = null,
             IGraphQLMutationHandler? graphQLMutationHandler = null,
             IMessenger? slackMessenger = null,
-            IReadOnlyDictionary<string, string>? slackUserMap = null)
+            IReadOnlyDictionary<string, string>? slackUserMap = null,
+            ILogger? logger = null)
         {
             PackageSupplier = packageSupplier;
             PackageConverter = packageConverter;
@@ -46,6 +50,7 @@ namespace Preesta.Notification
             TelegramUserMap = telegramUserMap ?? new Dictionary<string, string>();
             SlackMessenger = slackMessenger;
             SlackUserMap = slackUserMap ?? new Dictionary<string, string>();
+            Logger = logger;
         }
 
         public void Run()
@@ -61,45 +66,67 @@ namespace Preesta.Notification
                 .OfType<Package<NotificationReaction, TIssueType>>()
                 .ToArray();
 
-            // Email
-            var emailMessages = notificationPackages
-                .ToMessages(PackageConverter)
-                .Redirect(Redirector)
-                .SetLogo(LogoFileName);
+            // Each channel runs inside its own try/catch — a misconfigured or
+            // unreachable channel (bad SMTP creds, blocked Telegram user, expired
+            // Slack token) must not abort the rest of the run. Failures are logged
+            // at Error and the next channel proceeds.
 
-            Messenger?.SendAll(emailMessages);
-
-            // Telegram
-            if (TelegramMessenger != null)
+            TryRunStage("email send", () =>
             {
-                var telegramMessages = notificationPackages
-                    .ToTelegramMessages(PackageConverter, Redirector, TelegramUserMap);
-                TelegramMessenger.SendAll(telegramMessages);
-            }
+                var emailMessages = notificationPackages
+                    .ToMessages(PackageConverter)
+                    .Redirect(Redirector)
+                    .SetLogo(LogoFileName);
+                Messenger?.SendAll(emailMessages);
+            });
 
-            // Slack (personal DMs via chat.postMessage)
-            if (SlackMessenger != null)
+            TryRunStage("telegram send", () =>
             {
-                var slackMessages = notificationPackages
-                    .ToSlackMessages(PackageConverter, Redirector, SlackUserMap);
-                SlackMessenger.SendAll(slackMessages);
-            }
+                if (TelegramMessenger != null)
+                {
+                    var telegramMessages = notificationPackages
+                        .ToTelegramMessages(PackageConverter, Redirector, TelegramUserMap);
+                    TelegramMessenger.SendAll(telegramMessages);
+                }
+            });
 
-            // Self-updates (REST calls)
-            var selfUpdates = allPackages
+            TryRunStage("slack send", () =>
+            {
+                if (SlackMessenger != null)
+                {
+                    var slackMessages = notificationPackages
+                        .ToSlackMessages(PackageConverter, Redirector, SlackUserMap);
+                    SlackMessenger.SendAll(slackMessages);
+                }
+            });
+
+            TryRunStage("REST mutations", () =>
+            {
+                var selfUpdates = allPackages
                     .OfType<Package<SelfUpdate, TIssueType>>()
-                    .ToHttpRequests(PackageConverter)
-                ;
+                    .ToHttpRequests(PackageConverter);
+                HttpHandler?.HandleAll(selfUpdates);
+            });
 
-            HttpHandler?.HandleAll(selfUpdates);
-
-            // GraphQL mutations (Linear)
-            var graphQLBodies = allPackages
+            TryRunStage("GraphQL mutations", () =>
+            {
+                var graphQLBodies = allPackages
                     .OfType<Package<GraphQLMutation, TIssueType>>()
-                    .ToGraphQLMutationBodies(PackageConverter)
-                ;
+                    .ToGraphQLMutationBodies(PackageConverter);
+                GraphQLMutationHandler?.HandleAll(graphQLBodies);
+            });
+        }
 
-            GraphQLMutationHandler?.HandleAll(graphQLBodies);
+        private void TryRunStage(string stageName, Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                Logger?.Error(ex, "Pipeline stage '{Stage}' failed; subsequent stages continue", stageName);
+            }
         }
 
         public async Task RunAsync()

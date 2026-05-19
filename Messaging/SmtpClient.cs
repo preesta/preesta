@@ -95,7 +95,7 @@ namespace Messaging
                     messenger.Send(message);
                     return;
                 }
-                catch (Exception e) when (e is SmtpCommandException || e is SmtpProtocolException)
+                catch (Exception e) when (IsTransient(e))
                 {
                     if (i >= retryCount)
                     {
@@ -104,6 +104,19 @@ namespace Messaging
                     Thread.Sleep(delayInterval);
                 }
             }
+        }
+
+        /// <summary>
+        /// Auth failures (bad credentials, expired tokens, MFA-required) bypass retry —
+        /// twenty minutes of <c>Thread.Sleep</c> doesn't fix a wrong password. SMTP
+        /// command/protocol errors still retry: some 5xx responses are transient
+        /// (greylisting, temporary rate limits) and a stale connection often clears
+        /// after a brief pause.
+        /// </summary>
+        private static bool IsTransient(Exception e)
+        {
+            if (e is AuthenticationException) return false;
+            return e is SmtpCommandException || e is SmtpProtocolException;
         }
     }
 }
