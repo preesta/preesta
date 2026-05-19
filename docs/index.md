@@ -38,4 +38,4 @@ A `rules.yaml` file lists rules; each rule says *which tracker, which issues, wh
 
 ## Delivery channels
 
-Each digest is sent on every channel that has been configured: HTML email (when `Smtp:` is set), Telegram DM (when `Telegram:botToken` is set), Slack DM (when `Slack:botToken` is set). All three are independent and equal — you can run any combination, including Slack-only or Telegram-only. At least one must be set; otherwise the rules would match issues but have nowhere to deliver.
+Each digest is rendered once and dispatched on every channel that has credentials configured: HTML email through `Smtp:`, Telegram DM through `Telegram:botToken`, Slack DM through `Slack:botToken`. Configure the channels your team actually uses; Preesta needs at least one.

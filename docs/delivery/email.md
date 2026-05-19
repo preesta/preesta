@@ -1,6 +1,6 @@
 # Email
 
-One of three independent delivery channels — alongside [Telegram](telegram.md) and [Slack](slack.md). Each one is optional and they coexist: if all three are configured, every digest goes out on all three; if only Slack is configured, only Slack; etc. There is no "default" channel — at least one must be present (Preesta refuses to start with no delivery channel at all).
+Email is one of three delivery channels — [Telegram](telegram.md) and [Slack](slack.md) are the others. Each digest is rendered once and dispatched on every channel that has credentials configured; if your deployment only has `Slack:botToken` set, only Slack DMs go out, and the same goes for any other combination.
 
 ## SMTP setup
 
