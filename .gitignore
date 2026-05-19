@@ -443,4 +443,13 @@ $RECYCLE.BIN/
 
 **/appsettings.secrets*.json
 **/appsettings.secrets*.yaml
-**/appsettings.secrets*.yml.claude/
+**/appsettings.secrets*.yml
+
+.claude/
+
+# MkDocs build output
+/site/
+
+# Python virtualenvs for docs build
+.venv*/
+__pycache__/

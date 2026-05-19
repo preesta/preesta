@@ -34,7 +34,7 @@ What this says:
 - The `or:` clause catches *(not blocked) OR (due today or earlier)* — so things that are due RIGHT NOW even if blocked still show up
 - `mailTo: assignee` fans out one digest per assignee
 
-We use `filterRaw` instead of `filter` (AI prompt) because the `OR` boolean is exactly the kind of logic Linear's AI prompt tends to flip. See [Linear → Filter modes](../../trackers/linear.md#3-filter-modes-pick-one).
+We use `filterRaw` instead of `filter` (AI prompt) because the `OR` boolean is exactly the kind of logic Linear's AI prompt tends to flip. See [Linear → Filter modes](../trackers/linear.md#3-filter-modes-pick-one).
 
 ## Jira flavour
 
