@@ -54,10 +54,20 @@ namespace Preesta.AppConfig
             {
                 throw new ArgumentException("Required parameter Jira.rootUri is not configured in appsettings.json file", "Jira.rootUri");
             }
-            
-            if(!SmtpSection.Exists())
+
+            // At least one delivery channel must be configured — otherwise rules
+            // would match issues but have nowhere to send them. Smtp / Telegram /
+            // Slack are all independent now: any one of them is enough; none of
+            // them is privileged. See docs/delivery/* for the per-channel setup.
+            var hasSmtp     = SmtpSection.Exists();
+            var hasTelegram = !string.IsNullOrEmpty(TelegramBotToken);
+            var hasSlack    = !string.IsNullOrEmpty(SlackBotToken);
+            if (!hasSmtp && !hasTelegram && !hasSlack)
             {
-                throw new ArgumentException("Required configuration section 'Smtp' is absent in appsettings.json file", "Smtp");
+                throw new ArgumentException(
+                    "No delivery channel configured — set at least one of "
+                    + "Smtp section, Telegram:botToken, or Slack:botToken.",
+                    "Smtp/Telegram/Slack");
             }
         }
 

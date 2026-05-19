@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Xml.Linq;
 using LinearGraphQL;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Messaging;
 using Preesta.AppConfig;
@@ -36,7 +37,11 @@ namespace Preesta.DI
             // referenced in rules.yaml will then render as empty, but nothing crashes.
             var customFields = jiraService.GetCustomFieldMap();
 
-            var messenger = new SmtpClient(appSettings.SmtpSection);
+            // Email is optional — same as Telegram / Slack. ReactionPipeline checks
+            // for null and skips the SMTP send when nothing is configured.
+            IMessenger? messenger = null;
+            if (appSettings.SmtpSection.Exists())
+                messenger = new SmtpClient(appSettings.SmtpSection);
 
             IMessenger? telegramMessenger = null;
             var telegramToken = appSettings.TelegramBotToken;

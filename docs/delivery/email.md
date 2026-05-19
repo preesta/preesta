@@ -1,6 +1,6 @@
 # Email
 
-The default delivery channel. Every digest goes by email when SMTP is configured — Telegram and Slack are *additional*, never *replacements*.
+One of three independent delivery channels — alongside [Telegram](telegram.md) and [Slack](slack.md). Each one is optional and they coexist: if all three are configured, every digest goes out on all three; if only Slack is configured, only Slack; etc. There is no "default" channel — at least one must be present (Preesta refuses to start with no delivery channel at all).
 
 ## SMTP setup
 

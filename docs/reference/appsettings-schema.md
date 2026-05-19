@@ -103,6 +103,8 @@ The gating rules:
 | `Github` | `Github:token` |
 | `Gitlab` | `Gitlab:token` |
 | `Shortcut` | `Shortcut:apiToken` |
-| Email (SMTP) | `Smtp:Host` |
+| Email (SMTP) | `Smtp:` section present |
 | Telegram | `Telegram:botToken` |
 | Slack | `Slack:botToken` |
+
+Validation refuses to start if **all three delivery channels** (Smtp, Telegram, Slack) are absent — rules without any delivery channel match issues but have nowhere to send them, which is always a misconfiguration.

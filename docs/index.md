@@ -38,4 +38,4 @@ A `rules.yaml` file lists rules; each rule says *which tracker, which issues, wh
 
 ## Delivery channels
 
-Each digest is sent on the channels that have been configured: HTML email (always, when SMTP is set up), Telegram DM (when `Telegram:botToken` is set), Slack DM (when `Slack:botToken` is set). One rule, one digest content, three channels — no duplication.
+Each digest is sent on every channel that has been configured: HTML email (when `Smtp:` is set), Telegram DM (when `Telegram:botToken` is set), Slack DM (when `Slack:botToken` is set). All three are independent and equal — you can run any combination, including Slack-only or Telegram-only. At least one must be set; otherwise the rules would match issues but have nowhere to deliver.
