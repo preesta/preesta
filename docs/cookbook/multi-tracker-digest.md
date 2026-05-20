@@ -8,6 +8,12 @@
 
 Packages are grouped by `(To, Cc, Subject)`. Use the same `subject:` across the three rules and a recipient with work in all three gets one email with three sections; use different subjects and they fan out into separate emails. Per-tracker "Open in &lt;tracker&gt; →" headers and tracker-specific chips keep each section identifiable inside the merged digest.
 
+The Telegram and Slack DMs follow the same merge — the bot posts one combined message with the same `———` separator between sections:
+
+![Same merged digest delivered via Telegram](../assets/screenshots/tg-multi-tracker.png)
+
+![Same merged digest delivered via Slack](../assets/screenshots/slack-multi-tracker.png)
+
 ## The rules.yaml
 
 ```yaml

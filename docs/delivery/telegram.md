@@ -2,6 +2,8 @@
 
 Telegram delivery is **personal DMs** from a workspace bot — same shape as Slack (one bot token, per-rule routing to individual users). Group chats are supported too (a chat ID can be a group ID).
 
+![Example Telegram digest](../assets/screenshots/tg-single-tracker.png)
+
 ## 1. Create the bot
 
 1. Open Telegram, find [@BotFather](https://t.me/BotFather).

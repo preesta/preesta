@@ -2,6 +2,8 @@
 
 Slack delivery is **personal direct messages** from a workspace bot. Channels and incoming webhooks are not used — the per-rule routing model wants one DM per recipient, which webhooks can't do.
 
+![Example Slack digest](../assets/screenshots/slack-single-tracker.png)
+
 ## 1. Create the Slack app
 
 1. [api.slack.com/apps](https://api.slack.com/apps) → *Create New App* → *From scratch* → pick your workspace.

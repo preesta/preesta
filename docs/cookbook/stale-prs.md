@@ -4,6 +4,12 @@
 
 ![Stale-PR digest with recommendations header](../assets/screenshots/email-stale-with-recommendations.png)
 
+The same digest delivered to Telegram and Slack:
+
+![Stale-PR digest in Telegram](../assets/screenshots/tg-stale.png)
+
+![Stale-PR digest in Slack](../assets/screenshots/slack-stale.png)
+
 ## GitHub flavour
 
 ```yaml

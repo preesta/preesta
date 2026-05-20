@@ -221,6 +221,137 @@ namespace Tests.Screenshots
                 IssueFormatter.ToHtml(new[] { stale }, "https://github.com/"));
         }
 
+        // ===== Slack mockups =====
+        // The mrkdwn body comes from the real IssueFormatter.ToSlackMrkdwn path
+        // (so the text, emoji shortcodes, and `<url|label>` links match what a
+        // production bot would post); the surrounding chrome — sidebar, header,
+        // bot avatar, timestamp — is a Slack-styled HTML mock since logging
+        // into app.slack.com requires user credentials.
+
+        [Test]
+        public void Slack_SingleTracker()
+        {
+            var package = new Package<NotificationReaction, Issue>
+            {
+                Reaction = new NotificationReaction
+                {
+                    Subject = "Daily standup",
+                    Columns = new[] { "Status", "Priority", "Assignee" }
+                },
+                Items = new[]
+                {
+                    Issue("PRE-142", "Refactor mutation executor to share error envelope handling",
+                        status: "In Progress", priority: "High",   assignee: "Alice Chen"),
+                    Issue("PRE-138", "Add per-channel circuit breaker for SMTP auth failures",
+                        status: "In Review",   priority: "Medium", assignee: "Alice Chen"),
+                    Issue("PRE-131", "Telegram digest truncation at 4096 char limit",
+                        status: "To Do",       priority: "Urgent", assignee: "Alice Chen"),
+                    Issue("PRE-127", "Document the secrets file location on every delivery page",
+                        status: "Blocked",     priority: "Low",    assignee: "Alice Chen"),
+                }
+            };
+            WriteSlackMock("slack-single-tracker.html", "Daily standup",
+                IssueFormatter.ToSlackMrkdwn(new[] { package }, "https://jira.example.com/"));
+        }
+
+        [Test]
+        public void Slack_MultiTracker()
+        {
+            var packages = new[]
+            {
+                new Package<NotificationReaction, Issue>
+                {
+                    Reaction = new NotificationReaction { Subject = "Cross-tracker digest",
+                        Columns = new[] { "Status", "Priority", "Assignee" } },
+                    Items = new[]
+                    {
+                        Issue("PLAT-2041", "Migrate auth middleware to JWT v3",
+                            status: "In Progress", priority: "High", assignee: "Alice Chen"),
+                        Issue("PLAT-2038", "Investigate p99 latency on /api/users",
+                            status: "To Do", priority: "Medium", assignee: "Alice Chen"),
+                    }
+                },
+                new Package<NotificationReaction, Issue>
+                {
+                    Reaction = new NotificationReaction { Subject = "Cross-tracker digest",
+                        Columns = new[] { "Status", "Type", "Assignee" } },
+                    Items = new[]
+                    {
+                        GithubIssue("acme/api#412", "Add retry hook to outbound webhook dispatcher",
+                            status: "Open", type: "PR",    assignee: "Alice Chen",
+                            url: "https://github.com/acme/api/pull/412"),
+                        GithubIssue("acme/api#408", "Race condition in session refresh path",
+                            status: "Open", type: "Issue", assignee: "Alice Chen",
+                            url: "https://github.com/acme/api/issues/408"),
+                    }
+                },
+                new Package<NotificationReaction, Issue>
+                {
+                    Reaction = new NotificationReaction { Subject = "Cross-tracker digest",
+                        Columns = new[] { "Status", "Priority", "Assignee" } },
+                    Items = new[]
+                    {
+                        LinearIssue("DES-58", "Polish onboarding empty state",
+                            status: "In Progress", priority: "Medium", assignee: "Alice Chen",
+                            url: "https://linear.app/acme/issue/DES-58"),
+                    }
+                },
+            };
+            WriteSlackMock("slack-multi-tracker.html", "Cross-tracker digest",
+                IssueFormatter.ToSlackMrkdwn(packages, "https://jira.example.com/", linearWorkspace: "acme"));
+        }
+
+        [Test]
+        public void Slack_PerAssignee()
+        {
+            var package = new Package<NotificationReaction, Issue>
+            {
+                Reaction = new NotificationReaction { Subject = "Your open work",
+                    Columns = new[] { "Status", "Priority" } },
+                Items = new[]
+                {
+                    Issue("PRE-142", "Refactor mutation executor to share error envelope handling",
+                        status: "In Progress", priority: "High",   assignee: "Alice Chen"),
+                    Issue("PRE-138", "Add per-channel circuit breaker for SMTP auth failures",
+                        status: "In Review",   priority: "Medium", assignee: "Alice Chen"),
+                }
+            };
+            WriteSlackMock("slack-per-assignee.html", "Your open work",
+                IssueFormatter.ToSlackMrkdwn(new[] { package }, "https://jira.example.com/"));
+        }
+
+        [Test]
+        public void Slack_Stale()
+        {
+            var package = new Package<NotificationReaction, Issue>
+            {
+                Reaction = new NotificationReaction
+                {
+                    Subject = "Stale PRs — needs your attention",
+                    Recommendations = "These PRs have been waiting on review for more than 7 days. " +
+                                      "Please review, ping the author, or close if no longer relevant.",
+                    Columns = new[] { "Status", "Type", "Assignee", "Updated" }
+                },
+                Items = new[]
+                {
+                    GithubIssue("acme/api#412", "Add retry hook to outbound webhook dispatcher",
+                        status: "Open", type: "PR", assignee: "Alice Chen",
+                        url: "https://github.com/acme/api/pull/412",
+                        updated: new DateTime(2026, 5, 8)),
+                    GithubIssue("acme/web#1108", "Migrate settings page to React 19",
+                        status: "Open", type: "PR", assignee: "Bob Martinez",
+                        url: "https://github.com/acme/web/pull/1108",
+                        updated: new DateTime(2026, 5, 6)),
+                    GithubIssue("acme/api#398", "Backport rate-limit fix to 2025.04 release",
+                        status: "Open", type: "PR", assignee: "Clara Volkov",
+                        url: "https://github.com/acme/api/pull/398",
+                        updated: new DateTime(2026, 5, 3)),
+                }
+            };
+            WriteSlackMock("slack-stale.html", "Stale PRs — needs your attention",
+                IssueFormatter.ToSlackMrkdwn(new[] { package }, "https://github.com/"));
+        }
+
         // ---------- helpers ----------
 
         private static Issue Issue(string key, string summary,
@@ -319,6 +450,114 @@ namespace Tests.Screenshots
     </div>
     <div class=""subject"">{caption}</div>
     {body}
+  </div>
+</div></body></html>";
+            File.WriteAllText(Path.Combine(OutDir, fileName), html);
+            TestContext.WriteLine($"Wrote {Path.Combine(OutDir, fileName)}");
+        }
+
+        // Convert Slack mrkdwn into HTML for the mockup:
+        //   *bold*      → <strong>bold</strong>
+        //   <url|label> → <a href="url">label</a>
+        //   :emoji:     → the Unicode glyph Preesta's status/priority chips map to
+        // Newlines map to <br>, surrounding HTML escaping handled before regex.
+        private static string MrkdwnToHtml(string mrkdwn)
+        {
+            var emojiMap = new Dictionary<string, string>
+            {
+                [":white_check_mark:"]        = "✅",
+                [":hourglass_flowing_sand:"]  = "⏳",
+                [":black_square_button:"]     = "🔲",
+                [":open_file_folder:"]        = "📂",
+                [":x:"]                       = "❌",
+                [":no_entry:"]                = "⛔",
+                [":grey_question:"]           = "❔",
+                [":red_circle:"]              = "🔴",
+                [":large_orange_circle:"]     = "🟠",
+                [":large_yellow_circle:"]     = "🟡",
+                [":large_green_circle:"]      = "🟢",
+            };
+
+            var s = System.Net.WebUtility.HtmlEncode(mrkdwn);
+            foreach (var (shortcode, glyph) in emojiMap)
+                s = s.Replace(shortcode, glyph);
+            // <url|label> — but only ours where url is http(s)
+            s = System.Text.RegularExpressions.Regex.Replace(
+                s, @"&lt;(https?://[^|]+)\|([^&]+)&gt;",
+                "<a href=\"$1\" style=\"color:#1264A3;text-decoration:none\">$2</a>");
+            // *bold* — single asterisks, Slack style. Match * + non-space-then-non-asterisk + *
+            s = System.Text.RegularExpressions.Regex.Replace(
+                s, @"\*([^*\n]+)\*",
+                "<strong>$1</strong>");
+            // _italic_
+            s = System.Text.RegularExpressions.Regex.Replace(
+                s, @"(^|[\s>])_([^_\n]+)_(?=[\s<]|$)",
+                "$1<em>$2</em>");
+            return s.Replace("\n", "<br>");
+        }
+
+        private static void WriteSlackMock(string fileName, string caption, string mrkdwn)
+        {
+            var bodyHtml = MrkdwnToHtml(mrkdwn);
+            var html = $@"<!doctype html>
+<html><head><meta charset=""utf-8"">
+<title>{System.Net.WebUtility.HtmlEncode(caption)}</title>
+<style>
+  body {{ background:#FFFFFF; margin:0; padding:0;
+         font-family:'Slack-Lato','Lato','Helvetica Neue',Helvetica,Arial,sans-serif;
+         color:#1D1C1D; font-size:15px; line-height:1.46668; }}
+  .app {{ display:flex; min-height:100vh; }}
+  .sidebar {{ width:72px; background:#1A1D21; padding:14px 0; flex-shrink:0; }}
+  .ws-icon {{ width:36px; height:36px; border-radius:9px; background:#611F69;
+             color:#fff; display:flex; align-items:center; justify-content:center;
+             font-weight:900; font-size:18px; margin:0 auto; }}
+  .channels {{ width:240px; background:#19171D; color:#D1D2D3; padding:14px 0;
+              flex-shrink:0; }}
+  .ws-name {{ color:#fff; font-weight:900; padding:0 16px 12px; font-size:18px;
+             border-bottom:1px solid #2C2D30; }}
+  .channel-item {{ padding:6px 16px; color:#D1D2D3; }}
+  .channel-item.active {{ background:#1164A3; color:#fff; }}
+  .channel-item .hash {{ color:#9A9BA0; margin-right:8px; }}
+  .channels-heading {{ padding:14px 16px 6px; font-size:13px; font-weight:700;
+                      color:#9A9BA0; }}
+  .main {{ flex:1; display:flex; flex-direction:column; min-width:0; }}
+  .topbar {{ height:48px; padding:0 20px; border-bottom:1px solid #E1E1E1;
+            display:flex; align-items:center; font-weight:900; }}
+  .topbar .at {{ color:#1D1C1D; margin-right:6px; opacity:0.6; }}
+  .feed {{ flex:1; padding:24px 20px; }}
+  .msg {{ display:flex; gap:10px; align-items:flex-start; }}
+  .avatar {{ width:36px; height:36px; border-radius:4px; background:#611F69;
+            color:#fff; display:flex; align-items:center; justify-content:center;
+            font-weight:900; flex-shrink:0; }}
+  .msg-body {{ flex:1; min-width:0; }}
+  .meta {{ font-size:15px; margin-bottom:2px; }}
+  .meta .name {{ font-weight:900; }}
+  .meta .app-tag {{ background:#E8E8E8; color:#616061; font-size:10px;
+                   padding:1px 4px; border-radius:2px; font-weight:700;
+                   text-transform:uppercase; margin:0 6px; vertical-align:2px; }}
+  .meta .time {{ color:#616061; font-size:12px; }}
+  .text {{ white-space:normal; }}
+  .text a {{ color:#1264A3; }}
+</style></head><body>
+<div class=""app"">
+  <div class=""sidebar""><div class=""ws-icon"">P</div></div>
+  <div class=""channels"">
+    <div class=""ws-name"">preesta-test</div>
+    <div class=""channels-heading"">Direct messages</div>
+    <div class=""channel-item active""><span class=""hash"">●</span>Preesta</div>
+    <div class=""channel-item""><span class=""hash"">●</span>Slackbot</div>
+  </div>
+  <div class=""main"">
+    <div class=""topbar""><span class=""at"">@</span>Preesta</div>
+    <div class=""feed"">
+      <div class=""msg"">
+        <div class=""avatar"">P</div>
+        <div class=""msg-body"">
+          <div class=""meta""><span class=""name"">Preesta</span><span class=""app-tag"">APP</span><span class=""time"">{DateTime.Now:h:mm tt}</span></div>
+          <div class=""text""><strong>{System.Net.WebUtility.HtmlEncode(caption)}</strong><br><br>{bodyHtml}</div>
+        </div>
+      </div>
+    </div>
   </div>
 </div></body></html>";
             File.WriteAllText(Path.Combine(OutDir, fileName), html);
