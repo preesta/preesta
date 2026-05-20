@@ -35,7 +35,7 @@ Logger:
 |---|---|
 | `Verbose` | Per-rule found rule lists, per-fetch payload sizes |
 | `Information` | `N rules of type X found in schedule group 'Y'`, `<Tracker> mutation succeeded`, SMTP send confirmations |
-| `Warning` | Custom-field discovery failure (graceful), individual GitHub/GitLab/Linear hidden-email cases, Plane members-endpoint absence |
+| `Warning` | Custom-field discovery failure (graceful), individual GitHub/GitLab/Linear hidden-email cases |
 | `Error` | Per-rule conversion failures, per-mutation GraphQL errors, per-message Slack/Telegram failures, per-issue source fetch failures. **Never aborts the run** — Preesta keeps going for the other rules / mutations / channels |
 | `Fatal` | Only if the host crashes before/during DI container construction |
 

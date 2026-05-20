@@ -17,7 +17,7 @@ In order of likelihood:
 
 ## The link in the digest goes to the wrong place
 
-- **"Open in <tracker> →" lands on an unauthorized page** — usually a session issue in the browser (you're logged into Plane account A, link is for workspace B). Re-test in an incognito window.
+- **"Open in <tracker> →" lands on an unauthorized page** — usually a session issue in the browser (you're logged into account A, link is for workspace B). Re-test in an incognito window.
 - **Per-issue link 404s** — the underlying issue was deleted between fetch and digest send. Rare; not actionable.
 - **GitLab dashboard link is empty** — the dashboard filters by *the viewing user*, not by the token owner. If you click as someone who has no issues matching the chips, you see "no work items". Try in your tracker UI with the same chips manually.
 

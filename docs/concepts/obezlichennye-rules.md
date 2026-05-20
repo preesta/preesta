@@ -75,7 +75,7 @@ The mirror of "rules are impersonal" is: *don't put identity in the filter eithe
 
 Validators in the YAML converters enforce this where they can:
 
-- GitLab and (now) Plane reject rules with zero user-facing filter chips — an empty filter is a "scan everything" rule and is universally a mistake
+- GitLab rejects rules with zero user-facing filter chips — an empty filter is a "scan everything" rule and is universally a mistake
 - Linear's three filter modes (`filter`, `filterRaw`, `viewId`) are mutually exclusive — the rule has exactly one source of truth for what it matches
 
 ## See also

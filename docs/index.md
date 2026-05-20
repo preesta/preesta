@@ -34,8 +34,6 @@ A `rules.yaml` file lists rules; each rule says *which tracker, which issues, wh
 | GitLab | GraphQL `Query.issues` chip filter | GraphQL mutations |
 | Shortcut | REST `/search/stories` | REST mutations |
 
-(Plane was [evaluated and removed](concepts/architecture.md#why-not-plane) — their public API doesn't support server-side filtering.)
-
 ## Delivery channels
 
 Each digest is rendered once and dispatched on every channel that has credentials configured: HTML email through `Smtp:`, Telegram DM through `Telegram:botToken`, Slack DM through `Slack:botToken`. Configure the channels your team actually uses; Preesta needs at least one.

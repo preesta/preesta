@@ -41,10 +41,6 @@ A single email per `(To, Cc, Subject, Rule)` package — see [Routing model](../
 
 `mailTo:` and `cc:` accept comma-separated values, each either a literal email or a [marker](../concepts/obezlichennye-rules.md#markers) (`assignee` / `reporter` / `creator`). Literals stay literal. Markers resolve per issue and are how Preesta produces one digest per distinct assignee.
 
-## Why MailKit, not `System.Net.Mail.SmtpClient`
-
-The .NET built-in `SmtpClient` is officially obsoleted by Microsoft (`SmtpClient` documentation explicitly says don't use it for new code). Preesta uses [MailKit](https://github.com/jstedfast/MailKit) — actively maintained, RFC-compliant, supports modern auth methods (XOAUTH2, NTLM). The integration point is `Messaging/SmtpClient.cs`.
-
 ## Troubleshooting
 
 Common failure modes:

@@ -4,7 +4,7 @@ Blueprint for the next integration. Modeled on Phase 12.5 (GitHub) and Phase 13 
 
 ## Pre-work: does the tracker fit?
 
-Before writing code, answer five questions. The Plane abort was a direct consequence of skipping question 3.
+Before writing code, answer five questions:
 
 1. **Does the tracker have a public API at all?** Many in-app "automation" features are UI-only.
 2. **Is authentication via PAT / API key / OAuth?** Preesta is built for service-style auth, not OAuth-flow-on-every-fetch.
@@ -57,7 +57,7 @@ Read these in order before starting:
 - **REST tracker with search** — mirror Shortcut. `Search()` method on the gateway, raw-string `filter:`.
 - **REST tracker without search** — mirror Jira. Tracker-specific query language (JQL) embedded as a string.
 
-If the tracker is REST-only with **no server-side filter chips** (the Plane case) — stop. Document the finding and don't ship.
+If the tracker is REST-only with **no server-side filter chips** — stop. Document the finding and don't ship.
 
 ## What not to do
 

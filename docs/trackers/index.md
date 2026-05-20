@@ -13,7 +13,3 @@ Preesta supports five issue trackers as **sources** (which issues to digest) and
 ## Designing a new tracker integration
 
 Preesta is structured so adding the sixth tracker is a well-scoped piece of work — `git log --grep "^Phase 12.5"` for the GitHub addition is a clean reference. See **[Adding a tracker](../contributing/adding-a-tracker.md)** for the step-by-step.
-
-## Why not Plane
-
-Plane was briefly added (Phase 13) and reverted. Their public REST API deliberately ships without server-side filter parameters — see **[architecture → Why not Plane](../concepts/architecture.md#why-not-plane)** for the full reasoning. Short version: filtering happens client-side in their web app via a separate internal API that requires session cookies, not a PAT.

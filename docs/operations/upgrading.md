@@ -23,7 +23,7 @@ Preesta is pre-1.0. Breaking changes can happen between minor versions until a s
 ### Pre-release evolution
 
 - **Phase 12.5** (May 2026) — GitHub Issues + PRs support added
-- **Phase 13** (May 2026) — GitLab Issues, Shortcut stories support added; Plane briefly added and reverted (see [Architecture → Why not Plane](../concepts/architecture.md#why-not-plane))
+- **Phase 13** (May 2026) — GitLab Issues, Shortcut stories support added
 - **Custom fields** (May 2026) — Jira custom fields auto-discovered; `columns:` accepts custom field display names
 - **Slack DMs** (Apr 2026) — Slack personal-DM delivery added; mirrors Telegram routing
 - **Linear** (Apr 2026) — Linear support added; AI prompt + raw filter + saved view modes

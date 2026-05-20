@@ -85,7 +85,7 @@ mutations:
       }
 ```
 
-**REST trackers (Jira, Shortcut, plus Plane back when it was supported)** — each entry is a Jira-style `verb` / `urlPattern` / `body`:
+**REST trackers (Jira, Shortcut)** — each entry is a Jira-style `verb` / `urlPattern` / `body`:
 
 ```yaml
 mutations:
@@ -103,7 +103,7 @@ See **[Markers reference](../reference/markers.md)** for the full substitution l
 
 The YAML converter drops malformed rules with an `ILogger.Error` log line — Preesta keeps going for the rest of the file:
 
-- Missing required fields (`projectId` for old Plane rules, no filter chips for GitLab)
+- Missing required fields (no filter chips for GitLab)
 - Mutually-exclusive filter modes set together (Linear)
 - Empty filters that would scan an entire tracker
 - Non-string filter where a string is expected, or vice-versa

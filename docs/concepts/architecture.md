@@ -52,9 +52,3 @@ Why not one project? Because every new tracker integration would otherwise grow 
 ## Why YAML for rules
 
 The rule file is what end-users edit, and they aren't always engineers. YAML is the right pivot — multi-line strings for GraphQL mutation bodies are readable, mapping shapes for chip filters (GitLab) are natural, scalar strings work for raw search queries (GitHub, Shortcut), and comments survive round-trips. We accept some YAML weirdness (`YamlRulesConfig.ConvertFilterRaw` exists to recover scalar types after YamlDotNet flattens everything to string) but the user surface stays human-friendly.
-
-## Why not Plane
-
-Briefly added in May 2026, ripped out the same week. Plane has 49k GitHub stars but its public REST API deliberately ships without server-side filter parameters — the `list-issues` endpoint accepts only pagination/sort/expand. All chip filtering (priority, state, assignees, labels) is handled client-side in their own web app via a separate internal API that requires session cookies. Verified against [their docs](https://developers.plane.so/api-reference/issue/list-issues) and the [makeplane/plane source](https://github.com/makeplane/plane/blob/preview/apps/api/plane/api/views/issue.py).
-
-The only workarounds for our case are: download every work item and filter in-process (unacceptable at any non-toy scale), or wire through Plane Views (a parallel rule-shape exclusive to one tracker). Neither was worth carrying.
