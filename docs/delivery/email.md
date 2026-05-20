@@ -4,7 +4,7 @@ Email is one of three delivery channels — [Telegram](telegram.md) and [Slack](
 
 ## SMTP setup
 
-Configure in `appsettings.secrets.yaml`:
+Configure in [`appsettings.secrets.yaml`](../operations/secrets-and-tokens.md) (gitignored, sits next to `appsettings.yaml` in the Preesta install):
 
 ```yaml
 Smtp:

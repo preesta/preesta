@@ -13,6 +13,8 @@ Slack delivery is **personal direct messages** from a workspace bot. Channels an
 
 ## 2. Configure
 
+Add to [`appsettings.secrets.yaml`](../operations/secrets-and-tokens.md) (gitignored, sits next to `appsettings.yaml` in the Preesta install — alongside any `Smtp:` / `Telegram:` sections):
+
 ```yaml
 Slack:
   botToken: "xoxb-EXAMPLE-EXAMPLE-replaceme"

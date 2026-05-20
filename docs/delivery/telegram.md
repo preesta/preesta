@@ -10,6 +10,8 @@ Telegram delivery is **personal DMs** from a workspace bot — same shape as Sla
 
 ## 2. Configure
 
+Add to [`appsettings.secrets.yaml`](../operations/secrets-and-tokens.md) (gitignored, sits next to `appsettings.yaml` in the Preesta install — alongside any `Smtp:` / `Slack:` sections):
+
 ```yaml
 Telegram:
   botToken: "1234567890:AAEexamplexamplexamplexamplexample"
