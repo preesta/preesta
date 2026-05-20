@@ -452,4 +452,9 @@ $RECYCLE.BIN/
 
 # Python virtualenvs for docs build
 .venv*/
+
+# Intermediate HTML for the docs screenshot generator; PNGs in
+# docs/assets/screenshots/ are committed, the HTML is regenerated
+# by Tests.Screenshots.DigestScreenshotGen ([Explicit] fixture).
+docs/assets/rendered-html/
 __pycache__/

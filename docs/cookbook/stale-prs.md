@@ -2,6 +2,8 @@
 
 **Goal:** hourly during business hours, ping authors and reviewers of pull requests that haven't moved in 5+ days.
 
+![Stale-PR digest with recommendations header](../assets/screenshots/email-stale-with-recommendations.png)
+
 ## GitHub flavour
 
 ```yaml

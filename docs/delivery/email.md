@@ -30,6 +30,8 @@ Run [MailHog](https://github.com/mailhog/MailHog) in Docker (`docker run -p 1025
 
 ## What gets sent
 
+![Example email digest](../assets/screenshots/email-single-tracker.png)
+
 A single email per `(To, Cc, Subject, Rule)` package — see [Routing model](../concepts/routing-model.md). Each one is:
 
 - **HTML body** — the styled digest with status pills, priority dots, "Open in <tracker> →" headers

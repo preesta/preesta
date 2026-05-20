@@ -2,6 +2,8 @@
 
 A single digest is built once and shipped via every configured channel. This page explains how the same `mailTo: assignee` marker translates into a Slack DM, a Telegram message, and an email.
 
+![One impersonal rule produces a separate digest per assignee](../assets/screenshots/email-per-assignee.png)
+
 ## The two stages of routing
 
 Stage 1 — **inside the rule** — turns markers into emails. Stage 2 — **inside the channel** — turns emails into the channel's native identifier.

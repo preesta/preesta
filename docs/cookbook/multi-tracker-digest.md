@@ -1,16 +1,12 @@
 # Multi-tracker digest
 
-**Goal:** one schedule group fires rules across Jira + Linear + GitHub, each producing its own per-assignee digest. The result: a recipient who's active in all three trackers gets three emails, each scoped to one tracker.
+**Goal:** one schedule group fires rules across Jira + Linear + GitHub, each producing one section in a single per-assignee digest. The result: a recipient who's active in all three trackers gets one email with three sections, each headed by an "Open in &lt;tracker&gt; →" link.
 
-## Why three emails, not one combined
+![Three trackers, three sections, one recipient](../assets/screenshots/email-multi-tracker.png)
 
-Preesta groups by `(To, Cc, Subject, Rule)` — different rules don't merge. This is intentional:
+## How the merge happens
 
-- Different subjects say where the items came from at a glance
-- "Open in <tracker> →" links go to the right tracker
-- Mutation outcomes are logged per-rule, not blended
-
-If you want a single "everything on me" email, write a wrapper script that runs three groups and concatenates — Preesta won't merge across rules.
+Packages are grouped by `(To, Cc, Subject)`. Use the same `subject:` across the three rules and a recipient with work in all three gets one email with three sections; use different subjects and they fan out into separate emails. Per-tracker "Open in &lt;tracker&gt; →" headers and tracker-specific chips keep each section identifiable inside the merged digest.
 
 ## The rules.yaml
 
@@ -24,7 +20,7 @@ rules:
         - cycle: { isActive: { eq: true } }
         - state: { type: { neq: completed } }
     notify:
-      subject: "Linear — sprint work"
+      subject: "Cross-tracker digest"
       mailTo: assignee
       columns: [Status, Priority, Updated]
 
@@ -33,7 +29,7 @@ rules:
     group: morning-roundup
     jql: "assignee in (membersOf('engineering')) AND resolution is EMPTY"
     notify:
-      subject: "Jira — open tickets"
+      subject: "Cross-tracker digest"
       mailTo: assignee
       columns: [Status, Priority, DueDate]
 
@@ -42,7 +38,7 @@ rules:
     group: morning-roundup
     filter: "is:open org:bigcorp"
     notify:
-      subject: "GitHub — items on you"
+      subject: "Cross-tracker digest"
       mailTo: assignee
       columns: [Type, Status, Updated]
 ```
@@ -53,7 +49,7 @@ rules:
 30 8 * * 1-5  /usr/bin/dotnet /opt/preesta/Preesta.dll morning-roundup
 ```
 
-One CLI invocation, three tracker fetches in parallel (each pipeline runs as its own `Task`), three batches of per-assignee emails sent in one SMTP session.
+One CLI invocation, three tracker fetches in parallel (each pipeline runs as its own `Task`), one batch of merged per-assignee emails sent in one SMTP session.
 
 ## Verifying
 
@@ -63,10 +59,10 @@ Run with `Verbose` logging once to see all three pipelines firing:
 INFO 4 rules of type linear found in schedule group 'morning-roundup'
 INFO 2 rules of type jql found in schedule group 'morning-roundup'
 INFO 1 rules of type github found in schedule group 'morning-roundup'
-INFO Sent 12 email messages
+INFO Sent 6 email messages
 ```
 
-The recipient list per email comes from the rule's own `mailTo`, not from the union — alice can be Linear-only, bob can be Jira+GitHub, the digests fan out independently.
+The recipient list per email comes from the rule's own `mailTo` — alice can be Linear-only, bob can be Jira+GitHub. With a shared subject, packages bound for the same recipient merge into one email; with distinct subjects, they stay separate.
 
 ## Adding GitLab and Shortcut
 
@@ -76,10 +72,10 @@ Same pattern. Each tracker gets its own rule entry under `morning-roundup`. The 
   - type: gitlab
     group: morning-roundup
     filter: { state: opened, assigneeUsernames: [...] }
-    notify: { subject: "GitLab — open issues", mailTo: assignee }
+    notify: { subject: "Cross-tracker digest", mailTo: assignee }
 
   - type: shortcut
     group: morning-roundup
     filter: "!state:completed !is:archived owner:..."
-    notify: { subject: "Shortcut — open stories", mailTo: assignee }
+    notify: { subject: "Cross-tracker digest", mailTo: assignee }
 ```

@@ -4,6 +4,8 @@
 
 Preesta is a small CLI tool that reads rules from a YAML file, queries one or more issue trackers (Jira, Linear, GitHub, GitLab, Shortcut), groups the matched issues by recipient, and ships each recipient a digest by email, Telegram, and Slack. It can also run write-side actions (comments, status changes, label flips) against the same matches.
 
+![Example daily standup digest](assets/screenshots/email-single-tracker.png)
+
 It exists because every issue tracker has its own notification preferences screen, every team has its own "what's stale, what's blocking, what's on me today" question, and none of those preference screens lets you answer *yours*. With Preesta you write the question once in a rule, schedule it with cron, and the digest lands in the inbox of the people who actually need to see it.
 
 ## Who is this for?
