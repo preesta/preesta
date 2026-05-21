@@ -1,0 +1,14 @@
+<Project>
+  <!--
+    Shared metadata for every .csproj in the solution. Version comes from
+    the GitHub Actions release workflow on tag pushes (-p:Version=0.1.0);
+    locally, builds default to 0.0.0-dev so `preesta version` still works.
+  -->
+  <PropertyGroup>
+    <Version Condition="'$(Version)' == ''">0.0.0-dev</Version>
+    <Authors>Valentin Levitov</Authors>
+    <Product>Preesta</Product>
+    <RepositoryUrl>https://github.com/preesta/preesta</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,139 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.rid }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, rid: linux-x64,   archive: tar.gz }
+          - { os: ubuntu-latest, rid: linux-arm64, archive: tar.gz }
+          - { os: macos-latest,  rid: osx-x64,     archive: tar.gz }
+          - { os: macos-latest,  rid: osx-arm64,   archive: tar.gz }
+          - { os: windows-latest, rid: win-x64,    archive: zip    }
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Derive version
+        id: ver
+        shell: bash
+        run: |
+          # Strip the leading "v" from the tag (refs/tags/v0.1.0 → 0.1.0).
+          version="${GITHUB_REF_NAME#v}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish single-file binary
+        shell: bash
+        run: |
+          dotnet publish Preesta/Preesta.csproj \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:Version=${{ steps.ver.outputs.version }} \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -o ./out/${{ matrix.rid }}
+
+      # Per-RID staging directory contains the executable + non-secret config
+      # templates + Scriban templates. `secrets/` is intentionally absent — the
+      # user provides their own appsettings.secrets.yaml.
+      - name: Stage release artifacts
+        shell: bash
+        run: |
+          dest=./stage/preesta-${{ steps.ver.outputs.version }}-${{ matrix.rid }}
+          mkdir -p "$dest"
+          # Single-file binary + Templates + the bundled appsettings.yaml.
+          cp -r ./out/${{ matrix.rid }}/* "$dest/"
+          # Ship the working rules.yaml as an example users can edit.
+          cp Preesta/rules.yaml "$dest/rules.yaml.example" 2>/dev/null || true
+          # Inline README pointer so the user knows what to do next.
+          cat > "$dest/README.txt" <<'EOF'
+          preesta — see https://preesta.github.io/preesta/ for full docs.
+
+          Quick path:
+            1) Copy appsettings.yaml and adjust the non-secret defaults.
+            2) Create secrets/appsettings.secrets.yaml with your bot tokens
+               and SMTP credentials (gitignored template under the same path
+               in the source repo).
+            3) Copy rules.yaml.example to rules.yaml and edit.
+            4) Run: ./preesta <schedule-group>
+          EOF
+
+      - name: Package (tar.gz)
+        if: matrix.archive == 'tar.gz'
+        shell: bash
+        run: |
+          name=preesta-${{ steps.ver.outputs.version }}-${{ matrix.rid }}
+          tar -czf "${name}.tar.gz" -C ./stage "${name}"
+          shasum -a 256 "${name}.tar.gz" > "${name}.tar.gz.sha256"
+
+      - name: Package (zip)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          $name = "preesta-${{ steps.ver.outputs.version }}-${{ matrix.rid }}"
+          Compress-Archive -Path "./stage/$name/*" -DestinationPath "$name.zip"
+          (Get-FileHash "$name.zip" -Algorithm SHA256).Hash + "  $name.zip" | Out-File -Encoding ascii "$name.zip.sha256"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preesta-${{ matrix.rid }}
+          path: |
+            preesta-*.tar.gz
+            preesta-*.tar.gz.sha256
+            preesta-*.zip
+            preesta-*.zip.sha256
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: ./dist
+          merge-multiple: true
+
+      # Pull the matching section out of CHANGELOG.md, if present, to use as
+      # the release body. Falls back to "See CHANGELOG.md" otherwise.
+      - name: Extract changelog section
+        id: changelog
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if [ -f CHANGELOG.md ]; then
+            awk -v v="$version" '
+              $0 ~ "^## \\[" v "\\]" { capture=1; next }
+              capture && /^## \[/ { exit }
+              capture { print }
+            ' CHANGELOG.md > release-body.md
+          fi
+          if [ ! -s release-body.md ]; then
+            echo "See [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/main/CHANGELOG.md)." > release-body.md
+          fi
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body_path: release-body.md
+          files: dist/*
+          fail_on_unmatched_files: true
