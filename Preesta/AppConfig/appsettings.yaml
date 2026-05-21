@@ -28,11 +28,11 @@ Jira:
 
 Smtp:
   Host: smtp.gmail.com
-  Port: 465
+  # Port: 0                # optional; 0 = MailKit auto-picks per SecurityMode
+  # SecurityMode: Auto     # optional; one of Auto|None|SslOnConnect|StartTls|StartTlsWhenAvailable
   User: "--- set in appsettings.secrets.yaml ---"
   Password: "--- set in appsettings.secrets.yaml ---"
   From: "--- set in appsettings.secrets.yaml ---"
-  EnableSsl: true
 
 Telegram:
   botToken: "--- set in appsettings.secrets.yaml ---"

@@ -9,24 +9,28 @@ Configure in [`appsettings.secrets.yaml`](../operations/secrets-and-tokens.md) (
 ```yaml
 Smtp:
   Host:     smtp.gmail.com
-  Port:     465
   User:     you@example.com
   Password: "app-password-here"     # NOT your account password
   From:     you@example.com
-  EnableSsl: true
+  # Port: 0                         # optional; 0 = auto-pick by SecurityMode
+  # SecurityMode: Auto              # optional; Auto|None|SslOnConnect|StartTls|StartTlsWhenAvailable
 ```
+
+`Host`, `User`, `Password`, `From` are required. `Port` and `SecurityMode` are optional — Preesta uses MailKit's defaults (`Port: 0`, `SecurityMode: Auto`) which auto-negotiate STARTTLS when the server advertises it. Override only when your provider expects a specific port or wire mode.
+
+For unauthenticated relays (MailHog, local MTAs), omit both `User` and `Password` — Preesta skips the `AUTH` step entirely. Setting just one of the pair is a configuration error and Preesta fails loud.
 
 ### Gmail
 
-Gmail blocks regular-password SMTP. Generate an [App Password](https://support.google.com/accounts/answer/185833): account → Security → 2-Step Verification (must be on) → App passwords → generate. Use that as `Password`. `Host: smtp.gmail.com`, `Port: 465`, `EnableSsl: true`.
+Gmail blocks regular-password SMTP. Generate an [App Password](https://support.google.com/accounts/answer/185833): account → Security → 2-Step Verification (must be on) → App passwords → generate. Use that as `Password`. `Host: smtp.gmail.com`. Defaults cover the rest.
 
 ### Other providers
 
-Any SMTP-compliant server works — Office 365, Mailgun, SendGrid, Postmark, your company relay. Match the provider's documented `host:port` + auth.
+Any SMTP-compliant server works — Office 365, Mailgun, SendGrid, Postmark, your company relay. Match the provider's documented `host` + auth; ports and security modes usually need no override.
 
 ### Testing locally
 
-Run [MailHog](https://github.com/mailhog/MailHog) in Docker (`docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog`), point Preesta at `Host: localhost`, `Port: 1025`, `EnableSsl: false`, and browse sent messages at `http://localhost:8025`. No real outbound traffic.
+Run [MailHog](https://github.com/mailhog/MailHog) in Docker (`docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog`), point Preesta at `Host: localhost`, `Port: 1025`, `SecurityMode: None`, and leave `User`/`Password` unset. Browse sent messages at `http://localhost:8025`.
 
 ## What gets sent
 
@@ -49,5 +53,5 @@ Common failure modes:
 
 - **Authentication failed (5.7.8)** — wrong password or, for Gmail, you used your account password instead of an app password.
 - **Relay denied (5.7.1)** — `From` address is a domain the SMTP server isn't authorized to send for.
-- **Connection refused** — wrong host/port, or SSL/TLS mismatch (`EnableSsl: true` for port 465, `false` for 25/587 with STARTTLS — MailKit auto-negotiates STARTTLS).
+- **Connection refused** — wrong host/port, or SSL/TLS mismatch. With the default `SecurityMode: Auto` MailKit picks the wire mode by port (465 = SSL-on-connect, 587/25 = STARTTLS-when-available). Pin `SecurityMode` explicitly only if your provider needs it.
 - **No email but no error in logs either** — check `Application:subjectPrefix` and the recipient list resolution: `mailTo: assignee` with a tracker that returned empty `Email` for the assignee produces a package with no recipients, which SMTP silently skips. See [Routing model → When the assignee has no email](../concepts/routing-model.md#when-the-assignee-has-no-email).

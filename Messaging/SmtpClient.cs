@@ -5,15 +5,14 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
 using MimeKit.Utils;
-using Microsoft.Extensions.Configuration;
 
 namespace Messaging
 {
     public class SmtpClient : IMessenger
     {
-        private readonly IConfigurationSection _config;
+        private readonly SmtpConfig _config;
 
-        public SmtpClient(IConfigurationSection config)
+        public SmtpClient(SmtpConfig config)
         {
             _config = config;
         }
@@ -25,7 +24,7 @@ namespace Messaging
         public virtual void Send(Message data)
         {
             var mailMsg = new MimeMessage();
-            mailMsg.From.Add(MailboxAddress.Parse(_config["From"]));
+            mailMsg.From.Add(MailboxAddress.Parse(_config.From));
             mailMsg.Subject = data.Subject;
 
             mailMsg.To.AddRange(InternetAddressList.Parse(data.To.Trim(", ".ToCharArray())));
@@ -65,10 +64,14 @@ namespace Messaging
             mailMsg.Body = bodyBuilder.ToMessageBody();
 
             using var client = new MailKit.Net.Smtp.SmtpClient();
-            var enableSsl = bool.Parse(_config["EnableSsl"]);
-            client.Connect(_config["Host"], int.Parse(_config["Port"]),
-                enableSsl ? SecureSocketOptions.Auto : SecureSocketOptions.None);
-            client.Authenticate(_config["User"], _config["Password"]);
+            client.Connect(_config.Host, _config.Port, _config.SecurityMode);
+
+            // MailKit's Authenticate() is opt-in — local relays / MailHog need
+            // no auth. SmtpConfigLoader rejects half-credentials at startup, so
+            // by the time we're here, User/Password are both null or both set.
+            if (_config.User is { Length: > 0 })
+                client.Authenticate(_config.User, _config.Password);
+
             client.Send(mailMsg);
             client.Disconnect(true);
         }

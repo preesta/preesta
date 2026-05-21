@@ -1,4 +1,5 @@
 ﻿using System;
+using Messaging;
 using Microsoft.Extensions.Configuration;
 using NetEscapades.Configuration.Yaml;
 using System.IO;
@@ -50,16 +51,11 @@ namespace Preesta.AppConfig
 
         internal void Validate()
         {
-            if(JiraRootUri == null)
-            {
-                throw new ArgumentException("Required parameter Jira.rootUri is not configured in appsettings.json file", "Jira.rootUri");
-            }
-
             // At least one delivery channel must be configured — otherwise rules
             // would match issues but have nowhere to send them. Smtp / Telegram /
-            // Slack are all independent now: any one of them is enough; none of
-            // them is privileged. See docs/delivery/* for the per-channel setup.
-            var hasSmtp     = SmtpSection.Exists();
+            // Slack are all independent: any one of them is enough; none of them
+            // is privileged. See docs/delivery/* for the per-channel setup.
+            var hasSmtp     = Smtp is not null;
             var hasTelegram = !string.IsNullOrEmpty(TelegramBotToken);
             var hasSlack    = !string.IsNullOrEmpty(SlackBotToken);
             if (!hasSmtp && !hasTelegram && !hasSlack)
@@ -75,11 +71,14 @@ namespace Preesta.AppConfig
 
         public string LocalRulesFileName => _configuration["Application:rulesFileName"] ?? "rules.xml";
 
-        public string JiraRootUri  => _configuration["Jira:rootUri"];
+        // Jira fields stay as raw nullables for now — they'll be folded into a
+        // JiraConfig parameter object in the next refactor commit, alongside the
+        // rest of the per-tracker config records.
+        public string? JiraRootUri => _configuration["Jira:rootUri"];
 
-        public string UserName => _configuration["Jira:userName"];
+        public string? UserName => _configuration["Jira:userName"];
 
-        public string Password => _configuration["Jira:password"];
+        public string? Password => _configuration["Jira:password"];
 
         public string[] Supervisors => (_configuration["Application:supervisors"] ?? Empty).Split(',', StringSplitOptions.RemoveEmptyEntries);
 
@@ -112,7 +111,7 @@ namespace Preesta.AppConfig
 
         public string? ShortcutApiToken => _configuration["Shortcut:apiToken"];
 
-        public IConfigurationSection SmtpSection => _configuration.GetSection("Smtp");
+        public SmtpConfig? Smtp => SmtpConfigLoader.Load(_configuration.GetSection("Smtp"));
 
         public IConfigurationSection LoggerSection => _configuration.GetSection("Logger");
     }

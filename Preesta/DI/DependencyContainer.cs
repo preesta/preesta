@@ -41,9 +41,9 @@ namespace Preesta.DI
 
             // Email is optional — same as Telegram / Slack. ReactionPipeline checks
             // for null and skips the SMTP send when nothing is configured.
-            IMessenger? messenger = null;
-            if (appSettings.SmtpSection.Exists())
-                messenger = new SmtpClient(appSettings.SmtpSection);
+            IMessenger? messenger = appSettings.Smtp is not null
+                ? new SmtpClient(appSettings.Smtp)
+                : null;
 
             IMessenger? telegramMessenger = null;
             var telegramToken = appSettings.TelegramBotToken;

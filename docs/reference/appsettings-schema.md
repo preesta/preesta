@@ -63,12 +63,12 @@ Shortcut:
 
 ```yaml
 Smtp:
-  Host:      smtp.gmail.com    # required
-  Port:      465               # required
-  User:      you@example.com
-  Password:  "app-password"
-  From:      you@example.com
-  EnableSsl: true
+  Host:         smtp.gmail.com  # required
+  From:         you@example.com # required
+  User:         you@example.com # optional pair with Password (skip both for unauth relays)
+  Password:     "app-password"
+  Port:         0               # optional; 0 = auto-pick by SecurityMode
+  SecurityMode: Auto            # optional; Auto|None|SslOnConnect|StartTls|StartTlsWhenAvailable
 ```
 
 ## Telegram
