@@ -14,6 +14,7 @@ using Preesta.Data.Supplying;
 using Preesta.Data.Supplying.Convert;
 using Preesta.Notification;
 using Preesta.Notification.Delivery;
+using Preesta.Notification.Mutation;
 using Serilog;
 
 namespace Preesta.DI
@@ -90,7 +91,7 @@ namespace Preesta.DI
                 PackageSupplier = jqlSupplier,
                 PackageConverter = issueConverter,
                 Channels = channels,
-                HttpHandler = jiraService,
+                Mutations = new RestMutations(jiraService),
                 Logger = logger
             });
 
@@ -99,7 +100,7 @@ namespace Preesta.DI
                 PackageSupplier = buildSupplier,
                 PackageConverter = buildConverter,
                 Channels = channels,
-                HttpHandler = jiraService,
+                Mutations = new RestMutations(jiraService),
                 Logger = logger
             });
 
@@ -136,7 +137,7 @@ namespace Preesta.DI
                     PackageSupplier = linearSupplier,
                     PackageConverter = linearConverter,
                     Channels = channels,
-                    GraphQLMutationHandler = linearMutationExecutor,
+                    Mutations = new GraphQLMutations(linearMutationExecutor),
                     Logger = logger
                 });
             }
@@ -168,7 +169,7 @@ namespace Preesta.DI
                     PackageSupplier = gitlabSupplier,
                     PackageConverter = gitlabConverter,
                     Channels = channels,
-                    GraphQLMutationHandler = gitlabMutationExecutor,
+                    Mutations = new GraphQLMutations(gitlabMutationExecutor),
                     Logger = logger
                 });
             }
@@ -192,7 +193,7 @@ namespace Preesta.DI
                     PackageSupplier = githubSupplier,
                     PackageConverter = githubConverter,
                     Channels = channels,
-                    GraphQLMutationHandler = githubMutationExecutor,
+                    Mutations = new GraphQLMutations(githubMutationExecutor),
                     Logger = logger
                 });
             }
@@ -219,7 +220,7 @@ namespace Preesta.DI
                     PackageSupplier = shortcutSupplier,
                     PackageConverter = shortcutConverter,
                     Channels = channels,
-                    HttpHandler = shortcutMutationExecutor,
+                    Mutations = new RestMutations(shortcutMutationExecutor),
                     Logger = logger
                 });
             }

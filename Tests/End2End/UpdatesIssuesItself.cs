@@ -98,7 +98,7 @@ namespace End2End.Tests
                 PackageSupplier = jqlSupplier,
                 PackageConverter = new IssuePackageConverter(server.Url),
                 Channels = global::Tests.TestSupport.Channels.Email(messenger),
-                HttpHandler = svc
+                Mutations = new global::Preesta.Notification.Mutation.RestMutations(svc)
             };
             pipe.Run();
 
@@ -230,7 +230,7 @@ $@"<configuration>
                 {
                     PackageSupplier = packageSupplier,
                     PackageConverter = new IssuePackageConverter(Empty),
-                    HttpHandler = jiraService
+                    Mutations = new global::Preesta.Notification.Mutation.RestMutations(jiraService)
                 };
 
             // Experiment

@@ -43,7 +43,7 @@ namespace Tests
             {
                 PackageSupplier = jqlSupplier,
                 PackageConverter = new IssuePackageConverter("http://jira"),
-                HttpHandler = httpHandler
+                Mutations = new global::Preesta.Notification.Mutation.RestMutations(httpHandler)
             };
 
             // Experiment

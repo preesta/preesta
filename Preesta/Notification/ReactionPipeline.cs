@@ -3,8 +3,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Preesta.Data.Supplying;
 using Preesta.Data.Supplying.Convert;
-using Preesta.Extensions;
 using Preesta.Notification.Delivery;
+using Preesta.Notification.Mutation;
 using Serilog;
 
 namespace Preesta.Notification
@@ -18,10 +18,9 @@ namespace Preesta.Notification
         /// an empty set so a pipeline configured only for mutations sends nothing.</summary>
         public DeliveryChannels Channels { get; init; } = DeliveryChannels.None;
 
-        // Write side. Phase 2 will collapse these two into a single
-        // IMutationHandler — a tracker has exactly one mutation transport.
-        public IHttpHandler? HttpHandler { get; init; }
-        public IGraphQLMutationHandler? GraphQLMutationHandler { get; init; }
+        /// <summary>Write side — one transport per tracker (REST or GraphQL).
+        /// Null when the tracker's pipeline does no mutations.</summary>
+        public IMutationHandler? Mutations { get; init; }
 
         public ILogger? Logger { get; init; }
 
@@ -49,21 +48,8 @@ namespace Preesta.Notification
                     () => ch.Deliver(notificationPackages, PackageConverter));
             }
 
-            TryRunStage("REST mutations", () =>
-            {
-                var selfUpdates = allPackages
-                    .OfType<Package<SelfUpdate, TIssueType>>()
-                    .ToHttpRequests(PackageConverter);
-                HttpHandler?.HandleAll(selfUpdates);
-            });
-
-            TryRunStage("GraphQL mutations", () =>
-            {
-                var graphQLBodies = allPackages
-                    .OfType<Package<GraphQLMutation, TIssueType>>()
-                    .ToGraphQLMutationBodies(PackageConverter);
-                GraphQLMutationHandler?.HandleAll(graphQLBodies);
-            });
+            TryRunStage("mutations",
+                () => Mutations?.Execute(allPackages, PackageConverter));
         }
 
         private void TryRunStage(string stageName, Action action)

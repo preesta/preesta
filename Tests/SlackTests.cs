@@ -373,7 +373,7 @@ namespace Tests
                 PackageSupplier = supplier,
                 PackageConverter = new IssuePackageConverter("http://jira"),
                 Channels = Tests.TestSupport.Channels.Of(email: emailMessenger, slack: slackMessenger),
-                HttpHandler = Substitute.For<IHttpHandler>()
+                Mutations = new global::Preesta.Notification.Mutation.RestMutations(Substitute.For<IHttpHandler>())
             };
 
             pipe.Run();

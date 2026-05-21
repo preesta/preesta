@@ -151,7 +151,7 @@ namespace End2End.Tests
 				PackageSupplier = jqlSupplier,
 				PackageConverter = new IssuePackageConverter("http://jira"),
 				Channels = global::Tests.TestSupport.Channels.Email(messenger),
-				HttpHandler = Substitute.For<IHttpHandler>()
+				Mutations = new global::Preesta.Notification.Mutation.RestMutations(Substitute.For<IHttpHandler>())
 			};
 			pipe.Run();
 
@@ -198,7 +198,7 @@ namespace End2End.Tests
 				PackageSupplier = jqlSupplier,
 				PackageConverter = new IssuePackageConverter("http://jira"),
 				Channels = global::Tests.TestSupport.Channels.Email(messenger),
-				HttpHandler = Substitute.For<IHttpHandler>()
+				Mutations = new global::Preesta.Notification.Mutation.RestMutations(Substitute.For<IHttpHandler>())
 			};
 			pipe.Run();
 
