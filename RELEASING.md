@@ -2,32 +2,28 @@
 
 Cutting a release is two commands once `main` is green.
 
-## One-time: GitHub org migration
+## One-time: publish the repo
 
-The release infrastructure (`Directory.Build.props`, the Docker label,
-`release.yml`'s release URLs, the docs links) assumes the repo lives at
-`github.com/preesta/preesta`. Until that's true, the workflows still publish
-artifacts under whatever `${{ github.repository }}` resolves to — but the
-in-image labels and doc links will be wrong.
+The org `preesta` already exists. The local repo has no `origin` yet, so the
+first time around we create the GitHub repo inside the org and push:
 
-Steps the repo owner runs once:
+```bash
+gh repo create preesta/preesta \
+  --source=. \
+  --public \
+  --remote=origin \
+  --push \
+  --description "Rule-based digests for your issue trackers"
+```
 
-1. **Create the GitHub organization** `preesta` at
-   <https://github.com/organizations/new>.
-2. **Transfer the repo**: Settings → General → Transfer ownership →
-   target `preesta`. GitHub forwards traffic from the old URL to the new
-   one indefinitely.
-3. **Re-create the org-scoped Pages site**: Settings → Pages → re-enable
-   (transfer doesn't always carry GH Pages config). Confirm
-   <https://preesta.github.io/preesta/> serves the docs.
-4. **Update local clones**:
-   ```bash
-   git remote set-url origin git@github.com:preesta/preesta.git
-   ```
-5. **Container retag** (optional): existing pushes under
-   `ghcr.io/valentinlevitov/preesta` won't auto-move. After the first tagged
-   release publishes to `ghcr.io/preesta/preesta`, the old image stays
-   pinnable but isn't refreshed. Update any infra referencing the old path.
+After the push, enable GitHub Pages: Settings → Pages → Source: "GitHub
+Actions". The `docs.yml` workflow already targets the `gh-pages` branch on
+push to `main`, so the docs site comes up at
+<https://preesta.github.io/preesta/> on the next push.
+
+The release and Docker workflows use `${{ github.repository }}` for image
+and artifact names, so they pick up `preesta/preesta` automatically once the
+remote is in place — no edits to the YAML.
 
 ## Steps
 
