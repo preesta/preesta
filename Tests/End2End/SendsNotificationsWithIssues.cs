@@ -150,7 +150,7 @@ namespace End2End.Tests
 			{
 				PackageSupplier = jqlSupplier,
 				PackageConverter = new IssuePackageConverter("http://jira"),
-				Messenger = messenger,
+				Channels = global::Tests.TestSupport.Channels.Email(messenger),
 				HttpHandler = Substitute.For<IHttpHandler>()
 			};
 			pipe.Run();
@@ -197,7 +197,7 @@ namespace End2End.Tests
 			{
 				PackageSupplier = jqlSupplier,
 				PackageConverter = new IssuePackageConverter("http://jira"),
-				Messenger = messenger,
+				Channels = global::Tests.TestSupport.Channels.Email(messenger),
 				HttpHandler = Substitute.For<IHttpHandler>()
 			};
 			pipe.Run();

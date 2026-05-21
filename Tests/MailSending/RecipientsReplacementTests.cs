@@ -11,6 +11,7 @@ using Messaging;
 using NSubstitute;
 using NUnit.Framework;
 using Serilog;
+using Tests.TestSupport;
 
 namespace Tests.MailSending
 {
@@ -164,9 +165,8 @@ namespace Tests.MailSending
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test-for-faired-supervisor"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
-                Redirector = new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "expired_supervisor" }, Enumerable.Empty<string>()),
-                Messenger = messenger
-                    
+                Channels = Channels.Email(messenger,
+                    new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "expired_supervisor" }, Enumerable.Empty<string>()))
             };
 
             pipe.Run();
@@ -186,8 +186,8 @@ namespace Tests.MailSending
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("supervisor-in-To"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
-                Redirector = new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "supervisor" }, Enumerable.Empty<string>()),
-                Messenger = messenger
+                Channels = Channels.Email(messenger,
+                    new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "supervisor" }, Enumerable.Empty<string>()))
             };
 
             pipe.Run();
@@ -207,8 +207,8 @@ namespace Tests.MailSending
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("supervisor-in-Cc"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
-                Redirector = new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "supervisor" }, Enumerable.Empty<string>()),
-                Messenger = messenger
+                Channels = Channels.Email(messenger,
+                    new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "supervisor" }, Enumerable.Empty<string>()))
             };
 
             pipe.Run();
@@ -228,8 +228,8 @@ namespace Tests.MailSending
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test-for-empty-addressers"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
-                Redirector = new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "supervisor" }, Enumerable.Empty<string>()),
-                Messenger = messenger
+                Channels = Channels.Email(messenger,
+                    new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "supervisor" }, Enumerable.Empty<string>()))
             };
 
             pipe.Run();
@@ -250,8 +250,8 @@ namespace Tests.MailSending
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test-for-empty-addressers"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
-                Redirector = new Redirector(_rulesConfig.GetRedirectionMap(), Enumerable.Empty<string>(), new[] { "maintainer" }),
-                Messenger = messenger
+                Channels = Channels.Email(messenger,
+                    new Redirector(_rulesConfig.GetRedirectionMap(), Enumerable.Empty<string>(), new[] { "maintainer" }))
             };
 
             pipe.Run();
@@ -271,8 +271,8 @@ namespace Tests.MailSending
             {
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("expired-supervisor-in-addressees"), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
-                Redirector = new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "expired_supervisor" }, Enumerable.Empty<string>()),
-                Messenger = messenger
+                Channels = Channels.Email(messenger,
+                    new Redirector(_rulesConfig.GetRedirectionMap(), new[] { "expired_supervisor" }, Enumerable.Empty<string>()))
             };
 
             pipe.Run();

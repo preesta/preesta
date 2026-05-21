@@ -330,12 +330,13 @@ namespace Tests
             var supplier = new JqlSupplier(jira, new[] { rule }, Substitute.For<ILogger>());
             var emailMessenger = Substitute.For<IMessenger>();
 
-            var pipe = new ReactionPipeline<Issue>(
-                packageSupplier: supplier,
-                packageConverter: new IssuePackageConverter("http://jira"),
-                messenger: emailMessenger,
-                slackMessenger: null,                                  // ← simulates empty botToken
-                slackUserMap: new Dictionary<string, string>());
+            var pipe = new ReactionPipeline<Issue>
+            {
+                PackageSupplier = supplier,
+                PackageConverter = new IssuePackageConverter("http://jira"),
+                // email only — slack channel absent, simulating empty botToken
+                Channels = Tests.TestSupport.Channels.Email(emailMessenger)
+            };
 
             Assert.DoesNotThrow(() => pipe.Run());
             // Email side still fires — Slack side simply never enters the dispatch block.
@@ -371,8 +372,7 @@ namespace Tests
             {
                 PackageSupplier = supplier,
                 PackageConverter = new IssuePackageConverter("http://jira"),
-                Messenger = emailMessenger,
-                SlackMessenger = slackMessenger,
+                Channels = Tests.TestSupport.Channels.Of(email: emailMessenger, slack: slackMessenger),
                 HttpHandler = Substitute.For<IHttpHandler>()
             };
 

@@ -13,6 +13,7 @@ using Preesta.Data;
 using Preesta.Data.Supplying;
 using Preesta.Data.Supplying.Convert;
 using Preesta.Notification;
+using Preesta.Notification.Delivery;
 using Serilog;
 
 namespace Preesta.DI
@@ -39,8 +40,7 @@ namespace Preesta.DI
             // referenced in rules.yaml will then render as empty, but nothing crashes.
             var customFields = jiraService.GetCustomFieldMap();
 
-            // Email is optional — same as Telegram / Slack. ReactionPipeline checks
-            // for null and skips the SMTP send when nothing is configured.
+            // Each delivery channel is independent — any subset may be configured.
             IMessenger? messenger = appSettings.Smtp is not null
                 ? new SmtpClient(appSettings.Smtp)
                 : null;
@@ -74,20 +74,34 @@ namespace Preesta.DI
                 smtpConfigured: messenger != null,
                 rulesConfig, @group, slackUserMap, telegramUserMap, logger);
 
-            var logoFileName = appSettings.LogoFileName;
+            // Assemble the delivery targets once — every pipeline shares them.
+            var channels = DeliveryChannels.Build(
+                email: messenger,
+                telegram: telegramMessenger, telegramUsers: telegramUserMap,
+                slack: slackMessenger, slackUsers: slackUserMap,
+                redirector: redirector,
+                logoFileName: appSettings.LogoFileName);
 
             var services = new ServiceCollection();
             services.AddSingleton<IRulesConfig>(rulesConfig);
 
-            services.AddKeyedSingleton("Jql", new ReactionPipeline<Issue>(
-                jqlSupplier, issueConverter, messenger, jiraService, redirector, logoFileName,
-                telegramMessenger, telegramUserMap,
-                slackMessenger: slackMessenger, slackUserMap: slackUserMap, logger: logger));
+            services.AddKeyedSingleton("Jql", new ReactionPipeline<Issue>
+            {
+                PackageSupplier = jqlSupplier,
+                PackageConverter = issueConverter,
+                Channels = channels,
+                HttpHandler = jiraService,
+                Logger = logger
+            });
 
-            services.AddSingleton(new ReactionPipeline<Release>(
-                buildSupplier, buildConverter, messenger, jiraService, redirector, logoFileName,
-                telegramMessenger, telegramUserMap,
-                slackMessenger: slackMessenger, slackUserMap: slackUserMap, logger: logger));
+            services.AddSingleton(new ReactionPipeline<Release>
+            {
+                PackageSupplier = buildSupplier,
+                PackageConverter = buildConverter,
+                Channels = channels,
+                HttpHandler = jiraService,
+                Logger = logger
+            });
 
             // Linear pipeline is registered only when an API key is provided.
             // Application.cs uses GetKeyedService (nullable) so the pipeline is
@@ -117,10 +131,14 @@ namespace Preesta.DI
                 var linearConverter = new IssuePackageConverter(
                     linearRootUri, appSettings.SubjectPrefix, linearWorkspace, customFields);
 
-                services.AddKeyedSingleton("Linear", new ReactionPipeline<Issue>(
-                    linearSupplier, linearConverter, messenger, jiraService, redirector,
-                    logoFileName, telegramMessenger, telegramUserMap, linearMutationExecutor,
-                    slackMessenger: slackMessenger, slackUserMap: slackUserMap, logger: logger));
+                services.AddKeyedSingleton("Linear", new ReactionPipeline<Issue>
+                {
+                    PackageSupplier = linearSupplier,
+                    PackageConverter = linearConverter,
+                    Channels = channels,
+                    GraphQLMutationHandler = linearMutationExecutor,
+                    Logger = logger
+                });
             }
 
             // GitLab pipeline mirrors GitHub — registered only when a token is provided.
@@ -145,10 +163,14 @@ namespace Preesta.DI
                 var gitlabConverter = new IssuePackageConverter(
                     gitlabRootUri, appSettings.SubjectPrefix, customFields: customFields);
 
-                services.AddKeyedSingleton("Gitlab", new ReactionPipeline<Issue>(
-                    gitlabSupplier, gitlabConverter, messenger, jiraService, redirector,
-                    logoFileName, telegramMessenger, telegramUserMap, gitlabMutationExecutor,
-                    slackMessenger: slackMessenger, slackUserMap: slackUserMap, logger: logger));
+                services.AddKeyedSingleton("Gitlab", new ReactionPipeline<Issue>
+                {
+                    PackageSupplier = gitlabSupplier,
+                    PackageConverter = gitlabConverter,
+                    Channels = channels,
+                    GraphQLMutationHandler = gitlabMutationExecutor,
+                    Logger = logger
+                });
             }
 
             // GitHub pipeline mirrors Linear — registered only when a token is provided.
@@ -165,15 +187,19 @@ namespace Preesta.DI
                 var githubConverter = new IssuePackageConverter(
                     "https://github.com/", appSettings.SubjectPrefix, customFields: customFields);
 
-                services.AddKeyedSingleton("Github", new ReactionPipeline<Issue>(
-                    githubSupplier, githubConverter, messenger, jiraService, redirector,
-                    logoFileName, telegramMessenger, telegramUserMap, githubMutationExecutor,
-                    slackMessenger: slackMessenger, slackUserMap: slackUserMap, logger: logger));
+                services.AddKeyedSingleton("Github", new ReactionPipeline<Issue>
+                {
+                    PackageSupplier = githubSupplier,
+                    PackageConverter = githubConverter,
+                    Channels = channels,
+                    GraphQLMutationHandler = githubMutationExecutor,
+                    Logger = logger
+                });
             }
 
             // Shortcut pipeline mirrors GitHub — registered only when an API token is provided.
-            // Shortcut is REST-only (no GraphQL), so the mutation executor plugs into the
-            // same IHttpHandler slot as Jira (not the IGraphQLMutationHandler slot).
+            // Shortcut is REST-only (no GraphQL), so its executor plugs into the
+            // HttpHandler slot (an IHttpHandler), not the GraphQL one.
             if (!string.IsNullOrEmpty(appSettings.ShortcutApiToken))
             {
                 var shortcutConnection = new ShortcutRest.ShortcutConnection(appSettings.ShortcutApiToken!);
@@ -188,10 +214,14 @@ namespace Preesta.DI
                 var shortcutConverter = new IssuePackageConverter(
                     "https://api.app.shortcut.com/", appSettings.SubjectPrefix, customFields: customFields);
 
-                services.AddKeyedSingleton("Shortcut", new ReactionPipeline<Issue>(
-                    shortcutSupplier, shortcutConverter, messenger, shortcutMutationExecutor, redirector,
-                    logoFileName, telegramMessenger, telegramUserMap,
-                    slackMessenger: slackMessenger, slackUserMap: slackUserMap, logger: logger));
+                services.AddKeyedSingleton("Shortcut", new ReactionPipeline<Issue>
+                {
+                    PackageSupplier = shortcutSupplier,
+                    PackageConverter = shortcutConverter,
+                    Channels = channels,
+                    HttpHandler = shortcutMutationExecutor,
+                    Logger = logger
+                });
             }
 
             _provider = services.BuildServiceProvider();

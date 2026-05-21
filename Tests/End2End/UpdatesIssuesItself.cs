@@ -97,7 +97,7 @@ namespace End2End.Tests
             {
                 PackageSupplier = jqlSupplier,
                 PackageConverter = new IssuePackageConverter(server.Url),
-                Messenger = messenger,
+                Channels = global::Tests.TestSupport.Channels.Email(messenger),
                 HttpHandler = svc
             };
             pipe.Run();

@@ -162,8 +162,7 @@ namespace Tests
             {
                 PackageSupplier = supplier,
                 PackageConverter = new IssuePackageConverter("http://jira"),
-                Messenger = emailMessenger,
-                TelegramMessenger = telegramMessenger,
+                Channels = Tests.TestSupport.Channels.Of(email: emailMessenger, telegram: telegramMessenger),
                 HttpHandler = Substitute.For<IHttpHandler>()
             };
 
