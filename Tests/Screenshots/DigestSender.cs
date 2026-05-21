@@ -13,21 +13,24 @@ namespace Tests.Screenshots
     /// <summary>
     /// Sends the same four digest scenarios as <see cref="DigestScreenshotGen"/>
     /// to live Telegram and Slack so the docs author can capture real
-    /// desktop-client screenshots. Reads bot tokens from
-    /// <c>Preesta/secrets/appsettings.secrets.yaml</c>; chat/user IDs are the
-    /// owner-author's, hardcoded below (see Preesta/rules.yaml for the same
-    /// IDs in the live rules).
+    /// desktop-client screenshots. Reads bot tokens AND the docs-author's
+    /// chat/user IDs from <c>Preesta/secrets/appsettings.secrets.yaml</c>:
+    /// <code>
+    ///   Telegram: { botToken: "...", docsTestChatId: "..." }
+    ///   Slack:    { botToken: "...", docsTestUserId: "..." }
+    /// </code>
+    /// Both <c>docsTest*</c> keys are ignored by production Preesta — only
+    /// this fixture reads them. If absent, the test self-ignores.
     /// Run:
     ///   dotnet test --filter "FullyQualifiedName~Screenshots.DigestSender"
     /// </summary>
     [TestFixture, Explicit("Sends live messages to the docs author's accounts")]
     public class DigestSender
     {
-        private const string TelegramChatId = "12345678";
-        private const string SlackUserId    = "U01ABCDEFG";
-
         private string? _telegramToken;
         private string? _slackToken;
+        private string? _telegramChatId;
+        private string? _slackUserId;
 
         [OneTimeSetUp]
         public void LoadTokens()
@@ -43,8 +46,13 @@ namespace Tests.Screenshots
             var yaml = new YamlStream();
             yaml.Load(reader);
             var root = (YamlMappingNode)yaml.Documents[0].RootNode;
-            _telegramToken = ReadField(root, "Telegram", "botToken");
-            _slackToken    = ReadField(root, "Slack",    "botToken");
+            _telegramToken  = ReadField(root, "Telegram", "botToken");
+            _slackToken     = ReadField(root, "Slack",    "botToken");
+            // docsTestChatId / docsTestUserId are not real Preesta config keys;
+            // they live here only so this fixture knows where to send while
+            // staying out of the committed source.
+            _telegramChatId = ReadField(root, "Telegram", "docsTestChatId");
+            _slackUserId    = ReadField(root, "Slack",    "docsTestUserId");
 
             if (string.IsNullOrEmpty(_telegramToken) && string.IsNullOrEmpty(_slackToken))
                 Assert.Ignore("Neither Telegram nor Slack bot token configured");
@@ -77,12 +85,13 @@ namespace Tests.Screenshots
             string? rootUri = null)
         {
             if (string.IsNullOrEmpty(_telegramToken)) Assert.Ignore("No Telegram token");
+            if (string.IsNullOrEmpty(_telegramChatId)) Assert.Ignore("Telegram:docsTestChatId not set in secrets");
 
             var body = IssueFormatter.ToText(packages, rootUri ?? "https://jira.example.com/", linearWorkspace: "acme");
             var messenger = new TelegramMessenger(_telegramToken!);
             messenger.Send(new Message
             {
-                To = TelegramChatId,
+                To = _telegramChatId!,
                 Subject = $"[Preesta docs] {subject}",
                 TextBody = $"<b>{System.Net.WebUtility.HtmlEncode(subject)}</b>\n\n{body}"
             });
@@ -95,12 +104,13 @@ namespace Tests.Screenshots
             string? rootUri = null)
         {
             if (string.IsNullOrEmpty(_slackToken)) Assert.Ignore("No Slack token");
+            if (string.IsNullOrEmpty(_slackUserId)) Assert.Ignore("Slack:docsTestUserId not set in secrets");
 
             var body = IssueFormatter.ToSlackMrkdwn(packages, rootUri ?? "https://jira.example.com/", linearWorkspace: "acme");
             var messenger = new SlackMessenger(_slackToken!);
             messenger.Send(new Message
             {
-                To = SlackUserId,
+                To = _slackUserId!,
                 Subject = $"[Preesta docs] {subject}",
                 TextBody = $"*{subject}*\n\n{body}"
             });
@@ -200,9 +210,9 @@ namespace Tests.Screenshots
             Items = new[]
             {
                 MkIssue("PRE-142", "Refactor mutation executor to share error envelope handling",
-                    status: "In Progress", priority: "High",   assignee: "Valentin Levitov"),
+                    status: "In Progress", priority: "High",   assignee: "Alice Chen"),
                 MkIssue("PRE-138", "Add per-channel circuit breaker for SMTP auth failures",
-                    status: "In Review",   priority: "Medium", assignee: "Valentin Levitov"),
+                    status: "In Review",   priority: "Medium", assignee: "Alice Chen"),
             }
         };
 
