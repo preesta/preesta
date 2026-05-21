@@ -180,7 +180,7 @@ namespace Tests.Shortcut
 
             Assert.IsNotNull(issues[0].Participants.Assignee);
             Assert.AreEqual("bob@example.com", issues[0].Participants.Assignee!.Email);
-            Assert.AreEqual("Bob Roberts", issues[0].Participants.Assignee.DisplayName);
+            Assert.AreEqual("Bob Roberts", issues[0].Participants.Assignee!.DisplayName);
         }
 
         [Test]
@@ -200,7 +200,7 @@ namespace Tests.Shortcut
             Assert.IsNotNull(issues[2].Participants.Assignee);
             Assert.AreEqual(string.Empty, issues[2].Participants.Assignee!.Email);
             Assert.AreEqual("ffffffff-ffff-ffff-ffff-ffffffffffff",
-                issues[2].Participants.Assignee.Key);
+                issues[2].Participants.Assignee!.Key);
         }
 
         [Test]

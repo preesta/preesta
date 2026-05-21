@@ -439,10 +439,10 @@ rules:
             Assert.AreEqual(1, rules.Length);
             var f = rules[0].Filter;
             Assert.AreEqual("opened", f.State);
-            CollectionAssert.AreEqual(new[] { "urgent", "blocker" }, f.LabelName);
-            CollectionAssert.AreEqual(new[] { "alice", "bob" }, f.AssigneeUsernames);
+            CollectionAssert.AreEqual(new[] { "urgent", "blocker" }, f.LabelName!);
+            CollectionAssert.AreEqual(new[] { "alice", "bob" }, f.AssigneeUsernames!);
             Assert.AreEqual("carol", f.AuthorUsername);
-            CollectionAssert.AreEqual(new[] { "v1.0" }, f.MilestoneTitle);
+            CollectionAssert.AreEqual(new[] { "v1.0" }, f.MilestoneTitle!);
             Assert.AreEqual("checkout flow", f.Search);
             Assert.AreEqual(false, f.Confidential);
             Assert.Contains("assignee", rules[0].Notification!.RawRecipients);
@@ -528,7 +528,7 @@ rules:
             var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>()).GetGitlabRules("gl");
 
             Assert.AreEqual(1, rules.Length);
-            CollectionAssert.AreEqual(new[] { "urgent" }, rules[0].Filter.LabelName);
+            CollectionAssert.AreEqual(new[] { "urgent" }, rules[0].Filter.LabelName!);
         }
 
         // ----- end GitLab -----

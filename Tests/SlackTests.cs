@@ -37,7 +37,7 @@ namespace Tests
             });
 
             var entry = server.LogEntries.Single();
-            var headers = entry.RequestMessage.Headers!;
+            var headers = entry.RequestMessage!.Headers!;
             Assert.IsTrue(headers.ContainsKey("Authorization"),
                 "Authorization header missing");
             Assert.AreEqual("Bearer xoxb-FAKE-TEST-TOKEN", headers["Authorization"].ToString());

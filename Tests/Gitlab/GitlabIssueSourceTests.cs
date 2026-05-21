@@ -167,8 +167,8 @@ namespace Tests.Gitlab
 
             Assert.IsNotNull(issues[0].Participants.Assignee);
             Assert.AreEqual("bob@example.com", issues[0].Participants.Assignee!.Email);
-            Assert.AreEqual("Bob Roberts", issues[0].Participants.Assignee.DisplayName);
-            Assert.AreEqual("bob", issues[0].Participants.Assignee.Key);
+            Assert.AreEqual("Bob Roberts", issues[0].Participants.Assignee!.DisplayName);
+            Assert.AreEqual("bob", issues[0].Participants.Assignee!.Key);
 
             // No assignees → null
             Assert.IsNull(issues[1].Participants.Assignee);
@@ -182,7 +182,7 @@ namespace Tests.Gitlab
 
             Assert.AreEqual("alice@example.com", issues[0].Participants.Reporter!.Email);
             Assert.AreEqual("alice@example.com", issues[0].Participants.Creator!.Email);
-            Assert.AreEqual("alice", issues[0].Participants.Reporter.Key);
+            Assert.AreEqual("alice", issues[0].Participants.Reporter!.Key);
         }
 
         [Test]
@@ -196,7 +196,7 @@ namespace Tests.Gitlab
 
             Assert.IsNotNull(issues[1].Participants.Reporter);
             Assert.AreEqual(string.Empty, issues[1].Participants.Reporter!.Email);
-            Assert.AreEqual("carol", issues[1].Participants.Reporter.Key);
+            Assert.AreEqual("carol", issues[1].Participants.Reporter!.Key);
         }
 
         [Test]
