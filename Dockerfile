@@ -52,10 +52,8 @@ RUN ln -s /app/Preesta /usr/local/bin/preesta
 COPY --from=get-supercronic /tmp/supercronic /usr/local/bin/supercronic
 RUN chmod +x /usr/local/bin/supercronic /usr/local/bin/preesta
 ADD preesta-cron .
-RUN adduser \
-  --disabled-password \
-  --home /app \
-  --gecos '' app \
-  && chown -R app /app
+# The official dotnet/runtime image already ships a non-root `app` user with
+# /app as home. Just take ownership of the dir we copied into.
+RUN chown -R app /app
 USER app
 CMD ["supercronic", "-passthrough-logs", "/app/preesta-cron"]
