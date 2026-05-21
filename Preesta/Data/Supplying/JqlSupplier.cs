@@ -20,7 +20,9 @@ namespace Preesta.Data.Supplying
         {
             try
             {
-                return JiraService.GetIssuesForJql(rule.Jql);
+                // JqlSupplier's own ctor takes a non-null IJiraService, so the
+                // nullable base property is guaranteed non-null here.
+                return JiraService!.GetIssuesForJql(rule.Jql);
             }
             catch (Exception e)
             {

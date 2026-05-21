@@ -20,7 +20,7 @@ namespace Preesta.Data.Supplying
 
         public GitlabIssueSupplier(
             GitlabIssueSource source,
-            IJiraService jiraService,
+            IJiraService? jiraService,
             IEnumerable<GitlabRule> rules,
             ILogger logger)
             : base(jiraService, rules)

@@ -51,6 +51,21 @@ namespace Preesta.AppConfig
 
         internal void Validate()
         {
+            // At least one issue source must be configured — none is privileged,
+            // Jira included. With no source, there's nothing to digest.
+            var hasSource = Jira != null
+                            || !string.IsNullOrEmpty(LinearApiKey)
+                            || !string.IsNullOrEmpty(GithubToken)
+                            || !string.IsNullOrEmpty(GitlabToken)
+                            || !string.IsNullOrEmpty(ShortcutApiToken);
+            if (!hasSource)
+            {
+                throw new ArgumentException(
+                    "No issue source configured — set at least one of "
+                    + "Jira, Linear, Github, Gitlab, or Shortcut.",
+                    "Jira/Linear/Github/Gitlab/Shortcut");
+            }
+
             // At least one delivery channel must be configured — otherwise rules
             // would match issues but have nowhere to send them. Smtp / Telegram /
             // Slack are all independent: any one of them is enough; none of them
@@ -71,24 +86,13 @@ namespace Preesta.AppConfig
 
         public string LocalRulesFileName => _configuration["Application:rulesFileName"] ?? "rules.xml";
 
-        // Jira fields stay as raw nullables for now — they'll be folded into a
-        // JiraConfig parameter object in the next refactor commit, alongside the
-        // rest of the per-tracker config records.
-        public string? JiraRootUri => _configuration["Jira:rootUri"];
-
-        public string? UserName => _configuration["Jira:userName"];
-
-        public string? Password => _configuration["Jira:password"];
+        public JiraConfig? Jira => JiraConfigLoader.Load(_configuration.GetSection("Jira"));
 
         public string[] Supervisors => (_configuration["Application:supervisors"] ?? Empty).Split(',', StringSplitOptions.RemoveEmptyEntries);
 
         public string[] Maintainers => (_configuration["Application:maintenanceTeam"] ?? Empty).Split(',', StringSplitOptions.RemoveEmptyEntries);
 
-        public int MaxResults => _configuration.GetValue<int?>("Jira:maxResults") ?? 50;
-
         public string SubjectPrefix => _configuration["Application:subjectPrefix"] ?? Empty;
-
-        public string? ApiToken => _configuration["Jira:apiToken"];
 
         public string? TelegramBotToken => _configuration["Telegram:botToken"];
 

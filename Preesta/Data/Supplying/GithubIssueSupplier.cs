@@ -20,7 +20,7 @@ namespace Preesta.Data.Supplying
 
         public GithubIssueSupplier(
             GithubIssueSource source,
-            IJiraService jiraService,
+            IJiraService? jiraService,
             IEnumerable<GithubRule> rules,
             ILogger logger)
             : base(jiraService, rules)

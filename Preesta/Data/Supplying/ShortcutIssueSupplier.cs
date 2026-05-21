@@ -24,7 +24,7 @@ namespace Preesta.Data.Supplying
 
         public ShortcutIssueSupplier(
             ShortcutIssueSource source,
-            IJiraService jiraService,
+            IJiraService? jiraService,
             IEnumerable<ShortcutRule> rules,
             ILogger logger)
             : base(jiraService, rules)

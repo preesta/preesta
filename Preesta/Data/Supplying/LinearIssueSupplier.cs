@@ -19,7 +19,7 @@ namespace Preesta.Data.Supplying
 
         public LinearIssueSupplier(
             LinearIssueSource source,
-            IJiraService jiraService,
+            IJiraService? jiraService,
             IEnumerable<LinearRule> rules,
             ILogger logger)
             : base(jiraService, rules)

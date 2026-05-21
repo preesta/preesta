@@ -69,8 +69,9 @@ namespace Messaging
             // MailKit's Authenticate() is opt-in — local relays / MailHog need
             // no auth. SmtpConfigLoader rejects half-credentials at startup, so
             // by the time we're here, User/Password are both null or both set.
+            // Password is non-null whenever User is — they're a validated pair.
             if (_config.User is { Length: > 0 })
-                client.Authenticate(_config.User, _config.Password);
+                client.Authenticate(_config.User, _config.Password!);
 
             client.Send(mailMsg);
             client.Disconnect(true);

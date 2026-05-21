@@ -14,11 +14,17 @@ namespace Preesta
             var container = new DependencyContainer(args[0]);
             container.ValidateRules();
 
-            var tasks = new List<Task>
-            {
-                container.ResolveNotificationPipe<Issue>("Jql").RunAsync(),
-                container.ResolveNotificationPipe<Release>().RunAsync()
-            };
+            var tasks = new List<Task>();
+
+            // Every pipeline runs only when its tracker is configured — Jira
+            // (Jql + Release) is no longer privileged, it's gated like the rest.
+            var jqlPipe = container.TryResolveNotificationPipe<Issue>("Jql");
+            if (jqlPipe != null)
+                tasks.Add(jqlPipe.RunAsync());
+
+            var releasePipe = container.TryResolveNotificationPipe<Release>();
+            if (releasePipe != null)
+                tasks.Add(releasePipe.RunAsync());
 
             // Linear pipeline runs only when registered (i.e. Linear:apiKey is set).
             var linearPipe = container.TryResolveNotificationPipe<Issue>("Linear");

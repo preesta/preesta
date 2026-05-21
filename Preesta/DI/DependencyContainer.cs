@@ -32,14 +32,17 @@ namespace Preesta.DI
                 .ReadFrom.Configuration(appSettings.LoggerSection)
                 .CreateLogger();
 
-            var jiraService = !string.IsNullOrEmpty(appSettings.ApiToken)
-                ? new HttpJiraService(appSettings.JiraRootUri, appSettings.ApiToken, appSettings.MaxResults, logger: logger)
-                : new HttpJiraService(appSettings.JiraRootUri, appSettings.UserName, appSettings.Password, appSettings.MaxResults, logger: logger);
+            // Jira is one of five equal Sources — present only when configured.
+            // Linear-/GitHub-/GitLab-/Shortcut-only deployments leave it null.
+            var jiraService = CreateJiraService(appSettings.Jira, logger);
 
-            // Discover custom fields once at startup. On failure (HTTP error, no permissions),
-            // HttpJiraService logs a warning and returns an empty map — custom-field columns
-            // referenced in rules.yaml will then render as empty, but nothing crashes.
-            var customFields = jiraService.GetCustomFieldMap();
+            // Discover custom fields once at startup when Jira is wired in. On
+            // failure (HTTP error, no permissions) HttpJiraService logs a warning
+            // and returns an empty map; without Jira the map is simply empty —
+            // custom-field columns then render as empty cells, never crash.
+            IReadOnlyDictionary<string, string> customFields =
+                jiraService?.GetCustomFieldMap()
+                ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             // Each delivery channel is independent — any subset may be configured.
             IMessenger? messenger = appSettings.Smtp is not null
@@ -58,13 +61,6 @@ namespace Preesta.DI
 
             var rulesFileName = appSettings.LocalRulesFileName;
             var rulesConfig = CreateRulesConfig(rulesFileName, logger);
-
-            var jqlSupplier = new JqlSupplier(jiraService, rulesConfig.GetJqlRules(@group), logger);
-            var buildSupplier = new ReleaseSupplier(jiraService, rulesConfig.GetReleaseRules(@group));
-
-            var issueConverter = new IssuePackageConverter(
-                appSettings.JiraRootUri, appSettings.SubjectPrefix, customFields: customFields);
-            var buildConverter = new ReleasePackageConverter(appSettings.SubjectPrefix);
 
             var redirector = new Redirector(
                 rulesConfig.GetRedirectionMap(), appSettings.Supervisors, appSettings.Maintainers);
@@ -86,33 +82,16 @@ namespace Preesta.DI
             var services = new ServiceCollection();
             services.AddSingleton<IRulesConfig>(rulesConfig);
 
-            services.AddKeyedSingleton("Jql", new ReactionPipeline<Issue>
-            {
-                PackageSupplier = jqlSupplier,
-                PackageConverter = issueConverter,
-                Channels = channels,
-                Mutations = new RestMutations(jiraService),
-                Logger = logger
-            });
-
-            services.AddSingleton(new ReactionPipeline<Release>
-            {
-                PackageSupplier = buildSupplier,
-                PackageConverter = buildConverter,
-                Channels = channels,
-                Mutations = new RestMutations(jiraService),
-                Logger = logger
-            });
-
-            // Optional issue trackers are self-contained modules. Each knows
-            // whether it's configured and how to build its own pipeline; the
-            // orchestrator just registers the configured ones under their key.
-            // Adding a tracker is one new ITrackerModule plus one list entry —
-            // nothing here changes.
+            // Every issue tracker — Jira included — is a self-contained module.
+            // Each knows whether it's configured and how to build its own
+            // pipeline; the orchestrator just registers the configured ones
+            // under their key. Adding a tracker is one new ITrackerModule plus
+            // one list entry — nothing here changes.
             var trackerContext = new TrackerBuildContext(
                 appSettings, rulesConfig, @group, channels, customFields, jiraService, logger);
             var modules = new ITrackerModule[]
             {
+                new JqlModule(),
                 new LinearModule(),
                 new GitlabModule(),
                 new GithubModule(),
@@ -124,28 +103,52 @@ namespace Preesta.DI
                 services.AddKeyedSingleton(module.Key, module.BuildPipeline(trackerContext));
             }
 
+            // Jira release/version digests are Jira-bound; register only when
+            // Jira is configured. (Release is a separate item type, so it isn't
+            // an ITrackerModule<Issue>.)
+            if (jiraService != null)
+            {
+                services.AddSingleton(new ReactionPipeline<Release>
+                {
+                    PackageSupplier = new ReleaseSupplier(jiraService, rulesConfig.GetReleaseRules(@group)),
+                    PackageConverter = new ReleasePackageConverter(appSettings.SubjectPrefix),
+                    Channels = channels,
+                    Mutations = new RestMutations(jiraService),
+                    Logger = logger
+                });
+            }
+
             _provider = services.BuildServiceProvider();
         }
 
-        public ReactionPipeline<TIssueType> ResolveNotificationPipe<TIssueType>(string? name = null)
+        /// <summary>
+        /// Returns the pipeline if it was registered (keyed by <paramref name="name"/>
+        /// when supplied, otherwise the unkeyed singleton), or <c>null</c> when its
+        /// underlying tracker isn't configured.
+        /// </summary>
+        public ReactionPipeline<TIssueType>? TryResolveNotificationPipe<TIssueType>(string? name = null)
         {
             return name != null
-                ? _provider.GetRequiredKeyedService<ReactionPipeline<TIssueType>>(name)
-                : _provider.GetRequiredService<ReactionPipeline<TIssueType>>();
-        }
-
-        /// <summary>
-        /// Returns the keyed pipeline if it was registered (e.g. only when its
-        /// underlying service is configured), or <c>null</c> otherwise.
-        /// </summary>
-        public ReactionPipeline<TIssueType>? TryResolveNotificationPipe<TIssueType>(string name)
-        {
-            return _provider.GetKeyedService<ReactionPipeline<TIssueType>>(name);
+                ? _provider.GetKeyedService<ReactionPipeline<TIssueType>>(name)
+                : _provider.GetService<ReactionPipeline<TIssueType>>();
         }
 
         internal void ValidateRules()
         {
             _provider.GetRequiredService<IRulesConfig>().ValidateSchema();
+        }
+
+        /// <summary>
+        /// Builds the Jira service from config, or returns null when Jira isn't
+        /// configured. Picks Bearer (apiToken) over Basic (userName+password)
+        /// — JiraConfigLoader guarantees one of the two is present.
+        /// </summary>
+        private static HttpJiraService? CreateJiraService(JiraConfig? jira, ILogger logger)
+        {
+            if (jira == null) return null;
+            return jira.ApiToken != null
+                ? new HttpJiraService(jira.RootUri, jira.ApiToken, jira.MaxResults, logger: logger)
+                : new HttpJiraService(jira.RootUri, jira.UserName!, jira.Password!, jira.MaxResults, logger: logger);
         }
 
         private static IRulesConfig CreateRulesConfig(string path, ILogger logger)

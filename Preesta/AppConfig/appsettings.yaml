@@ -20,11 +20,10 @@ Application:
   subjectPrefix: ""
 
 Jira:
-  rootUri: https://valevitov.atlassian.net/
-  userName: "--- set in appsettings.secrets.yaml ---"
-  password: "--- set in appsettings.secrets.yaml ---"
-  apiToken: "--- set in appsettings.secrets.yaml ---"
+  rootUri: https://valevitov.atlassian.net/   # omit the whole Jira section if you don't use Jira
   maxResults: 300
+  # Credentials live in appsettings.secrets.yaml — either apiToken (Bearer),
+  # or userName + password (Basic).
 
 Smtp:
   Host: smtp.gmail.com

@@ -19,6 +19,9 @@ namespace Preesta.DI.Modules
         string Group,
         DeliveryChannels Channels,
         IReadOnlyDictionary<string, string> CustomFields,
-        IJiraService JiraService,
+        // Concrete type: HttpJiraService is both IJiraService (read, for the
+        // supplier base's predicate support) and IHttpHandler (write, for the
+        // Jql REST mutations). Null when Jira isn't configured.
+        HttpJiraService? JiraService,
         ILogger Logger);
 }

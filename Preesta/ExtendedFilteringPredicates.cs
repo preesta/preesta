@@ -17,8 +17,13 @@ namespace Preesta
             return Algorithm.DueDateExpiredMoreThan2WorkingDays(DateTime.Now.Date, issue.DueDate);
         }
 
-        internal static bool EstimatesAttachmentIsAbsent(IJiraService jira, Issue issue)
+        internal static bool EstimatesAttachmentIsAbsent(IJiraService? jira, Issue issue)
         {
+            // Jira-dependent by definition — activating it on a non-Jira rule
+            // without Jira configured is a misconfiguration, surfaced here.
+            if (jira is null)
+                throw new InvalidOperationException(
+                    "EstimatesAttachmentIsAbsent requires Jira to be configured.");
             return
                 !jira
                      .GetIssueAttachments(issue.Key)

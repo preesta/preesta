@@ -8,10 +8,14 @@ namespace Preesta.Data.Supplying
     internal abstract class IssueSupplier<TRule> : IPackageSupplier
         where TRule : Rule 
     {
-        protected IJiraService JiraService { get; }
+        // Nullable: Jira is one of five equal Sources, not a privileged spine.
+        // Non-Jira suppliers pass null here; it's only dereferenced by the
+        // Jira-dependent ExtendedFilteringPredicates, which fail loud if a rule
+        // activates them without Jira configured.
+        protected IJiraService? JiraService { get; }
         protected IEnumerable<TRule> Rules { get; }
 
-        protected IssueSupplier(IJiraService jiraService, IEnumerable<TRule> rules)
+        protected IssueSupplier(IJiraService? jiraService, IEnumerable<TRule> rules)
         {
             Rules = rules;
             JiraService = jiraService;
@@ -21,7 +25,7 @@ namespace Preesta.Data.Supplying
         {
             return (bool) typeof (ExtendedFilteringPredicates)!
                 .GetMethod(additionalPredicateName, BindingFlags.NonPublic | BindingFlags.Static)!
-                .Invoke(null, new object[] {JiraService, issue})!;
+                .Invoke(null, new object?[] {JiraService, issue})!;
         }
 
         protected string ReplaceMarkersByRealAddresses(string[] metaAddressees, IssueParticipants staff)
