@@ -17,7 +17,7 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Multi-arch build needs QEMU for the arm64 leg on an amd64 runner.
       - uses: docker/setup-qemu-action@v3
