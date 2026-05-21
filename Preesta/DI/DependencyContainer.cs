@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
-using LinearGraphQL;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Messaging;
@@ -12,6 +11,7 @@ using Preesta.Configuration;
 using Preesta.Data;
 using Preesta.Data.Supplying;
 using Preesta.Data.Supplying.Convert;
+using Preesta.DI.Modules;
 using Preesta.Notification;
 using Preesta.Notification.Delivery;
 using Preesta.Notification.Mutation;
@@ -104,125 +104,24 @@ namespace Preesta.DI
                 Logger = logger
             });
 
-            // Linear pipeline is registered only when an API key is provided.
-            // Application.cs uses GetKeyedService (nullable) so the pipeline is
-            // skipped silently when Linear isn't configured.
-            if (!string.IsNullOrEmpty(appSettings.LinearApiKey))
+            // Optional issue trackers are self-contained modules. Each knows
+            // whether it's configured and how to build its own pipeline; the
+            // orchestrator just registers the configured ones under their key.
+            // Adding a tracker is one new ITrackerModule plus one list entry —
+            // nothing here changes.
+            var trackerContext = new TrackerBuildContext(
+                appSettings, rulesConfig, @group, channels, customFields, jiraService, logger);
+            var modules = new ITrackerModule[]
             {
-                // One LinearConnection (= ILinearGateway) shared between the read path
-                // (LinearIssueSource) and the write path (LinearMutationExecutor) — same
-                // HttpClient, same auth header, no duplicate setup.
-                var linearConnection = new LinearConnection(appSettings.LinearApiKey!);
-                var linearSource = new LinearIssueSource(linearConnection, logger);
-                var linearSupplier = new LinearIssueSupplier(
-                    linearSource, jiraService, rulesConfig.GetLinearRules(@group), logger);
-                var linearMutationExecutor = new LinearMutationExecutor(linearConnection, logger);
-
-                // IssuePackageConverter is reused as-is. For Linear issues, Issue.Url is
-                // populated by LinearIssueSource and the formatter prefers it over the
-                // reconstructed-from-rootUri form, so the rootUri passed here is only
-                // a fallback (and a workspace-scoped URL works either way).
-                var linearWorkspace = appSettings.LinearWorkspace;
-                var linearRootUri = string.IsNullOrEmpty(linearWorkspace)
-                    ? "https://linear.app/"
-                    : $"https://linear.app/{linearWorkspace}/";
-                // Pass Jira's customFields map through too — Linear-sourced issues
-                // have empty Issue.CustomFields, so the map is effectively unused,
-                // but keeps construction symmetric for future reuse.
-                var linearConverter = new IssuePackageConverter(
-                    linearRootUri, appSettings.SubjectPrefix, linearWorkspace, customFields);
-
-                services.AddKeyedSingleton("Linear", new ReactionPipeline<Issue>
-                {
-                    PackageSupplier = linearSupplier,
-                    PackageConverter = linearConverter,
-                    Channels = channels,
-                    Mutations = new GraphQLMutations(linearMutationExecutor),
-                    Logger = logger
-                });
-            }
-
-            // GitLab pipeline mirrors GitHub — registered only when a token is provided.
-            if (!string.IsNullOrEmpty(appSettings.GitlabToken))
+                new LinearModule(),
+                new GitlabModule(),
+                new GithubModule(),
+                new ShortcutModule(),
+            };
+            foreach (var module in modules)
             {
-                // GitlabConnection picks the default https://gitlab.com/api/graphql
-                // endpoint when apiBase is empty; self-hosted instances override it.
-                var gitlabApiBase = appSettings.GitlabApiBase;
-                var gitlabConnection = string.IsNullOrEmpty(gitlabApiBase)
-                    ? new GitlabGraphQL.GitlabConnection(appSettings.GitlabToken!)
-                    : new GitlabGraphQL.GitlabConnection(appSettings.GitlabToken!, gitlabApiBase!);
-                var gitlabSource = new GitlabIssueSource(gitlabConnection, logger);
-                var gitlabSupplier = new GitlabIssueSupplier(
-                    gitlabSource, jiraService, rulesConfig.GetGitlabRules(@group), logger);
-                var gitlabMutationExecutor = new GitlabMutationExecutor(gitlabConnection, logger);
-
-                // For GitLab-sourced issues, Issue.Url is populated by GitlabIssueSource
-                // and the formatter prefers it — rootUri is a fallback only. We derive
-                // a workspace-style root from the configured endpoint (strip /api/graphql)
-                // so the fallback URL still points to the right host for self-hosted.
-                var gitlabRootUri = DeriveGitlabRoot(gitlabApiBase);
-                var gitlabConverter = new IssuePackageConverter(
-                    gitlabRootUri, appSettings.SubjectPrefix, customFields: customFields);
-
-                services.AddKeyedSingleton("Gitlab", new ReactionPipeline<Issue>
-                {
-                    PackageSupplier = gitlabSupplier,
-                    PackageConverter = gitlabConverter,
-                    Channels = channels,
-                    Mutations = new GraphQLMutations(gitlabMutationExecutor),
-                    Logger = logger
-                });
-            }
-
-            // GitHub pipeline mirrors Linear — registered only when a token is provided.
-            if (!string.IsNullOrEmpty(appSettings.GithubToken))
-            {
-                var githubConnection = new GithubGraphQL.GithubConnection(appSettings.GithubToken!);
-                var githubSource = new GithubIssueSource(githubConnection, logger);
-                var githubSupplier = new GithubIssueSupplier(
-                    githubSource, jiraService, rulesConfig.GetGithubRules(@group), logger);
-                var githubMutationExecutor = new GithubMutationExecutor(githubConnection, logger);
-
-                // For GitHub-sourced issues, Issue.Url is populated by GithubIssueSource and
-                // the formatter prefers it — rootUri is a fallback only.
-                var githubConverter = new IssuePackageConverter(
-                    "https://github.com/", appSettings.SubjectPrefix, customFields: customFields);
-
-                services.AddKeyedSingleton("Github", new ReactionPipeline<Issue>
-                {
-                    PackageSupplier = githubSupplier,
-                    PackageConverter = githubConverter,
-                    Channels = channels,
-                    Mutations = new GraphQLMutations(githubMutationExecutor),
-                    Logger = logger
-                });
-            }
-
-            // Shortcut pipeline mirrors GitHub — registered only when an API token is provided.
-            // Shortcut is REST-only (no GraphQL), so its executor plugs into the
-            // HttpHandler slot (an IHttpHandler), not the GraphQL one.
-            if (!string.IsNullOrEmpty(appSettings.ShortcutApiToken))
-            {
-                var shortcutConnection = new ShortcutRest.ShortcutConnection(appSettings.ShortcutApiToken!);
-                var shortcutSource = new ShortcutIssueSource(shortcutConnection, logger);
-                var shortcutSupplier = new ShortcutIssueSupplier(
-                    shortcutSource, jiraService, rulesConfig.GetShortcutRules(@group), logger);
-                var shortcutMutationExecutor = new ShortcutMutationExecutor(shortcutConnection, logger);
-
-                // Issue.Url is populated by ShortcutIssueSource (app_url); rootUri is a
-                // fallback only. The base URL also lets {{@jiraRoot}} marker resolve to
-                // the Shortcut API root for rule-supplied mutation urlPattern templates.
-                var shortcutConverter = new IssuePackageConverter(
-                    "https://api.app.shortcut.com/", appSettings.SubjectPrefix, customFields: customFields);
-
-                services.AddKeyedSingleton("Shortcut", new ReactionPipeline<Issue>
-                {
-                    PackageSupplier = shortcutSupplier,
-                    PackageConverter = shortcutConverter,
-                    Channels = channels,
-                    Mutations = new RestMutations(shortcutMutationExecutor),
-                    Logger = logger
-                });
+                if (!module.IsConfigured(appSettings)) continue;
+                services.AddKeyedSingleton(module.Key, module.BuildPipeline(trackerContext));
             }
 
             _provider = services.BuildServiceProvider();
@@ -247,26 +146,6 @@ namespace Preesta.DI
         internal void ValidateRules()
         {
             _provider.GetRequiredService<IRulesConfig>().ValidateSchema();
-        }
-
-        /// <summary>
-        /// Strips the <c>/api/graphql</c> suffix off the configured endpoint so the
-        /// formatter has a usable host root for the fallback "Open in GitLab →" link
-        /// on self-hosted instances. Returns <c>https://gitlab.com/</c> when nothing
-        /// is configured.
-        /// </summary>
-        private static string DeriveGitlabRoot(string? apiBase)
-        {
-            if (string.IsNullOrEmpty(apiBase)) return "https://gitlab.com/";
-            try
-            {
-                var uri = new Uri(apiBase);
-                return $"{uri.Scheme}://{uri.Authority}/";
-            }
-            catch
-            {
-                return "https://gitlab.com/";
-            }
         }
 
         private static IRulesConfig CreateRulesConfig(string path, ILogger logger)
