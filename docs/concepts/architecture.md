@@ -14,16 +14,17 @@ Preesta is small on purpose. The whole runtime fits on a napkin:
                   │  Formatter renders one digest        │
                   │  per group: HTML + text + mrkdwn     │
                   │                ▼                     │
-                  │  per-channel MessageBuilder fans     │
-                  │  out the digest to each channel's    │
-                  │  recipient list (email → SMTP,       │
-                  │  email→chatId map → Telegram, etc)   │
+                  │  each configured IDeliveryChannel    │
+                  │  sends the digest (email → SMTP,     │
+                  │  email→ID map → Telegram / Slack)    │
                   │                ▼                     │
-                  │  Optional: same matched issues feed  │
-                  │  the MutationExecutor for write-side │
-                  │  actions (comments, status changes)  │
+                  │  Optional: one IMutationHandler runs │
+                  │  the rule's write-side actions       │
+                  │  (comments, status changes)          │
                   └──────────────────────────────────────┘
 ```
+
+Each issue tracker is a self-contained module; the CLI assembles the shared delivery channels once, then registers a pipeline for every configured tracker (see [Wiring](#wiring-one-module-per-tracker)).
 
 ## The five moving parts
 
@@ -33,9 +34,20 @@ Preesta is small on purpose. The whole runtime fits on a napkin:
 
 **Formatter** — `IssueFormatter` and the Scriban templates in `Preesta/Templates/`. Renders one digest per package as HTML email, plain text (Telegram-compatible HTML), and Slack mrkdwn. Knows about per-tracker concerns: "Open in Jira → / Linear / GitHub / GitLab / Shortcut" round-trip links in the header, filter-description lines, status pill colors, priority dots.
 
-**MessageBuilder** — per-channel fan-out. `ToMessages` for SMTP, `ToTelegramMessages` and `ToSlackMessages` for the DM channels. The latter two look up each package's resolved emails in workspace-level `telegramUsers:` / `slackUsers:` (email → ID) maps and emit one message per ID. Literal `slackUserId:` / `telegramChatId:` on the rule itself is one-for-all (no per-recipient routing).
+**Delivery channel** — `IDeliveryChannel` (`EmailChannel`, `TelegramChannel`, `SlackChannel`) is one send target. Given the run's notification packages and the converter, it produces and sends the channel-native messages; underneath, `MessageBuilder` does the per-recipient fan-out (email → SMTP, and for the DM channels the workspace-level `telegramUsers:` / `slackUsers:` email→ID maps — literal `slackUserId:` / `telegramChatId:` on the rule are one-for-all). The configured channels are assembled once into a `DeliveryChannels` object shared by every pipeline. Adding a target (Discord, a webhook) is one new `IDeliveryChannel` plus one line in `DeliveryChannels.Build` — the pipeline doesn't change.
 
-**MutationExecutor** — `IHttpHandler` (REST) and `IGraphQLMutationHandler` (GraphQL) are the two write-side abstractions. `LinearMutationExecutor` and `GithubMutationExecutor` implement the GraphQL one; `GitlabMutationExecutor` joins them; Jira's `callRest` and Shortcut's REST mutations go through the REST handler. Per-mutation failures (HTTP errors, GraphQL `errors` envelope) are logged and swallowed — one bad mutation never stops the others.
+**Mutation handler** — one `IMutationHandler` per pipeline: `RestMutations` (Jira `callRest`, Shortcut) or `GraphQLMutations` (Linear, GitHub, GitLab), each wrapping the wire-level executor. It pulls the run's mutation packages and executes them; per-mutation failures (HTTP errors, GraphQL `errors` envelope) are logged and swallowed — one bad mutation never stops the others. A tracker has exactly one mutation transport, so the pipeline holds exactly one handler (not a REST-or-GraphQL pair).
+
+## Wiring: one module per tracker
+
+Each tracker is an `ITrackerModule` — `JqlModule`, `LinearModule`, `GithubModule`, `GitlabModule`, `ShortcutModule`. A module knows two things: whether it's configured (`IsConfigured`) and how to build its own pipeline (`BuildPipeline` — source + supplier + converter + mutation handler). `DependencyContainer` assembles the shared `DeliveryChannels` once, then loops the modules and registers a pipeline for each configured one. It never names a specific tracker.
+
+The payoff is that the two axes of growth are each a one-file change:
+
+- **A new tracker** — write one `ITrackerModule` (plus its transport `.csproj`) and add one entry to the module list. `Application.cs`, the DI loop, and the other modules don't change.
+- **A new delivery target** — write one `IDeliveryChannel` and add one line to `DeliveryChannels.Build`. The pipelines and modules don't change.
+
+Jira is not privileged — it's `JqlModule`, registered through the same loop as the rest. A deployment with no `Jira:` section simply doesn't register it; the same goes for any other tracker.
 
 ## Why a single CLI, not a daemon
 

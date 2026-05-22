@@ -14,37 +14,16 @@ namespace Preesta
             var container = new DependencyContainer(args[0]);
             container.ValidateRules();
 
-            var tasks = new List<Task>();
+            // Run every configured tracker's pipeline plus the release pipeline.
+            // No tracker is named here — the container hands back whatever the
+            // module loop registered, so adding a tracker never touches this loop.
+            var tasks = container.IssuePipelines()
+                .Select(pipe => pipe.RunAsync())
+                .ToList();
 
-            // Every pipeline runs only when its tracker is configured — Jira
-            // (Jql + Release) is no longer privileged, it's gated like the rest.
-            var jqlPipe = container.TryResolveNotificationPipe<Issue>("Jql");
-            if (jqlPipe != null)
-                tasks.Add(jqlPipe.RunAsync());
-
-            var releasePipe = container.TryResolveNotificationPipe<Release>();
+            var releasePipe = container.ReleasePipeline();
             if (releasePipe != null)
                 tasks.Add(releasePipe.RunAsync());
-
-            // Linear pipeline runs only when registered (i.e. Linear:apiKey is set).
-            var linearPipe = container.TryResolveNotificationPipe<Issue>("Linear");
-            if (linearPipe != null)
-                tasks.Add(linearPipe.RunAsync());
-
-            // GitHub pipeline runs only when registered (i.e. Github:token is set).
-            var githubPipe = container.TryResolveNotificationPipe<Issue>("Github");
-            if (githubPipe != null)
-                tasks.Add(githubPipe.RunAsync());
-
-            // GitLab pipeline runs only when registered (i.e. Gitlab:token is set).
-            var gitlabPipe = container.TryResolveNotificationPipe<Issue>("Gitlab");
-            if (gitlabPipe != null)
-                tasks.Add(gitlabPipe.RunAsync());
-
-            // Shortcut pipeline runs only when registered (i.e. Shortcut:apiToken is set).
-            var shortcutPipe = container.TryResolveNotificationPipe<Issue>("Shortcut");
-            if (shortcutPipe != null)
-                tasks.Add(shortcutPipe.RunAsync());
 
             Task.WaitAll(tasks.ToArray());
         }

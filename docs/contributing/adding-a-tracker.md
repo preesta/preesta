@@ -16,16 +16,17 @@ If any answer is "no" or "unclear", document the finding in MIGRATION as a defer
 
 ## The shape
 
-Every tracker integration is the same six pieces:
+Every tracker integration is the same seven pieces:
 
 1. **Transport project** — `XxxGraphQL/` or `XxxRest/`, a thin wrapper over `HttpClient`. One `Query()` (GraphQL) or `Send()` (REST) method, just enough to keep auth + serialization in one place.
-2. **`Xxx:token` in `AppSettings.cs`** — credential reader.
-3. **`XxxRule` + `GetXxxRules` in `YamlRulesConfig.cs`** — rule shape and parsing.
+2. **`Xxx:token` (or `XxxConfig`) on `AppSettings.cs`** — credential reader. Single-field trackers expose a `string? XxxToken`; richer ones (Jira, SMTP) get a typed `XxxConfig` record + loader.
+3. **`XxxRule` + `GetXxxRules` in `YamlRulesConfig.cs`** (and the matching no-op in `XmlRulesConfig`) — rule shape and parsing.
 4. **`XxxIssueSource`** — fetch + mapping into the shared `Issue` model.
 5. **`XxxIssueSupplier : IssueSupplier<XxxRule>`** — group-by-recipient via the inherited base class; override `Enrich` to attach package-level metadata (filter description, "Open in Xxx" URL).
-6. **`XxxMutationExecutor`** — implements `IHttpHandler` (REST) or `IGraphQLMutationHandler` (GraphQL). Logs + swallows per-mutation failures.
+6. **`XxxMutationExecutor`** — implements the wire-level `IHttpHandler` (REST) or `IGraphQLMutationHandler` (GraphQL). Logs + swallows per-mutation failures. In the module it's wrapped in a `RestMutations` / `GraphQLMutations` adapter so the pipeline sees one `IMutationHandler`.
+7. **`XxxModule : ITrackerModule`** (`Preesta/DI/Modules/`) — ties the above together: `IsConfigured(settings)` and `BuildPipeline(context)` (source + supplier + converter + mutation handler). Then add one entry to the `modules` array in `DependencyContainer`.
 
-Plus DI wire-up in `DependencyContainer.cs`, `Application.cs` resolves the new pipeline, `IRulesConfig` / `XmlRulesConfig` get the new method.
+That's the whole wiring. `Application.cs`, the DI loop, and the other modules **don't change** — the orchestrator never names a tracker. `IRulesConfig` / `XmlRulesConfig` gain the `GetXxxRules` signature (interface + no-op), which is the only shared file the rule parsing touches.
 
 ## Commit sequence (recommended)
 
@@ -35,8 +36,8 @@ Phase 12.5 hit these in order — keep each commit small and self-contained:
 2. **AppSettings** — add `Xxx:token` reader + placeholder in `appsettings.yaml`.
 3. **Rule + YAML parsing** — `XxxRule.cs`, `GetXxxRules` in `YamlRulesConfig`, validation tests in `Tests/YamlConfigTests.cs`.
 4. **IssueSource** — fetch + mapping. Tests in `Tests/Xxx/XxxIssueSourceTests.cs` via NSubstitute on `IXxxGateway`.
-5. **Supplier + DI wire-up + Application.cs** — make the pipeline routable.
-6. **MutationExecutor** — write-side. Tests.
+5. **Supplier + `XxxModule` + register in the `modules` array** — make the pipeline routable. (No `Application.cs` edit — `TryResolveNotificationPipe` already iterates whatever's registered.)
+6. **MutationExecutor** — write-side, wrapped in `RestMutations` / `GraphQLMutations` by the module. Tests.
 7. **Docs** — `docs/trackers/xxx.md`, MIGRATION entry, update `docs/index.md`'s tracker table.
 
 The split keeps each PR reviewable. A typical phase comes out to 7-9 commits.
@@ -63,7 +64,7 @@ If the tracker is REST-only with **no server-side filter chips** — stop. Docum
 
 - **Don't invent a DSL for the filter.** Use whatever the tracker's web UI accepts. Users already think in that syntax.
 - **Don't add identity to filters.** No `assignee:@me` patterns in examples. The routing layer handles per-recipient.
-- **Don't skip the "no unfiltered rules" validator.** A rule with empty filter scans the whole tracker; that's never what the user wants. Drop with `ILogger.Error`. Mirror `GitlabRule`'s `HasAnyField` check.
+- **Don't add a static "filter breadth" validator.** It's tempting to reject thin filters in the converter, but how broad is "too broad" depends on the deployment (a query that's fine on a small self-hosted instance times out on the giant SaaS one) — something the parser can't know. Reject only what's statically wrong (empty/missing required filter string, mutually-exclusive modes). An over-broad query is a runtime concern: let it run, catch the server's error, log a warning, continue. (This is why GitLab's old `HasAnyField` guard was removed.)
 - **Don't pile on shared-code refactors.** Each new tracker should *add* to shared interfaces (Issue fields, marker fallbacks), not rename or restructure existing ones. The `LinearId ?? GithubNodeId ?? GitlabGlobalId ?? ShortcutId` fallback chain in `ReplaceKnownMarkers` is the canonical pattern.
 - **Don't ship without browser verification.** Run the digest live, click every link in the email, confirm the "Open in <tracker> →" lands where you expect and the per-issue links route correctly.
 

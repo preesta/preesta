@@ -122,16 +122,16 @@ namespace Preesta.DI
         }
 
         /// <summary>
-        /// Returns the pipeline if it was registered (keyed by <paramref name="name"/>
-        /// when supplied, otherwise the unkeyed singleton), or <c>null</c> when its
-        /// underlying tracker isn't configured.
+        /// Every issue-tracker pipeline that got registered (one per configured
+        /// tracker module). The caller runs them without knowing which trackers
+        /// exist — so adding a tracker never touches the run loop.
         /// </summary>
-        public ReactionPipeline<TIssueType>? TryResolveNotificationPipe<TIssueType>(string? name = null)
-        {
-            return name != null
-                ? _provider.GetKeyedService<ReactionPipeline<TIssueType>>(name)
-                : _provider.GetService<ReactionPipeline<TIssueType>>();
-        }
+        public IEnumerable<ReactionPipeline<Issue>> IssuePipelines() =>
+            _provider.GetKeyedServices<ReactionPipeline<Issue>>(KeyedService.AnyKey);
+
+        /// <summary>The release/version pipeline, or null when Jira isn't configured.</summary>
+        public ReactionPipeline<Release>? ReleasePipeline() =>
+            _provider.GetService<ReactionPipeline<Release>>();
 
         internal void ValidateRules()
         {
