@@ -145,7 +145,7 @@ Single `filter:` field, raw GitHub search string. Multi-repo / org / `is:issue` 
     assigneeUsernames: [alice]
 ```
 
-Structured chip mapping — keys match `Query.issues` GraphQL argument names verbatim. At least one chip required. See [GitLab tracker page](../trackers/gitlab.md) for the full chip list.
+Structured chip mapping — keys match `Query.issues` GraphQL argument names verbatim. Include a narrowing chip (`assigneeUsernames` / `authorUsername` / `milestoneTitle` / `iids`) so the query stays bounded on busy instances. See [GitLab tracker page](../trackers/gitlab.md#3-write-rules-filter-chips) for the full chip list and the breadth note.
 
 ### `shortcut`
 
@@ -182,8 +182,9 @@ Empty / missing values render as nothing — no crash.
 Malformed rules are dropped with `ILogger.Error` and Preesta keeps going for the rest of the file:
 
 - Linear: rules with zero or 2+ of {filter, filterRaw, viewId}
-- GitLab: rules with no chip fields set (`Query.issues` refuses unfiltered scans)
 - GitHub / Shortcut: rules with empty/missing `filter:` string
 - Any rule: missing `notify` and no mutations (nothing for the rule to do)
+
+GitLab is **not** in this list: filter breadth isn't statically validated (an unscoped query is fine on a small self-hosted instance, times out on gitlab.com). Over-broad GitLab queries fail at fetch time and are logged, not rejected up front — see [GitLab → scope the filter](../trackers/gitlab.md#3-write-rules-filter-chips).
 
 If a digest you expected isn't going out, check the log first — there's almost always an `Error` line naming the rejected rule.

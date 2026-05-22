@@ -152,9 +152,10 @@ rules:
     filter:
       state: opened
       labelName: [urgent]
+      assigneeUsernames: [your-username]   # narrowing scope — unscoped state+label times out on gitlab.com
     notify:
       subject: "GitLab digest"
-      recommendations: "Open GitLab issues with urgent label across visible projects."
+      recommendations: "Open urgent GitLab issues assigned to you."
       mailTo: you@example.com
       cc: ""
       telegramChatId: "12345678"

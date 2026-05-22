@@ -103,9 +103,10 @@ See **[Markers reference](../reference/markers.md)** for the full substitution l
 
 The YAML converter drops malformed rules with an `ILogger.Error` log line — Preesta keeps going for the rest of the file:
 
-- Missing required fields (no filter chips for GitLab)
 - Mutually-exclusive filter modes set together (Linear)
-- Empty filters that would scan an entire tracker
+- Empty/missing `filter:` string (GitHub, Shortcut)
 - Non-string filter where a string is expected, or vice-versa
+
+Filter *breadth* is not validated — a too-broad query (e.g. an unscoped GitLab filter on gitlab.com) isn't rejected up front; it fails at fetch time, gets logged, and the run continues.
 
 If something is silently not happening, check the log — there's almost always an `Error` line explaining which rule got dropped and why.

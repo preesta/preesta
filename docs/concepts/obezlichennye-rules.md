@@ -73,9 +73,10 @@ Three concrete payoffs:
 
 The mirror of "rules are impersonal" is: *don't put identity in the filter either.* Avoid filters like `is:open assignee:@me` — the `@me` resolves to whoever owns the API token, which is almost never who the digest is for. If the rule should catch "open urgent issues on the platform team", filter on `team:platform`, not on a specific person, and let the routing layer fan out.
 
-Validators in the YAML converters enforce this where they can:
+A note on breadth: Preesta doesn't statically reject a thin filter — how broad is "too broad" depends on the tracker instance (an unscoped GitLab query is fine on a small self-hosted instance but times out on gitlab.com), which the rule parser can't know. Keep filters bounded as an authoring discipline; an over-broad query fails at fetch time, gets logged, and the run continues. See [GitLab → scope the filter](../trackers/gitlab.md#3-write-rules-filter-chips).
 
-- GitLab rejects rules with zero user-facing filter chips — an empty filter is a "scan everything" rule and is universally a mistake
+The YAML converters do enforce the things that *are* statically knowable:
+
 - Linear's three filter modes (`filter`, `filterRaw`, `viewId`) are mutually exclusive — the rule has exactly one source of truth for what it matches
 
 ## See also

@@ -52,7 +52,7 @@ rules:
 | `updatedAfter` / `updatedBefore` | ISO-8601 string | |
 | `iids` | string[] | per-project numeric IDs |
 
-**At least one chip must be set.** GitLab's GraphQL refuses unfiltered scans, and Preesta drops empty rules with an `Error` log — see [Impersonal rules → Filters are impersonal too](../concepts/obezlichennye-rules.md#the-non-obvious-follow-on-filters-are-impersonal-too).
+**Scope the filter to the instance you're hitting.** Chips are forwarded verbatim as `Query.issues` variables — Preesta doesn't pre-judge how broad the result is. On a busy instance (gitlab.com especially) a filter with only `state` and/or `labelName` asks the server for every matching issue across *all* projects and gets killed with a timeout (`503 Request timed out`). Add a narrowing chip — `assigneeUsernames`, `authorUsername`, `milestoneTitle`, or `iids` — so the server can bound the query. Thin `state`+`labelName` filters are fine only on a small self-hosted instance where "everything" is still a sane set. An over-broad query isn't rejected up front; it fails at fetch time, gets logged as a warning, and the rest of the run continues.
 
 ## Issues only, no MRs
 
@@ -85,6 +85,7 @@ Raw GraphQL bodies against `https://gitlab.com/api/graphql` (or your self-hosted
   filter:
     state: opened
     labelName: [stale]
+    assigneeUsernames: [alice]   # narrowing scope — see "Scope the filter" above
   mutations:
     - mutation: |
         mutation {
