@@ -147,19 +147,5 @@ rules:
       slackUserId: "U01ABCDEFG"
       columns: [Status, Priority, DueDate, Updated]
 
-  - type: gitlab
-    group: e2etest
-    filter:
-      state: opened
-      labelName: [urgent]
-      assigneeUsernames: [your-username]   # narrowing scope — unscoped state+label times out on gitlab.com
-    notify:
-      subject: "GitLab digest"
-      recommendations: "Open urgent GitLab issues assigned to you."
-      mailTo: you@example.com
-      cc: ""
-      telegramChatId: "12345678"
-      columns: [Status, Labels, Updated]
-
 # Email alias mappings
 redirectionRules: {}
