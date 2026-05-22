@@ -105,24 +105,6 @@ namespace Preesta.Configuration.Action
         public string[]? Iids { get; set; }
 
         /// <summary>
-        /// True iff at least one filter field is set. Used by the YAML converter to drop
-        /// empty rules — GitLab's <c>Query.issues</c> refuses unfiltered scans.
-        /// </summary>
-        public bool HasAnyField =>
-            !string.IsNullOrEmpty(State)
-            || (LabelName != null && LabelName.Length > 0)
-            || (AssigneeUsernames != null && AssigneeUsernames.Length > 0)
-            || !string.IsNullOrEmpty(AuthorUsername)
-            || (MilestoneTitle != null && MilestoneTitle.Length > 0)
-            || !string.IsNullOrEmpty(Search)
-            || !string.IsNullOrEmpty(CreatedAfter)
-            || !string.IsNullOrEmpty(CreatedBefore)
-            || !string.IsNullOrEmpty(UpdatedAfter)
-            || !string.IsNullOrEmpty(UpdatedBefore)
-            || Confidential.HasValue
-            || (Iids != null && Iids.Length > 0);
-
-        /// <summary>
         /// Human-readable one-liner for the digest header (mirror of GitHub's
         /// "Search: …" line). Skips null/empty fields, joins arrays with commas.
         /// </summary>

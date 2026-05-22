@@ -67,7 +67,7 @@ namespace Preesta.Data.Supplying
 
         protected internal override PackageBase Enrich(PackageBase basePackage, GitlabRule rule)
         {
-            if (rule.Filter != null && rule.Filter.HasAnyField)
+            if (rule.Filter != null)
             {
                 basePackage.Properties["GitlabFilter"] = rule.Filter.ToHumanString();
                 // Round-trip link to the GitLab dashboard pre-filtered to the same

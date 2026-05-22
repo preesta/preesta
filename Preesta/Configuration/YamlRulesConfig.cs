@@ -122,14 +122,6 @@ namespace Preesta.Configuration
                         .ToArray();
                 }
 
-                if (!rule.Filter.HasAnyField)
-                {
-                    _logger.Error("GitLab rule must specify at least one filter field "
-                        + "(state, labelName, assigneeUsernames, authorUsername, milestoneTitle, "
-                        + "search, createdAfter/Before, updatedAfter/Before, confidential, iids)");
-                    return null!;
-                }
-
                 return rule;
             });
         }

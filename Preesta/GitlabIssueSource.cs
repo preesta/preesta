@@ -17,11 +17,12 @@ namespace Preesta
     /// </summary>
     /// <remarks>
     /// <para>
-    /// GitLab's GraphQL <c>Query.issues</c> requires at least one filter (the
-    /// <see cref="GitlabRule.Filter"/> object guarantees this on the YAML side).
     /// Fields users see as filter chips in the web UI are forwarded verbatim as
     /// GraphQL variables — the names match GraphQL argument names exactly so the
-    /// mapping is mechanical.
+    /// mapping is mechanical. How tightly the filter bounds the result set is the
+    /// rule author's call: a query that's too broad for a busy instance (e.g.
+    /// gitlab.com) is rejected by the server with a timeout, caught in
+    /// <see cref="GetIssues"/>, logged, and skipped — not pre-judged here.
     /// </para>
     /// <para>
     /// Phase 13 covers Issues only — not Merge Requests. GitLab's GraphQL has no
@@ -94,9 +95,8 @@ query(
 
         public virtual Issue[] GetIssues(GitlabRule rule)
         {
-            if (rule.Filter == null || !rule.Filter.HasAnyField)
+            if (rule.Filter == null)
             {
-                _logger?.Warning("GitLab rule has no filter fields set; skipping");
                 return Array.Empty<Issue>();
             }
 

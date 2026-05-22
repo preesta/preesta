@@ -244,20 +244,22 @@ namespace Tests.Gitlab
         }
 
         [Test]
-        public void EmptyFilter_ReturnsEmptyAndDoesNotCallGateway()
+        public void EmptyFilter_StillQueriesGateway()
         {
-            // A GitlabRule whose Filter object has zero fields set must not even
-            // attempt the query — GitLab's GraphQL refuses unfiltered scans, and we
-            // want predictable "log + skip" behaviour at the source layer too (the
-            // YAML parser already drops these before they reach the source, but the
-            // contract should hold defensively).
+            // The source no longer pre-judges filter breadth — an empty filter is
+            // sent to the gateway like any other. If the resulting query is too
+            // broad for the instance, the server times out and the catch block
+            // (covered elsewhere) logs + returns empty. Here the stub returns an
+            // empty result set, so the query runs and yields zero issues.
             var gateway = Substitute.For<IGitlabGateway>();
+            gateway.Query(Arg.Any<string>(), Arg.Any<object>())
+                .Returns(JObject.Parse(EmptyResponse));
             var source = new GitlabIssueSource(gateway, Substitute.For<ILogger>());
 
             var issues = source.GetIssues(new GitlabRule { Filter = new GitlabFilter() });
 
             Assert.AreEqual(0, issues.Length);
-            gateway.DidNotReceive().Query(Arg.Any<string>(), Arg.Any<object>());
+            gateway.Received().Query(Arg.Any<string>(), Arg.Any<object>());
         }
 
         [Test]

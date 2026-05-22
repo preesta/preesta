@@ -475,44 +475,36 @@ rules:
         }
 
         [Test]
-        public void Gitlab_RuleWithNoFilterFields_IsDroppedAndLogged()
+        public void Gitlab_RuleWithEmptyOrNoFilter_IsAccepted()
         {
-            const string yaml = @"
+            // Whether a GitLab query is "too broad" depends on the target instance
+            // (gitlab.com vs a small self-hosted one), which the parser can't know.
+            // So we don't statically reject thin/empty filters — an over-broad query
+            // is handled at runtime (the server times out, GitlabIssueSource catches
+            // it, logs a warning, and the run continues).
+            const string emptyFilter = @"
 rules:
   - type: gitlab
-    group: gl-bad
+    group: gl
     filter: {}
-    notify:
-      subject: x
-      mailTo: assignee
+    notify: { subject: x, mailTo: assignee }
 ";
-            var logger = Substitute.For<ILogger>();
-            var rules = new YamlRulesConfig(yaml, logger).GetGitlabRules("gl-bad");
-
-            Assert.AreEqual(0, rules.Length);
-            Assert.IsTrue(
-                logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"),
-                "Expected ILogger.Error when a GitLab rule's filter is empty");
-        }
-
-        [Test]
-        public void Gitlab_RuleWithoutFilter_IsDroppedAndLogged()
-        {
-            const string yaml = @"
+            const string noFilter = @"
 rules:
   - type: gitlab
-    group: gl-bad
-    notify:
-      subject: x
-      mailTo: assignee
+    group: gl
+    notify: { subject: x, mailTo: assignee }
 ";
-            var logger = Substitute.For<ILogger>();
-            var rules = new YamlRulesConfig(yaml, logger).GetGitlabRules("gl-bad");
+            foreach (var yaml in new[] { emptyFilter, noFilter })
+            {
+                var logger = Substitute.For<ILogger>();
+                var rules = new YamlRulesConfig(yaml, logger).GetGitlabRules("gl");
 
-            Assert.AreEqual(0, rules.Length);
-            Assert.IsTrue(
-                logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"),
-                "Expected ILogger.Error when a GitLab rule has no filter");
+                Assert.AreEqual(1, rules.Length, "Rule should be accepted, not dropped");
+                Assert.IsFalse(
+                    logger.ReceivedCalls().Any(c => c.GetMethodInfo().Name == "Error"),
+                    "No Error should be logged — thin filters are no longer rejected");
+            }
         }
 
         [Test]
