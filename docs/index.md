@@ -19,6 +19,18 @@ It exists because every issue tracker has its own notification preferences scree
 
 A `rules.yaml` file lists rules; each rule says *which tracker, which issues, who to notify, what to do.* Preesta runs once per cron tick, fetches the matches, groups them by recipient (e.g. one digest per `assignee`), and sends.
 
+## What Preesta is *not*
+
+Preesta is a thin scheduled layer **on top of** existing trackers. It deliberately doesn't try to be:
+
+- **An incident-management platform.** No `Incident` object, no declare/ack/resolve lifecycle, no post-mortems. If you're paging an SRE at 3 a.m., reach for PagerDuty or Rootly, not Preesta.
+- **An on-call / escalation engine.** No rotations, no "if no ack in 5 min then page the manager", no calendars. Per-recipient routing happens via the tracker's assignee, not via Preesta-owned schedules.
+- **A workflow engine.** No transitions, approvals, branching runbooks, or multi-step orchestration. A rule's one optional mutation runs against each matched issue independently.
+- **A status page / customer-comms tool.** Output is internal digests (email / Telegram / Slack DM) and tracker-side comments. Public status communication is somewhere else.
+- **A tracker.** Issues live in Jira / Linear / GitHub / GitLab / Shortcut. Preesta queries them; it doesn't store them.
+
+**The line that keeps the scope small:** Preesta is stateless across cron ticks. Every run starts from a clean slate, reads the current tracker state, dispatches, exits. If a feature would need Preesta to *remember* something between runs — escalation timers, SLA counters, who's been paged when — that feature lives elsewhere.
+
 ## What you read next
 
 - **[Quickstart](quickstart.md)** — zero to first digest in 10 minutes.
