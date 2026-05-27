@@ -36,16 +36,17 @@ Github:
 rules:
   - type: github
     group: hello-preesta
-    filter: "is:open is:issue assignee:@me sort:updated-desc"
+    filter: "is:open is:issue repo:your-org/your-repo"
     notify:
-      subject: "Things on me in GitHub"
-      mailTo: you@example.com
+      subject: "Open issues on you"
+      mailTo: assignee          # ← the killer feature: per-recipient fan-out
 ```
 
-The `filter:` is a raw GitHub search query — the same syntax you type into the web search bar. Use whatever queries you actually run by hand.
+Look at what's *not* in that rule: **no identity**. The filter says *which issues* (open issues in one repo), and `mailTo: assignee` is a marker that resolves per matched issue. Preesta groups the matches by assignee email and sends each distinct assignee their own slice. One rule, N digests, one per actual recipient.
 
-!!! warning "`assignee:@me` is fine for a personal digest, not for shared rules"
-    `@me` resolves to whoever owns the API token. For a team, write `is:open is:issue label:urgent` and let the routing layer fan out: one digest per assignee via the `mailTo: assignee` marker. See [Routing model](concepts/routing-model.md).
+Run it solo and you receive only the issues actually assigned to you. Add a teammate to the repo and **they automatically start getting their digest the moment they get assigned** — without you touching `rules.yaml`. Remove them and they stop getting digests the moment they stop being assigned. The rule outlives team membership.
+
+`filter:` is a raw GitHub search query — the same syntax you type into the web search bar. Use whatever queries you actually run by hand. See [Routing model](concepts/routing-model.md) for the full marker mechanics (`assignee` / `reporter` / `creator`, mixing literals with markers, email→Telegram/Slack ID maps).
 
 ## 2. Run
 
@@ -57,7 +58,7 @@ docker run --rm \
   preesta hello-preesta
 ```
 
-A log block prints the matched issues, then the SMTP send. The email lands in your inbox within seconds — one row per matched issue, each linked to its GitHub page, plus an "Open in GitHub →" link in the header pointing at the same search query.
+A log block prints the matched issues, then one SMTP send per distinct assignee. Within seconds an email lands in your inbox containing **only the issues actually assigned to you**, each linked to its GitHub page, plus an "Open in GitHub →" link in the header pointing at the same search query. Teammates with exposed `User.email` get their own digests in parallel — same rule, different slice each. (GitHub returns `""` for users who've hidden their email; their issues stay in the run but the marker skips routing for them. See [Routing model](concepts/routing-model.md#when-the-assignee-has-no-email).)
 
 Sanity check the image first if you like:
 
