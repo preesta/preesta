@@ -1,40 +1,36 @@
 # Quickstart
 
-This walks you from "nothing installed" to "first digest in my inbox" in about ten minutes. We'll use **GitHub Issues** as the source and **email** as the only delivery channel — Telegram and Slack are described on their own pages.
+From "nothing installed" to "first digest in my inbox" in about five minutes. We'll use **GitHub Issues** as the source and **email** as the only delivery channel — Telegram and Slack are described on their own pages.
 
 ## Prerequisites
 
-- .NET 8 SDK (`dotnet --version` should print 8.x)
-- A GitHub Personal Access Token with `repo` (or `public_repo`) **and** `user:email` scopes — the email scope is mandatory because Preesta routes digests using the `User.email` GraphQL field
-- An SMTP account you can send from (Gmail with an [app password](https://support.google.com/accounts/answer/185833) is the simplest)
+- **Docker** (the only thing you install — no .NET SDK, no clone, no build).
+- A **GitHub Personal Access Token** with `repo` (or `public_repo`) **and** `user:email` scopes — the email scope is mandatory because Preesta routes digests via the `User.email` GraphQL field.
+- An **SMTP account** you can send from (Gmail with an [app password](https://support.google.com/accounts/answer/185833) is the simplest).
 
-## 1. Clone and build
+## 1. Set up a config directory
+
+Create a folder anywhere — three files live in it.
 
 ```bash
-git clone https://github.com/preesta/preesta.git
-cd preesta
-dotnet build
+mkdir preesta && cd preesta
+mkdir secrets
 ```
 
-## 2. Set your secrets
-
-`Preesta/secrets/appsettings.secrets.yaml` is gitignored and lives next to the public `appsettings.yaml`. Create it:
+### `secrets/appsettings.secrets.yaml` — tokens (gitignore this)
 
 ```yaml
 Smtp:
-  User: you@example.com
-  Password: "your-app-password"
-  From:    you@example.com
+  Host:     smtp.gmail.com
+  From:     you@example.com
+  User:     you@example.com
+  Password: "your-app-password"   # not your account password — see Gmail link above
 
 Github:
   token: "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxx"
 ```
 
-(The other tracker tokens and `Telegram` / `Slack` bot tokens live in the same file. See [Secrets & tokens](operations/secrets-and-tokens.md) for the full list.)
-
-## 3. Write your first rule
-
-`Preesta/rules.yaml` (you can keep the existing rules — Preesta groups rules by `group:` and you target a group on the command line):
+### `rules.yaml` — what to digest, to whom
 
 ```yaml
 rules:
@@ -46,34 +42,63 @@ rules:
       mailTo: you@example.com
 ```
 
-The `filter:` is a raw GitHub search query — the same syntax you see in the web search bar. Use whatever queries you actually run by hand.
+The `filter:` is a raw GitHub search query — the same syntax you type into the web search bar. Use whatever queries you actually run by hand.
 
-!!! warning "Don't embed `assignee:@me` in shared rules"
-    For a personal digest this works because the rule is for you. In team setups you want a rule like `is:open is:issue label:urgent` that fans out: one digest per assignee, addressed via the `mailTo: assignee` marker. See [Routing model](concepts/routing-model.md).
+!!! warning "`assignee:@me` is fine for a personal digest, not for shared rules"
+    `@me` resolves to whoever owns the API token. For a team, write `is:open is:issue label:urgent` and let the routing layer fan out: one digest per assignee via the `mailTo: assignee` marker. See [Routing model](concepts/routing-model.md).
 
-## 4. Run
+## 2. Run
 
 ```bash
-cd Preesta
-dotnet run -- hello-preesta
+docker run --rm \
+  -v "$(pwd)/secrets:/app/secrets:ro" \
+  -v "$(pwd)/rules.yaml:/app/rules.yaml:ro" \
+  ghcr.io/preesta/preesta:latest \
+  preesta hello-preesta
 ```
 
-You should see a `GitHub mutation succeeded`-free log block ending with the SMTP send. Within a few seconds the email lands in your inbox with one row per matched issue, each linked to its GitHub page, plus an "Open in GitHub →" link in the header pointing at the same search query.
+A log block prints the matched issues, then the SMTP send. The email lands in your inbox within seconds — one row per matched issue, each linked to its GitHub page, plus an "Open in GitHub →" link in the header pointing at the same search query.
 
-## 5. Schedule it
+Sanity check the image first if you like:
 
-Cron tab:
+```bash
+docker run --rm ghcr.io/preesta/preesta:latest preesta --version
+```
+
+## 3. Schedule it
+
+The bundled container CMD runs [supercronic](https://github.com/aptible/supercronic) against `/app/preesta-cron` — drop a crontab in there and `docker run -d` without overriding the CMD:
 
 ```cron
-# Every weekday at 9:00 send the hello-preesta digest
-0 9 * * 1-5  cd /opt/preesta && /usr/bin/dotnet Preesta.dll hello-preesta
+# /app/preesta-cron
+0 9 * * 1-5  preesta hello-preesta
 ```
 
-Or use the [Docker image and the bundled `preesta-cron` wrapper](operations/installation.md). Or any scheduler — Preesta is a single CLI invocation per tick.
+Or use any external scheduler — host cron, systemd timer, Kubernetes CronJob, GitHub Actions on a schedule. Each tick is one `docker run` with the group name as the argument.
 
 ## Next steps
 
-- Browse the [Concepts](concepts/architecture.md) section — three short pages that explain the rest of the surface area
-- Add a tracker: [Jira](trackers/jira.md), [Linear](trackers/linear.md), [GitLab](trackers/gitlab.md), [Shortcut](trackers/shortcut.md)
-- Wire up Telegram or Slack delivery — same digest, different channel
-- Copy a realistic rule from the [Cookbook](cookbook/index.md)
+- Browse the [Concepts](concepts/architecture.md) section — three short pages cover the rest of the surface area.
+- Add a tracker: [Jira](trackers/jira.md), [Linear](trackers/linear.md), [GitLab](trackers/gitlab.md), [Shortcut](trackers/shortcut.md).
+- Wire up [Telegram](delivery/telegram.md) or [Slack](delivery/slack.md) — same digest, different channel.
+- Copy a realistic rule from the [Cookbook](cookbook/index.md).
+
+## Other install paths
+
+### Self-contained binary
+
+Tagged releases (`vX.Y.Z`) ship binaries for linux-x64/arm64, osx-x64/arm64, win-x64 on the [Releases page](https://github.com/preesta/preesta/releases). Unpack, drop your `secrets/` and `rules.yaml` next to it, run `./preesta <group>`. No Docker, no .NET install — the runtime is bundled.
+
+### From source
+
+For contributors and people running off `main`:
+
+```bash
+git clone https://github.com/preesta/preesta.git
+cd preesta
+dotnet build
+cd Preesta/bin/Debug/net8.0
+./Preesta hello-preesta
+```
+
+Needs the .NET 8 SDK; the build copies the project's `appsettings.yaml` and your `secrets/`, `rules.yaml` into the output directory.
