@@ -32,21 +32,41 @@ Github:
 
 ### `rules.yaml` — what to digest, to whom
 
+Two rules in one group answer the morning-standup question *"what blockers need eyes today?"* — one for blockers that have no owner yet, one for blockers an owner has but hasn't started.
+
 ```yaml
 rules:
+  # 1. Blocker exists, nobody owns it — surface to the team lead and
+  #    drop an automated comment so the issue can't quietly rot.
   - type: github
-    group: hello-preesta
+    group: daily-blockers
+    filter: "is:open is:issue repo:your-org/your-repo label:blocker no:assignee"
+    notify:
+      subject: "Unassigned blocker — needs an owner"
+      mailTo: team-lead@example.com
+    mutations:
+      - mutation: |
+          mutation {
+            addComment(input: {
+              subjectId: "{{@issueId}}",
+              body: "This blocker has no assignee. Please pick it up or hand it off."
+            }) { clientMutationId }
+          }
+
+  # 2. Blocker has an owner but isn't moving yet — ping the owner.
+  - type: github
+    group: daily-blockers
     filter: "is:open is:issue repo:your-org/your-repo label:blocker -label:in-progress"
     notify:
-      subject: "Blocker open and not picked up"
+      subject: "Your blocker hasn't been picked up"
       mailTo: assignee
 ```
 
-This is the morning-standup question: *which blockers are sitting on someone's plate and haven't been started?* Open issues labelled `blocker` and not yet `in-progress`. The filter says *which issues* and nothing about *who*; `mailTo: assignee` resolves per matched issue. Preesta groups matches by assignee email and sends each distinct assignee their own slice — one rule, one digest per actual owner, surfaced before standup.
+Look at what's *not* in either rule: no identity. Rule 1 routes the unassigned set to a literal address (the lead, who triages) **and** runs a GraphQL mutation against each match. Rule 2 routes the owned-but-stalled set with the `assignee` marker — Preesta groups matches by assignee email and sends each distinct owner their own slice. One rule, one digest per actual recipient.
 
-Add a teammate to the repo and **they start receiving their digest the moment they get assigned** — without you touching `rules.yaml`. Remove them and they stop. The rule outlives team membership.
+Add a teammate to the repo and **they start receiving their digest the moment they get assigned a stalled blocker** — without you touching `rules.yaml`. Remove them and they stop. The rule outlives team membership.
 
-`filter:` is a raw GitHub search query — the same syntax you type into the web search bar. Compose any combination of labels, age, milestone, etc. that captures a real "this needs eyes today" condition. Jira's JQL is more powerful for time-based staleness (`status != "In Progress" AND updated < -30m` for the "blocker stuck unstarted for 30 min" pattern, `resolution = EMPTY AND due < now()` for overdue) — see [Jira](trackers/jira.md). The architecture is the same: impersonal filter + `mailTo: assignee`. The mechanics are in [Routing model](concepts/routing-model.md).
+`filter:` is a raw GitHub search query — the same syntax you type into the web search bar. Compose any combination of labels, age, milestone, etc. that captures a real "this needs eyes today" condition. GitHub search doesn't do relative-time staleness ("not touched for 30 minutes"); for that pattern use Jira — JQL has `updated < -30m`, `due < now()`, `status != "In Progress"` and friends. Same architectural shape across trackers: impersonal filter + `mailTo: assignee` (+ optional `mutations:`). The marker mechanics are in [Routing model](concepts/routing-model.md); the full mutation surface is on the per-tracker pages.
 
 ## 2. Run
 
@@ -55,10 +75,15 @@ docker run --rm \
   -v "$(pwd)/secrets:/app/secrets:ro" \
   -v "$(pwd)/rules.yaml:/app/rules.yaml:ro" \
   ghcr.io/preesta/preesta:latest \
-  preesta hello-preesta
+  preesta daily-blockers
 ```
 
-A log block prints the matched issues, then one SMTP send per distinct assignee. Within seconds an email lands in your inbox containing **only the issues actually assigned to you**, each linked to its GitHub page, plus an "Open in GitHub →" link in the header pointing at the same search query. Teammates with exposed `User.email` get their own digests in parallel — same rule, different slice each. (GitHub returns `""` for users who've hidden their email; their issues stay in the run but the marker skips routing for them. See [Routing model](concepts/routing-model.md#when-the-assignee-has-no-email).)
+The log lists matches per rule, then sends. Substitute your own address for `team-lead@example.com` and you receive **two emails**:
+
+1. From rule 1 — the unassigned-blocker triage list. Each matched issue also gets an automated GitHub comment from the rule's mutation.
+2. From rule 2 — only the stalled blockers actually assigned to you.
+
+Teammates with exposed `User.email` get their own slice of rule 2 in parallel. (GitHub returns `""` for users who've hidden their email; those issues stay in the matched set but the marker skips routing — see [Routing model](concepts/routing-model.md#when-the-assignee-has-no-email).) Each email links every issue to its GitHub page plus an "Open in GitHub →" header pointing at the same search query.
 
 Sanity check the image first if you like:
 
@@ -72,7 +97,7 @@ The bundled container CMD runs [supercronic](https://github.com/aptible/supercro
 
 ```cron
 # /app/preesta-cron
-0 9 * * 1-5  preesta hello-preesta
+0 9 * * 1-5  preesta daily-blockers
 ```
 
 Or use any external scheduler — host cron, systemd timer, Kubernetes CronJob, GitHub Actions on a schedule. Each tick is one `docker run` with the group name as the argument.
@@ -99,7 +124,7 @@ git clone https://github.com/preesta/preesta.git
 cd preesta
 dotnet build
 cd Preesta/bin/Debug/net8.0
-./Preesta hello-preesta
+./Preesta daily-blockers
 ```
 
 Needs the .NET 8 SDK; the build copies the project's `appsettings.yaml` and your `secrets/`, `rules.yaml` into the output directory.
