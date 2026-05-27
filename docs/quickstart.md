@@ -36,17 +36,17 @@ Github:
 rules:
   - type: github
     group: hello-preesta
-    filter: "is:open is:issue repo:your-org/your-repo"
+    filter: "is:open is:issue repo:your-org/your-repo label:blocker -label:in-progress"
     notify:
-      subject: "Open issues on you"
+      subject: "Blocker open and not picked up"
       mailTo: assignee
 ```
 
-Look at what's *not* in that rule: **no identity**. The filter says *which issues* (open issues in one repo), and `mailTo: assignee` is a marker that resolves per matched issue. Preesta groups the matches by assignee email and sends each distinct assignee their own slice. One rule, N digests, one per actual recipient.
+This is the morning-standup question: *which blockers are sitting on someone's plate and haven't been started?* Open issues labelled `blocker` and not yet `in-progress`. The filter says *which issues* and nothing about *who*; `mailTo: assignee` resolves per matched issue. Preesta groups matches by assignee email and sends each distinct assignee their own slice — one rule, one digest per actual owner, surfaced before standup.
 
-Run it solo and you receive only the issues actually assigned to you. Add a teammate to the repo and **they automatically start getting their digest the moment they get assigned** — without you touching `rules.yaml`. Remove them and they stop getting digests the moment they stop being assigned. The rule outlives team membership.
+Add a teammate to the repo and **they start receiving their digest the moment they get assigned** — without you touching `rules.yaml`. Remove them and they stop. The rule outlives team membership.
 
-`filter:` is a raw GitHub search query — the same syntax you type into the web search bar. Use whatever queries you actually run by hand. See [Routing model](concepts/routing-model.md) for the full marker mechanics (`assignee` / `reporter` / `creator`, mixing literals with markers, email→Telegram/Slack ID maps).
+`filter:` is a raw GitHub search query — the same syntax you type into the web search bar. Compose any combination of labels, age, milestone, etc. that captures a real "this needs eyes today" condition. Jira's JQL is more powerful for time-based staleness (`status != "In Progress" AND updated < -30m` for the "blocker stuck unstarted for 30 min" pattern, `resolution = EMPTY AND due < now()` for overdue) — see [Jira](trackers/jira.md). The architecture is the same: impersonal filter + `mailTo: assignee`. The mechanics are in [Routing model](concepts/routing-model.md).
 
 ## 2. Run
 
