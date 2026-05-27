@@ -1,16 +1,16 @@
 # Quickstart
 
-From "nothing installed" to "first digest in my inbox" in about five minutes. We'll use **GitHub Issues** as the source and **email** as the only delivery channel — Telegram and Slack are described on their own pages.
+From "nothing installed" to "first digest in my inbox" in about five minutes. We'll use **Jira** as the source (the canonical Preesta tracker — real status field, real priority, relative-time JQL) and **email** as the only delivery channel; Telegram and Slack are described on their own pages, other trackers on theirs.
 
 ## Prerequisites
 
 - **Docker** (the only thing you install — no .NET SDK, no clone, no build).
-- A **GitHub Personal Access Token** with `repo` (or `public_repo`) **and** `user:email` scopes — the email scope is mandatory because Preesta routes digests via the `User.email` GraphQL field.
+- A **Jira API token** from <https://id.atlassian.com/manage-profile/security/api-tokens>. For Atlassian Cloud you authenticate with your email + the API token (used as the password in HTTP Basic).
 - An **SMTP account** you can send from (Gmail with an [app password](https://support.google.com/accounts/answer/185833) is the simplest).
 
 ## 1. Set up a config directory
 
-Create a folder anywhere — three files live in it.
+Create a folder anywhere — two files live in it.
 
 ```bash
 mkdir preesta && cd preesta
@@ -24,31 +24,33 @@ Smtp:
   Host:     smtp.gmail.com
   From:     you@example.com
   User:     you@example.com
-  Password: "your-app-password"   # not your account password — see Gmail link above
+  Password: "your-app-password"     # not your account password — see Gmail link above
 
-Github:
-  token: "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxx"
+Jira:
+  rootUri:  "https://your-company.atlassian.net/"
+  userName: "you@example.com"
+  password: "ATATT3xFfGF0xxxxxxxxxxxxxxxxxxxx"   # the Jira API token
 ```
 
 ### `rules.yaml` — what to digest, to whom
 
-One rule, one notification: every owner of a stalled blocker gets pinged about *their* stalled blockers, surfaced fast enough to act.
+One rule, one notification: every owner of a blocker that's been sitting more than 30 minutes without moving to *In Progress* gets pinged about *their* blockers.
 
 ```yaml
 rules:
-  - type: github
+  - type: jql
     group: blocker-watch
-    filter: "is:open is:issue repo:your-org/your-repo label:blocker -label:in-progress"
+    jql: 'priority = Blocker AND status != "In Progress" AND assignee is not EMPTY AND updated < -30m'
     notify:
-      subject: "Your blocker hasn't been picked up"
+      subject: "Your blocker hasn't been picked up (30+ min)"
       mailTo: assignee
 ```
 
-Look at what's *not* in the rule: no identity. The filter says *which issues* (open blockers not yet in progress in one repo), and `mailTo: assignee` is a marker that resolves per matched issue. Preesta groups matches by assignee email and sends each distinct owner their own slice. Add a teammate to the repo and **they start receiving their digest the moment they get assigned** — without you touching `rules.yaml`.
+Look at what's *not* in the rule: no identity. The JQL says *which issues* (blocker priority, not yet *In Progress*, assigned to someone, last touched more than 30 minutes ago), and `mailTo: assignee` is a marker that resolves per matched issue. Preesta groups matches by assignee email and sends each distinct owner their own slice. Add a teammate to the project and **they start receiving their digest the moment they get assigned a stalled blocker** — without you touching `rules.yaml`.
 
-`filter:` is a raw GitHub search query — the same syntax you type into the web search bar. The marker mechanics (`assignee` / `reporter` / `creator`, mixing literals with markers, email→Telegram/Slack ID maps) are in [Routing model](concepts/routing-model.md).
+`jql:` is raw JQL — the same expression you type into Jira's advanced search bar. Use whatever query catches a real "this needs eyes today" condition. The marker mechanics (`assignee` / `reporter` / `creator`, mixing literals with markers, email→Telegram/Slack ID maps) are in [Routing model](concepts/routing-model.md).
 
-> Unassigned blockers don't match `mailTo: assignee` and silently drop. Closing that gap — auto-assigning the unowned ones to a triager so the queue can't grow — is a two-rule loop in the cookbook: [Auto-triage blockers](cookbook/auto-triage-blockers.md). GitHub search also can't do relative-time staleness ("blocker stuck for 30 minutes"); JQL handles those patterns — see [Jira](trackers/jira.md).
+> Unassigned blockers don't match `mailTo: assignee` and silently drop. Closing that gap — auto-assigning the unowned ones to a triager so the queue can't grow — is a two-rule loop in the cookbook: [Auto-triage blockers](cookbook/auto-triage-blockers.md).
 
 ## 2. Run
 
@@ -60,7 +62,7 @@ docker run --rm \
   preesta blocker-watch
 ```
 
-A log block prints the matches, then one SMTP send per distinct assignee. Within seconds an email lands in your inbox listing **only the blockers actually assigned to you and not yet in-progress** — each linked to its GitHub page, plus an "Open in GitHub →" header pointing at the same search query. Teammates with exposed `User.email` get their own slice in parallel. (GitHub returns `""` for users who've hidden their email; those issues stay in the matched set but the marker skips routing — see [Routing model](concepts/routing-model.md#when-the-assignee-has-no-email).)
+A log block prints the matches, then one SMTP send per distinct assignee. Within seconds an email lands in your inbox listing **only the blockers actually assigned to you and stalled for 30+ minutes** — each linked to its Jira page, plus an "Open in Jira →" header pointing at the same JQL. Teammates with a visible Jira email get their own slice in parallel.
 
 Sanity check the image first if you like:
 
@@ -82,7 +84,7 @@ Or use any external scheduler — host cron, systemd timer, Kubernetes CronJob, 
 ## Next steps
 
 - Browse the [Concepts](concepts/architecture.md) section — three short pages cover the rest of the surface area.
-- Add a tracker: [Jira](trackers/jira.md), [Linear](trackers/linear.md), [GitLab](trackers/gitlab.md), [Shortcut](trackers/shortcut.md).
+- Add another tracker: [Linear](trackers/linear.md), [GitHub](trackers/github.md), [GitLab](trackers/gitlab.md), [Shortcut](trackers/shortcut.md). All four are equal sources — pick the ones you actually use.
 - Wire up [Telegram](delivery/telegram.md) or [Slack](delivery/slack.md) — same digest, different channel.
 - Copy a realistic rule from the [Cookbook](cookbook/index.md).
 
