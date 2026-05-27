@@ -40,13 +40,13 @@ One rule, one notification: every owner of a blocker that's been sitting more th
 rules:
   - type: jql
     group: blocker-watch
-    jql: 'priority = Blocker AND status != "In Progress" AND assignee is not EMPTY AND updated < -30m'
+    jql: 'priority = Blocker AND resolution = EMPTY AND status != "In Progress" AND assignee is not EMPTY AND updated < -30m'
     notify:
       subject: "Your blocker hasn't been picked up (30+ min)"
       mailTo: assignee
 ```
 
-Look at what's *not* in the rule: no identity. The JQL says *which issues* (blocker priority, not yet *In Progress*, assigned to someone, last touched more than 30 minutes ago), and `mailTo: assignee` is a marker that resolves per matched issue. Preesta groups matches by assignee email and sends each distinct owner their own slice. Add a teammate to the project and **they start receiving their digest the moment they get assigned a stalled blocker** — without you touching `rules.yaml`.
+Look at what's *not* in the rule: no identity. The JQL says *which issues* (blocker priority, still unresolved, not yet *In Progress*, assigned to someone, last touched more than 30 minutes ago — `resolution = EMPTY` is the canonical Jira "this is still open work, regardless of which custom status it's in" clause, so Closed/Resolved/Done/Duplicate/etc. all fall out), and `mailTo: assignee` is a marker that resolves per matched issue. Preesta groups matches by assignee email and sends each distinct owner their own slice. Add a teammate to the project and **they start receiving their digest the moment they get assigned a stalled blocker** — without you touching `rules.yaml`.
 
 `jql:` is raw JQL — the same expression you type into Jira's advanced search bar. Use whatever query catches a real "this needs eyes today" condition. The marker mechanics (`assignee` / `reporter` / `creator`, mixing literals with markers, email→Telegram/Slack ID maps) are in [Routing model](concepts/routing-model.md).
 

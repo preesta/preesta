@@ -8,10 +8,10 @@ JQL has the native `status`, `priority`, and relative-time vocabulary this patte
 
 ```yaml
 rules:
-  # 1. Unassigned blocker → assign to the triager so it can't sit ownerless.
+  # 1. Unresolved blocker, no owner → assign to the triager so it can't sit ownerless.
   - type: jql
     group: blocker-watch
-    jql: 'priority = Blocker AND status = "Open" AND assignee is EMPTY'
+    jql: 'priority = Blocker AND resolution = EMPTY AND assignee is EMPTY'
     notify:
       subject: "Unassigned blocker — auto-assigned to you"
       mailTo: triager@example.com
@@ -20,14 +20,16 @@ rules:
         urlPattern: "{{@jiraRoot}}rest/api/2/issue/{{@issueKey}}/assignee"
         body: '{"name": "triager-jira-username"}'
 
-  # 2. Owned blocker that hasn't moved into In Progress within 30 minutes.
+  # 2. Unresolved owned blocker that hasn't moved into In Progress within 30 minutes.
   - type: jql
     group: blocker-watch
-    jql: 'priority = Blocker AND status != "In Progress" AND assignee is not EMPTY AND updated < -30m'
+    jql: 'priority = Blocker AND resolution = EMPTY AND status != "In Progress" AND assignee is not EMPTY AND updated < -30m'
     notify:
       subject: "Your blocker hasn't been picked up (30+ min)"
       mailTo: assignee
 ```
+
+`resolution = EMPTY` is the canonical Jira clause for "this is still open work, regardless of which custom status it's in" — without it `status != "In Progress"` would happily match Closed / Resolved / Duplicate / Done and ship a digest of finished tickets.
 
 ## The loop
 
