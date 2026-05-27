@@ -32,45 +32,23 @@ Github:
 
 ### `rules.yaml` — what to digest, to whom
 
-Two rules in one group answer the morning-standup question *"what blockers need eyes today?"* — one for blockers that have no owner yet, one for blockers an owner has but hasn't started.
+One rule, one notification: every owner of a stalled blocker gets pinged about *their* stalled blockers, surfaced fast enough to act.
 
 ```yaml
 rules:
-  # 1. Blocker exists, nobody owns it — auto-assign to the triager
-  #    so it can't sit ownerless, and surface to them by email too.
   - type: github
-    group: daily-blockers
-    filter: "is:open is:issue repo:your-org/your-repo label:blocker no:assignee"
-    notify:
-      subject: "Unassigned blocker — auto-assigned to you"
-      mailTo: triager@example.com
-    mutations:
-      - mutation: |
-          mutation {
-            addAssigneesToAssignable(input: {
-              assignableId: "{{@issueId}}",
-              assigneeIds: ["U_kgDO_TRIAGER_NODE_ID"]
-            }) { assignable { ... on Issue { number url } } }
-          }
-
-  # 2. Blocker has an owner but isn't moving yet — ping the owner.
-  - type: github
-    group: daily-blockers
+    group: blocker-watch
     filter: "is:open is:issue repo:your-org/your-repo label:blocker -label:in-progress"
     notify:
       subject: "Your blocker hasn't been picked up"
       mailTo: assignee
 ```
 
-Look at what's *not* in either rule: no identity. Rule 1 routes the unassigned set to a literal address (the triager) **and** runs a GraphQL mutation that auto-assigns each match to the triager — so the issue can't sit ownerless. Rule 2 routes the owned-but-stalled set with the `assignee` marker — Preesta groups matches by assignee email and sends each distinct owner their own slice.
+Look at what's *not* in the rule: no identity. The filter says *which issues* (open blockers not yet in progress in one repo), and `mailTo: assignee` is a marker that resolves per matched issue. Preesta groups matches by assignee email and sends each distinct owner their own slice. Add a teammate to the repo and **they start receiving their digest the moment they get assigned** — without you touching `rules.yaml`.
 
-The two rules form a loop: an untriaged blocker is auto-assigned to the triager by rule 1; on the next tick that same blocker shows up in rule 2's digest *for the triager*, who either starts it (clears it) or re-assigns to the right owner (who then sees it in their own rule-2 digest). The list never quietly grows.
+`filter:` is a raw GitHub search query — the same syntax you type into the web search bar. The marker mechanics (`assignee` / `reporter` / `creator`, mixing literals with markers, email→Telegram/Slack ID maps) are in [Routing model](concepts/routing-model.md).
 
-Add a teammate to the repo and **they start receiving their digest the moment they get assigned a stalled blocker** — without you touching `rules.yaml`. Remove them and they stop. The rule outlives team membership.
-
-> Replace `U_kgDO_TRIAGER_NODE_ID` with the triager's GitHub GraphQL node ID. Get it with `gh api graphql -f query='query { user(login: "triager-username") { id } }'`, or `curl -H "Authorization: bearer $TOKEN" -X POST -d '{"query":"query { user(login: \"triager-username\") { id } }"}' https://api.github.com/graphql`.
-
-`filter:` is a raw GitHub search query — the same syntax you type into the web search bar. Compose any combination of labels, age, milestone, etc. that captures a real "this needs eyes today" condition. GitHub search doesn't do relative-time staleness ("not touched for 30 minutes"); for that pattern use Jira — JQL has `updated < -30m`, `due < now()`, `status != "In Progress"` and friends. Same architectural shape across trackers: impersonal filter + `mailTo: assignee` (+ optional `mutations:`). The marker mechanics are in [Routing model](concepts/routing-model.md); the full mutation surface is on the per-tracker pages.
+> Unassigned blockers don't match `mailTo: assignee` and silently drop. Closing that gap — auto-assigning the unowned ones to a triager so the queue can't grow — is a two-rule loop in the cookbook: [Auto-triage blockers](cookbook/auto-triage-blockers.md). GitHub search also can't do relative-time staleness ("blocker stuck for 30 minutes"); JQL handles those patterns — see [Jira](trackers/jira.md).
 
 ## 2. Run
 
@@ -79,15 +57,10 @@ docker run --rm \
   -v "$(pwd)/secrets:/app/secrets:ro" \
   -v "$(pwd)/rules.yaml:/app/rules.yaml:ro" \
   ghcr.io/preesta/preesta:latest \
-  preesta daily-blockers
+  preesta blocker-watch
 ```
 
-The log lists matches per rule, then sends. With your own address as `triager@example.com` (and your own user node ID in rule 1's mutation), you receive **two emails**:
-
-1. From rule 1 — every unassigned blocker just auto-assigned to you. Each matched issue's `assignees` is updated in GitHub by the mutation, so the next tick won't re-trigger this rule for the same issue.
-2. From rule 2 — every blocker assigned to you that hasn't moved to `in-progress` yet (now including the ones rule 1 just handed you).
-
-Teammates with exposed `User.email` get their own slice of rule 2 in parallel. (GitHub returns `""` for users who've hidden their email; those issues stay in the matched set but the marker skips routing — see [Routing model](concepts/routing-model.md#when-the-assignee-has-no-email).) Each email links every issue to its GitHub page plus an "Open in GitHub →" header pointing at the same search query.
+A log block prints the matches, then one SMTP send per distinct assignee. Within seconds an email lands in your inbox listing **only the blockers actually assigned to you and not yet in-progress** — each linked to its GitHub page, plus an "Open in GitHub →" header pointing at the same search query. Teammates with exposed `User.email` get their own slice in parallel. (GitHub returns `""` for users who've hidden their email; those issues stay in the matched set but the marker skips routing — see [Routing model](concepts/routing-model.md#when-the-assignee-has-no-email).)
 
 Sanity check the image first if you like:
 
@@ -100,8 +73,8 @@ docker run --rm ghcr.io/preesta/preesta:latest preesta --version
 The bundled container CMD runs [supercronic](https://github.com/aptible/supercronic) against `/app/preesta-cron` — drop a crontab in there and `docker run -d` without overriding the CMD:
 
 ```cron
-# /app/preesta-cron
-0 9 * * 1-5  preesta daily-blockers
+# /app/preesta-cron — blockers need tight latency
+*/10 * * * *  preesta blocker-watch
 ```
 
 Or use any external scheduler — host cron, systemd timer, Kubernetes CronJob, GitHub Actions on a schedule. Each tick is one `docker run` with the group name as the argument.
@@ -128,7 +101,7 @@ git clone https://github.com/preesta/preesta.git
 cd preesta
 dotnet build
 cd Preesta/bin/Debug/net8.0
-./Preesta daily-blockers
+./Preesta blocker-watch
 ```
 
 Needs the .NET 8 SDK; the build copies the project's `appsettings.yaml` and your `secrets/`, `rules.yaml` into the output directory.

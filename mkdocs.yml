@@ -100,6 +100,7 @@ nav:
     - cookbook/stale-prs.md
     - cookbook/overdue-tickets.md
     - cookbook/auto-comment-stale.md
+    - cookbook/auto-triage-blockers.md
     - cookbook/multi-tracker-digest.md
     - cookbook/per-team-routing.md
   - Contributing:
