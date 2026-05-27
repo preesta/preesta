@@ -36,21 +36,21 @@ Two rules in one group answer the morning-standup question *"what blockers need 
 
 ```yaml
 rules:
-  # 1. Blocker exists, nobody owns it — surface to the team lead and
-  #    drop an automated comment so the issue can't quietly rot.
+  # 1. Blocker exists, nobody owns it — auto-assign to the triager
+  #    so it can't sit ownerless, and surface to them by email too.
   - type: github
     group: daily-blockers
     filter: "is:open is:issue repo:your-org/your-repo label:blocker no:assignee"
     notify:
-      subject: "Unassigned blocker — needs an owner"
-      mailTo: team-lead@example.com
+      subject: "Unassigned blocker — auto-assigned to you"
+      mailTo: triager@example.com
     mutations:
       - mutation: |
           mutation {
-            addComment(input: {
-              subjectId: "{{@issueId}}",
-              body: "This blocker has no assignee. Please pick it up or hand it off."
-            }) { clientMutationId }
+            addAssigneesToAssignable(input: {
+              assignableId: "{{@issueId}}",
+              assigneeIds: ["U_kgDO_TRIAGER_NODE_ID"]
+            }) { assignable { ... on Issue { number url } } }
           }
 
   # 2. Blocker has an owner but isn't moving yet — ping the owner.
@@ -62,9 +62,13 @@ rules:
       mailTo: assignee
 ```
 
-Look at what's *not* in either rule: no identity. Rule 1 routes the unassigned set to a literal address (the lead, who triages) **and** runs a GraphQL mutation against each match. Rule 2 routes the owned-but-stalled set with the `assignee` marker — Preesta groups matches by assignee email and sends each distinct owner their own slice. One rule, one digest per actual recipient.
+Look at what's *not* in either rule: no identity. Rule 1 routes the unassigned set to a literal address (the triager) **and** runs a GraphQL mutation that auto-assigns each match to the triager — so the issue can't sit ownerless. Rule 2 routes the owned-but-stalled set with the `assignee` marker — Preesta groups matches by assignee email and sends each distinct owner their own slice.
+
+The two rules form a loop: an untriaged blocker is auto-assigned to the triager by rule 1; on the next tick that same blocker shows up in rule 2's digest *for the triager*, who either starts it (clears it) or re-assigns to the right owner (who then sees it in their own rule-2 digest). The list never quietly grows.
 
 Add a teammate to the repo and **they start receiving their digest the moment they get assigned a stalled blocker** — without you touching `rules.yaml`. Remove them and they stop. The rule outlives team membership.
+
+> Replace `U_kgDO_TRIAGER_NODE_ID` with the triager's GitHub GraphQL node ID. Get it with `gh api graphql -f query='query { user(login: "triager-username") { id } }'`, or `curl -H "Authorization: bearer $TOKEN" -X POST -d '{"query":"query { user(login: \"triager-username\") { id } }"}' https://api.github.com/graphql`.
 
 `filter:` is a raw GitHub search query — the same syntax you type into the web search bar. Compose any combination of labels, age, milestone, etc. that captures a real "this needs eyes today" condition. GitHub search doesn't do relative-time staleness ("not touched for 30 minutes"); for that pattern use Jira — JQL has `updated < -30m`, `due < now()`, `status != "In Progress"` and friends. Same architectural shape across trackers: impersonal filter + `mailTo: assignee` (+ optional `mutations:`). The marker mechanics are in [Routing model](concepts/routing-model.md); the full mutation surface is on the per-tracker pages.
 
@@ -78,10 +82,10 @@ docker run --rm \
   preesta daily-blockers
 ```
 
-The log lists matches per rule, then sends. Substitute your own address for `team-lead@example.com` and you receive **two emails**:
+The log lists matches per rule, then sends. With your own address as `triager@example.com` (and your own user node ID in rule 1's mutation), you receive **two emails**:
 
-1. From rule 1 — the unassigned-blocker triage list. Each matched issue also gets an automated GitHub comment from the rule's mutation.
-2. From rule 2 — only the stalled blockers actually assigned to you.
+1. From rule 1 — every unassigned blocker just auto-assigned to you. Each matched issue's `assignees` is updated in GitHub by the mutation, so the next tick won't re-trigger this rule for the same issue.
+2. From rule 2 — every blocker assigned to you that hasn't moved to `in-progress` yet (now including the ones rule 1 just handed you).
 
 Teammates with exposed `User.email` get their own slice of rule 2 in parallel. (GitHub returns `""` for users who've hidden their email; those issues stay in the matched set but the marker skips routing — see [Routing model](concepts/routing-model.md#when-the-assignee-has-no-email).) Each email links every issue to its GitHub page plus an "Open in GitHub →" header pointing at the same search query.
 
