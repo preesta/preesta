@@ -39,7 +39,7 @@ rules:
     filter: "is:open is:issue repo:your-org/your-repo"
     notify:
       subject: "Open issues on you"
-      mailTo: assignee          # ← the killer feature: per-recipient fan-out
+      mailTo: assignee
 ```
 
 Look at what's *not* in that rule: **no identity**. The filter says *which issues* (open issues in one repo), and `mailTo: assignee` is a marker that resolves per matched issue. Preesta groups the matches by assignee email and sends each distinct assignee their own slice. One rule, N digests, one per actual recipient.
