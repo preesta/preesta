@@ -6,7 +6,7 @@
 
 ```yaml
 - tracker: github
-  group: weekly-stale
+  tags: weekly-stale
   filter: "is:open is:issue label:stale updated:<-14d"
   notify:
     subject: "Stale issues — auto-bumped"
@@ -28,7 +28,7 @@ Two things happen per matched issue: (1) the auto-comment posts via the GraphQL 
 
 ```yaml
 - tracker: jira
-  group: weekly-stale
+  tags: weekly-stale
   filter: "labels = stale AND resolution is EMPTY AND updated < -14d"
   notify:
     subject: "Stale Jira tickets — auto-bumped"
@@ -44,7 +44,7 @@ Two things happen per matched issue: (1) the auto-comment posts via the GraphQL 
 
 ```yaml
 - tracker: linear
-  group: weekly-stale
+  tags: weekly-stale
   filterRaw:
     and:
       - labels:

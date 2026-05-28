@@ -51,7 +51,7 @@ Jira is not privileged — it's `JqlModule`, registered through the same loop as
 
 ## Why a single CLI, not a daemon
 
-Preesta is a one-shot CLI on purpose: `preesta <schedule-group>`. The reason is operational simplicity — no persistent process to crash, no in-memory state to lose, no port to expose. You schedule it however you already schedule things (cron, systemd timer, Kubernetes CronJob, GitHub Actions on a schedule). Each invocation reads rules + secrets, does its work, exits.
+Preesta is a one-shot CLI on purpose: `preesta tag`. The reason is operational simplicity — no persistent process to crash, no in-memory state to lose, no port to expose. You schedule it however you already schedule things (cron, systemd timer, Kubernetes CronJob, GitHub Actions on a schedule). Each invocation reads rules + secrets, does its work, exits.
 
 The trade-off: anything stateful (run history, last-seen IDs, dedup across runs) doesn't exist. That's deliberate — every digest is computed fresh from the current tracker state. If you want "issues that became blocked since yesterday" you express it as a filter on `updated_at >= today - 1d`, not as a stored diff.
 

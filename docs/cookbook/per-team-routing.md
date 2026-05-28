@@ -17,7 +17,7 @@ slackUsers:
 rules:
   # Platform team: urgent issues, fan out to assignees, copy lead, Slack on
   - tracker: jira
-    group: team-alerts
+    tags: team-alerts
     filter: "labels = 'team-platform' AND priority in (Highest, High) AND resolution is EMPTY"
     notify:
       subject: "Urgent items on platform team"
@@ -26,7 +26,7 @@ rules:
 
   # Mobile team: same shape, different recipients
   - tracker: jira
-    group: team-alerts
+    tags: team-alerts
     filter: "labels = 'team-mobile' AND priority in (Highest, High) AND resolution is EMPTY"
     notify:
       subject: "Urgent items on mobile team"
@@ -59,7 +59,7 @@ Stricter teams can layer auto-mutations on top of their per-team rules:
 
 ```yaml
   - tracker: jira
-    group: team-alerts
+    tags: team-alerts
     filter: "labels = 'team-platform' AND status changed BEFORE -7d AND resolution is EMPTY"
     notify:
       subject: "Platform — stale items auto-bumped"

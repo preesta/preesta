@@ -6,7 +6,7 @@
 
 ```yaml
 - tracker: linear
-  group: morning-standup
+  tags: morning-standup
   filterRaw:
     and:
       - cycle:
@@ -40,7 +40,7 @@ We use `filterRaw` instead of `filter` (AI prompt) because the `OR` boolean is e
 
 ```yaml
 - tracker: jira
-  group: morning-standup
+  tags: morning-standup
   filter: "assignee in (currentUser()) AND resolution is EMPTY AND (priority in (Highest, High) OR duedate <= now())"
   notify:
     subject: "Morning standup"

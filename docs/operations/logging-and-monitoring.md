@@ -34,7 +34,7 @@ Logger:
 | Level | Examples |
 |---|---|
 | `Verbose` | Per-rule found rule lists, per-fetch payload sizes |
-| `Information` | `N rules of type X found in schedule group 'Y'`, `<Tracker> mutation succeeded`, SMTP send confirmations |
+| `Information` | `N rules of type X found in tag 'Y'`, `<Tracker> mutation succeeded`, SMTP send confirmations |
 | `Warning` | Custom-field discovery failure (graceful), individual GitHub/GitLab/Linear hidden-email cases |
 | `Error` | Per-rule conversion failures, per-mutation GraphQL errors, per-message Slack/Telegram failures, per-issue source fetch failures. **Never aborts the run** — Preesta keeps going for the other rules / mutations / channels |
 | `Fatal` | Only if the host crashes before/during DI container construction |
@@ -111,12 +111,12 @@ This is enough for most teams. A future REST-API mode (Phase 13 in the roadmap) 
 
 ## Correlation across runs
 
-Each run is independent — no run ID, no parent run. If you need to correlate digest emails with mutation actions and tracker events, the timestamp + schedule group are the join key:
+Each run is independent — no run ID, no parent run. If you need to correlate digest emails with mutation actions and tracker events, the timestamp + tag are the join key:
 
 ```
-INFO 2026-05-18 09:00:01  1 rules of type jql found in schedule group 'morning'
+INFO 2026-05-18 09:00:01  1 rules with tracker=jql found for tags [morning]
 INFO 2026-05-18 09:00:03  GitHub mutation succeeded: mutation { addComment ...
 INFO 2026-05-18 09:00:04  Sent 4 email messages
 ```
 
-These three lines belong to the same run if the timestamps are within a few seconds and the schedule group lines up. A more rigorous correlation ID can be added via `LogContext.PushProperty` if it becomes a real need.
+These three lines belong to the same run if the timestamps are within a few seconds and the tag lines up. A more rigorous correlation ID can be added via `LogContext.PushProperty` if it becomes a real need.

@@ -28,7 +28,7 @@ Gitlab:
 ```yaml
 rules:
   - tracker: gitlab
-    group: morning
+    tags: morning
     filter:
       state: opened
       labelName: [urgent, blocker]            # AND across labels

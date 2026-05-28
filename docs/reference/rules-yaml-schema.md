@@ -6,11 +6,11 @@ The full grammar of the rules file. For prose-level explanation of each section,
 
 ```yaml
 rules:
-  - tracker: ...        # required, picks the tracker
-    group: ...          # required, schedule group (the CLI argument)
+  - tracker: ...           # required, picks the tracker
+    tags: [foo, bar]       # optional, lefthook-style CLI tag selector
     # ... tracker-specific fields ...
-    notify: { ... }     # optional, but typically present
-    mutations: [ ... ]  # optional
+    notify: { ... }        # optional, but typically present
+    mutations: [ ... ]     # optional
 
 # Workspace-level (used by every rule)
 aliases: {}             # marker → recipients (group emails, on-leave fallbacks)
@@ -25,7 +25,7 @@ Every rule accepts:
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `tracker` | string | yes | One of `jira` / `linear` / `github` / `gitlab` / `shortcut` |
-| `group` | string | yes | Schedule group — must match the CLI argument when the rule should fire |
+| `tags` | string \| list | no | Lefthook-style tag selector. Accepts a scalar (`tags: morning`), a comma-separated scalar (`tags: "morning, standup"`), or a list (`tags: [morning, standup]`). A rule runs when the CLI invocation has no tag args (no filter), or when any of the rule's tags appears in the CLI args (OR-match). Untagged rules are skipped the moment any tag is requested. |
 | `active` | bool | no | Default `true`. Set `false` to disable a rule without deleting it |
 | `notify` | object | typically yes | See below |
 | `mutations` | array | no | See below |

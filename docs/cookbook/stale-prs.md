@@ -14,7 +14,7 @@ The same digest delivered to Telegram and Slack:
 
 ```yaml
 - tracker: github
-  group: stale-prs
+  tags: stale-prs
   filter: "is:open is:pr org:bigcorp review:required updated:<2026-05-01"
   notify:
     subject: "Stale PRs waiting on review"
@@ -34,7 +34,7 @@ The same digest delivered to Telegram and Slack:
 
 ```yaml
 - tracker: shortcut
-  group: stale-prs
+  tags: stale-prs
   filter: "state:\"Ready for Review\" updated:<-5d !is:archived"
   notify:
     subject: "Stories awaiting review"
@@ -50,7 +50,7 @@ Linear treats PRs as linked from the GitHub side, not first-class. The Linear-si
 
 ```yaml
 - tracker: linear
-  group: stale-prs
+  tags: stale-prs
   filterRaw:
     state:
       type:

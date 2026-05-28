@@ -19,7 +19,7 @@ cd preesta
 dotnet build
 # fill Preesta/secrets/appsettings.secrets.yaml with your SMTP + tracker tokens
 # adjust Preesta/rules.yaml
-cd Preesta && dotnet run -- <schedule-group>
+cd Preesta && dotnet run -- tag
 ```
 
 The full walkthrough — token procurement per tracker, SMTP setup, first rule — is at **[preesta.dev/quickstart/](https://preesta.dev/quickstart/)**.

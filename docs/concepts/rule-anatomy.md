@@ -4,7 +4,7 @@ Every rule has four sections. The shape changes a little per tracker, but the fo
 
 ```yaml
 - tracker: github            # ① WHICH TRACKER
-  group: morning          #    schedule group (CLI argument)
+  tags: [morning, standup]   #    optional CLI tag filter (any string)
 
   filter: "..."           # ② WHICH ISSUES
                           #    shape depends on tracker — see below
@@ -26,11 +26,18 @@ Every rule has four sections. The shape changes a little per tracker, but the fo
       body: "..."
 ```
 
-## ① `tracker` and `group`
+## ① `tracker` and `tags`
 
 `tracker:` picks the source — one of `jira` / `linear` / `github` / `gitlab` / `shortcut`.
 
-`group:` is purely organizational. Rules with the same group run together when you invoke `preesta <group>`. Use it to cluster rules by schedule (`morning`, `nightly`, `weekly`), by team, by anything — it has no semantic meaning beyond "ran in the same CLI invocation".
+`tags:` is **optional** and uses lefthook-style positive selection:
+
+- A rule with no `tags:` runs whenever you invoke `preesta` **without arguments**.
+- A rule with `tags:` (scalar `tags: morning`, comma-string `tags: "morning, standup"`, or list `tags: [morning, standup]`) runs whenever any of its tags is in the CLI args.
+- `preesta morning` runs every rule whose tags include `morning`. Untagged rules **drop out** the moment you pass a tag — that's the point of being explicit.
+- Multiple CLI tags OR-match: `preesta morning release` runs anything tagged either way.
+
+Use it for ad-hoc schedule slices (`morning`, `nightly`), team scopes (`backend`, `frontend`), or specialised runs (`q3-rollout`). The value is opaque — Preesta doesn't interpret it.
 
 ## ② `filter` — which issues
 

@@ -10,7 +10,7 @@ In order of likelihood:
    - GitLab rule with no filter chips
    - Linear rule with 0 or 2+ of {filter, filterRaw, viewId}
    - GitHub / Shortcut rule with empty `filter:`
-2. **No matches.** Preesta sends nothing for empty result sets — by design. Log will have `0 rules of type X found in schedule group 'Y'` if no rules fired, or no further lines if rules fired but matched zero issues. Run the same filter directly in the tracker's web UI to confirm.
+2. **No matches.** Preesta sends nothing for empty result sets — by design. Log will have `0 rules with tracker=X found for tags [Y]` if no rules fired, or no further lines if rules fired but matched zero issues. Run the same filter directly in the tracker's web UI to confirm.
 3. **Recipient resolution skipped everything.** `mailTo: assignee` with a tracker that returned empty emails for every assignee (GitHub hidden-email, GitLab `publicEmail = null`) produces a package with `To: ""` and the channels silently skip it. Add `Reporter` columns to the digest temporarily — if the issues render but no email goes out, that's the symptom.
 4. **SMTP authentication failed.** Look for `MailKit.Net.Smtp.SmtpCommandException`. Gmail's "wrong password" usually means you used the account password where an [app password](../delivery/email.md#gmail) is required.
 5. **SMTP send queued but blocked.** Some providers (notably Gmail) silently drop messages that look spammy when `From:` is a domain you don't control. Check the SMTP provider's outbound dashboard.
@@ -29,9 +29,9 @@ In order of likelihood:
 
 ## The digest is duplicated
 
-- **Two cron invocations of the same group ran concurrently.** Add `flock` to the cron command, or set `concurrencyPolicy: Forbid` on the Kubernetes CronJob.
-- **Two cron entries fire the same group.** Check the cron tab.
-- **Both `mailTo:` and `cc:` list the same email** — Preesta dedupes within a single package, but if two rules in the same group target the same person with different subjects, they'll get two emails. That's by design — one rule, one digest, one email.
+- **Two cron invocations of the same tag ran concurrently.** Add `flock` to the cron command, or set `concurrencyPolicy: Forbid` on the Kubernetes CronJob.
+- **Two cron entries fire the same tag.** Check the cron tab.
+- **Both `mailTo:` and `cc:` list the same email** — Preesta dedupes within a single package, but if two rules sharing a tag target the same person with different subjects, they'll get two emails. That's by design — one rule, one digest, one email.
 
 ## Logs are noisy
 

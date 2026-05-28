@@ -30,7 +30,7 @@ Github:
 rules:
   # All open urgent issues across an org — one digest per assignee
   - tracker: github
-    group: morning
+    tags: morning
     filter: "is:open is:issue org:bigcorp label:urgent"
     notify:
       subject: "Urgent GitHub issues"
@@ -38,7 +38,7 @@ rules:
 
   # Stale PRs across two specific repos
   - tracker: github
-    group: morning
+    tags: morning
     filter: "is:open is:pr repo:foo/api repo:foo/web review:required updated:<2026-05-01"
     notify:
       subject: "Stale PRs waiting on review"

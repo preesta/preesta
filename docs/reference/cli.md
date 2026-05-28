@@ -1,14 +1,26 @@
 # CLI
 
-Preesta is a single-shot CLI. One invocation, one schedule group, one batch of work, exit.
+Preesta is a single-shot CLI. One invocation, one batch of work, exit. Tag arguments are an optional filter — pass none to run every rule, pass some to narrow to the matching ones.
 
 ## Invocation
 
 ```bash
-preesta <schedule-group>
+preesta                       # run every rule in rules.yaml
+preesta <tag>                 # run rules whose tags include <tag>
+preesta <tag> [<tag>…]        # OR-match: any rule with any matching tag fires
+preesta --version | -v        # print version, exit
+preesta --help    | -h        # show usage, exit
 ```
 
-`<schedule-group>` is the `group:` value on the rules to fire. Every rule with a matching group runs; everything else is ignored.
+Lefthook-style positive tag selection: an untagged rule (`tags:` omitted) runs **only** when the CLI has no tag args; the moment any tag is requested, only tagged rules with at least one matching tag participate. Multiple CLI tags OR together.
+
+Examples:
+
+```bash
+preesta                         # everything fires
+preesta morning                 # only rules tagged "morning"
+preesta blocker-watch release   # rules tagged either "blocker-watch" or "release"
+```
 
 ## Exit codes
 
@@ -29,7 +41,7 @@ Preesta reads configuration from files **relative to the current working directo
 - `./rules.yaml` (path overridable via `Application:rulesFileName`)
 - `./rules.xml` (legacy XML rules — still read if `rulesFileName: rules.xml`)
 
-For deployments, `cd /path/to/preesta && dotnet Preesta.dll <group>` is the idiomatic invocation. The Docker image's entrypoint is set up this way.
+For deployments, `cd /path/to/preesta && dotnet Preesta.dll [<tag>…]` is the idiomatic invocation. The Docker image's entrypoint is set up this way.
 
 ## Logging
 
@@ -39,4 +51,4 @@ Logs are structured (Serilog's `MessageTemplate` system) — every field is keye
 
 ## Help / version
 
-Not implemented. The CLI is meant for cron tabs and CI jobs, not interactive use — if you're invoking it manually enough to need `--help`, you're probably building rules and the docs site is more useful.
+`--help` / `-h` prints usage. `--version` / `-v` prints the build version string (informational + assembly version). Anything else is treated as tag arguments.

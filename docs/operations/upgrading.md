@@ -13,7 +13,7 @@ Preesta is pre-1.0. Breaking changes can happen between minor versions until a s
 1. Read this page from your current version down to the new one.
 2. Update `appsettings.yaml` / `rules.yaml` per the changes called out.
 3. Pull the new image / rebuild from source.
-4. Run the command on a dev schedule group first; observe one cron tick of output.
+4. Run the command on a dev tag first; observe one cron tick of output.
 5. Promote.
 
 ## Release history

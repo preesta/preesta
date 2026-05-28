@@ -20,7 +20,7 @@ API token for Cloud: [id.atlassian.com/manage-profile/security/api-tokens](https
 
 ```yaml
 - tracker: jira
-  group: daily
+  tags: daily
   filter: "project = INFRA AND assignee = currentUser() AND resolution is EMPTY ORDER BY priority DESC"
   notify:
     subject: "Open INFRA tickets on you"

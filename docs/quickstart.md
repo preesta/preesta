@@ -39,7 +39,7 @@ One rule, one notification: every owner of a blocker that's been sitting more th
 ```yaml
 rules:
   - tracker: jira
-    group: blocker-watch
+    tags: blocker-watch
     filter: 'priority = Blocker AND status = "Open" AND assignee is not EMPTY AND updated < -30m'
     notify:
       subject: "Your blocker hasn't been picked up (30+ min)"
@@ -91,7 +91,7 @@ The bundled container CMD runs [supercronic](https://github.com/aptible/supercro
 */10 * * * *  preesta blocker-watch
 ```
 
-Or use any external scheduler — host cron, systemd timer, Kubernetes CronJob, GitHub Actions on a schedule. Each tick is one `docker run` with the group name as the argument.
+Or use any external scheduler — host cron, systemd timer, Kubernetes CronJob, GitHub Actions on a schedule. Each tick is one `docker run`, optionally passing tags as arguments to limit which rules fire (`preesta blocker-watch` runs every rule tagged `blocker-watch`; `preesta` with no arguments runs every rule in the file).
 
 ## Next steps
 
@@ -104,7 +104,7 @@ Or use any external scheduler — host cron, systemd timer, Kubernetes CronJob, 
 
 ### Self-contained binary
 
-Tagged releases (`vX.Y.Z`) ship binaries for linux-x64/arm64, osx-x64/arm64, win-x64 on the [Releases page](https://github.com/preesta/preesta/releases). Unpack, drop your `secrets/` and `rules.yaml` next to it, run `./preesta <group>`. No Docker, no .NET install — the runtime is bundled.
+Tagged releases (`vX.Y.Z`) ship binaries for linux-x64/arm64, osx-x64/arm64, win-x64 on the [Releases page](https://github.com/preesta/preesta/releases). Unpack, drop your `secrets/` and `rules.yaml` next to it, run `./preesta` (or `./preesta <tag>` to filter). No Docker, no .NET install — the runtime is bundled.
 
 ### From source
 

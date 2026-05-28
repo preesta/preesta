@@ -97,7 +97,7 @@ spec:
                 secretName: preesta-secrets
 ```
 
-`preesta-config` ConfigMap holds `appsettings.yaml` + `rules.yaml`; `preesta-secrets` Secret holds `appsettings.secrets.yaml`. Multiple CronJobs (one per schedule group) keep the schedule definition in Kubernetes rather than a separate cron file.
+`preesta-config` ConfigMap holds `appsettings.yaml` + `rules.yaml`; `preesta-secrets` Secret holds `appsettings.secrets.yaml`. Multiple CronJobs (one per tag) keep the schedule definition in Kubernetes rather than a separate cron file.
 
 ## Plain .NET 8 (development)
 
@@ -106,7 +106,7 @@ git clone https://github.com/preesta/preesta.git
 cd preesta
 dotnet build
 cd Preesta
-dotnet run -- <schedule-group>
+dotnet run -- [<tag>…]
 ```
 
 `bin/Debug/net8.0` is added to `Preesta.csproj` as the working directory for `dotnet run` — that's where the built `appsettings.yaml` / `rules.yaml` end up.

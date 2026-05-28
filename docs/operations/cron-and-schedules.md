@@ -2,11 +2,16 @@
 
 Preesta has no built-in scheduler. The CLI is one-shot; **cron, systemd timers, Kubernetes CronJobs, or any other periodic invoker** are how you make it fire repeatedly.
 
-## The `group:` tag is your schedule selector
+## `tags:` is your schedule selector
 
-Every rule has a `group:`. The CLI takes one schedule group as its sole argument. Rules with matching `group:` fire; everything else is silent.
+Rules can carry optional `tags:` (string, list, or comma-separated string). The CLI takes 0+ tag arguments. A rule fires when:
 
-This means **the schedule lives in the cron tab, the membership lives in `rules.yaml`**. Add a rule to a schedule by setting its `group:`; move it between schedules by changing the group. The cron tab itself is small — usually one line per group.
+- the CLI has no tag arguments (no filter — everything runs), or
+- any of the CLI's tags appears in the rule's `tags:` (OR-match).
+
+Untagged rules drop out the moment any tag is requested. That's lefthook-style positive selection: tagged rules are explicit opt-ins, untagged rules are the "always-on" default.
+
+This means **the schedule lives in the cron tab, the membership lives in `rules.yaml`**. Add a rule to a schedule by giving it that schedule's tag; move it between schedules by changing the tag. The cron tab itself is small — usually one line per tag.
 
 ## Typical layout
 
@@ -27,7 +32,7 @@ The `preesta` username on the third field is the cron user; pick whichever local
 
 ## Kubernetes CronJob
 
-One `CronJob` per schedule group is cleaner than packing everything into a single cron file:
+One `CronJob` per tag is cleaner than packing everything into a single cron file:
 
 ```yaml
 apiVersion: batch/v1
@@ -48,14 +53,14 @@ spec:
               # ... volume mounts for config + secrets ...
 ```
 
-Benefits over a cron sidecar: independent retries per group, k8s native observability, easier to scale (add a new CronJob = add a new schedule).
+Benefits over a cron sidecar: independent retries per tag, k8s native observability, easier to scale (add a new CronJob = add a new schedule).
 
 ## Schedule design guidelines
 
 - **Pick the slowest frequency that's still useful.** A 5-minute cron firing a "stale PR" rule that's polling GitHub every 5 minutes is noisy and burns API quota; once an hour is plenty for stale checks.
-- **Spread the load.** Don't schedule six groups at `0 9 * * *` — stagger by 5-10 minutes (`5 9`, `10 9`, …). Each group is one CLI process with all its tracker fetches in parallel anyway, but staggering smooths SMTP outbound and reduces simultaneous tracker load.
-- **One rule, one group, one schedule.** Resist the urge to put multiple unrelated schedules into one group "because the rules are similar". Logs become hard to read when a group does too many things.
-- **Test new rules in a `dev` group first.** Schedule it daily, point its recipients at yourself only, observe a week of digests before promoting to a team-facing group.
+- **Spread the load.** Don't schedule six tag invocations at `0 9 * * *` — stagger by 5-10 minutes (`5 9`, `10 9`, …). Each invocation is one CLI process with all its tracker fetches in parallel anyway, but staggering smooths SMTP outbound and reduces simultaneous tracker load.
+- **One tag per cron line.** Resist the urge to mix unrelated schedules under one tag "because the rules are similar". Logs become hard to read when one tag does too many things.
+- **Test new rules with a `dev` tag first.** Schedule it daily, point its recipients at yourself only, observe a week of digests before promoting to a team-facing tag.
 
 ## Time zones
 
@@ -64,5 +69,5 @@ Preesta has no opinion about time zones — it runs whenever it's invoked. Cron,
 ## Failure modes
 
 - **Cron silent failure** — if the cron command fails to start (missing `dotnet`, missing rules.yaml, …) cron mails the local user and that's it. Watch `/var/spool/mail/<user>` or pipe `2>&1 | logger -t preesta` to make failures visible.
-- **Overlapping invocations** — Preesta is stateless, so a long-running invocation followed immediately by another isn't a correctness problem (they don't share state). But two invocations of the same group running concurrently will double every email. Use cron's `flock` or k8s's `concurrencyPolicy: Forbid` if your runs can exceed the interval.
+- **Overlapping invocations** — Preesta is stateless, so a long-running invocation followed immediately by another isn't a correctness problem (they don't share state). But two invocations of the same tag running concurrently will double every email. Use cron's `flock` or k8s's `concurrencyPolicy: Forbid` if your runs can exceed the interval.
 - **Empty digests** — Preesta sends nothing if no rule produced any matches. This is intentional — no noise on quiet days. If you want a "nothing today" heartbeat, write a rule with no filter that always matches and route it to yourself.

@@ -10,7 +10,7 @@ JQL has the native `status`, `priority`, and relative-time vocabulary this patte
 rules:
   # 1. Open blocker, no owner → assign to the triager so it can't sit ownerless.
   - tracker: jira
-    group: blocker-watch
+    tags: blocker-watch
     filter: 'priority = Blocker AND status = "Open" AND assignee is EMPTY'
     notify:
       subject: "Unassigned blocker — auto-assigned to you"
@@ -22,7 +22,7 @@ rules:
 
   # 2. Open blocker, owned but not picked up in 30 minutes.
   - tracker: jira
-    group: blocker-watch
+    tags: blocker-watch
     filter: 'priority = Blocker AND status = "Open" AND assignee is not EMPTY AND updated < -30m'
     notify:
       subject: "Your blocker hasn't been picked up (30+ min)"
@@ -53,7 +53,7 @@ GitHub Issues have no native `status` field — only `open` / `closed`. The patt
 rules:
   # 1. Blocker exists, nobody owns it — auto-assign to the triager.
   - tracker: github
-    group: blocker-watch
+    tags: blocker-watch
     filter: "is:open is:issue repo:your-org/your-repo label:blocker no:assignee"
     notify:
       subject: "Unassigned blocker — auto-assigned to you"
@@ -69,7 +69,7 @@ rules:
 
   # 2. Blocker has an owner but isn't moving yet — ping the owner.
   - tracker: github
-    group: blocker-watch
+    tags: blocker-watch
     filter: "is:open is:issue repo:your-org/your-repo label:blocker -label:in-progress"
     notify:
       subject: "Your blocker hasn't been picked up"

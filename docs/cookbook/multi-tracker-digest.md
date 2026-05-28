@@ -1,6 +1,6 @@
 # Multi-tracker digest
 
-**Goal:** one schedule group fires rules across Jira + Linear + GitHub, each producing one section in a single per-assignee digest. The result: a recipient who's active in all three trackers gets one email with three sections, each headed by an "Open in &lt;tracker&gt; →" link.
+**Goal:** one tag fires rules across Jira + Linear + GitHub, each producing one section in a single per-assignee digest. The result: a recipient who's active in all three trackers gets one email with three sections, each headed by an "Open in &lt;tracker&gt; →" link.
 
 ![Three trackers, three sections, one recipient](../assets/screenshots/email-multi-tracker.png)
 
@@ -20,7 +20,7 @@ The Telegram and Slack DMs follow the same merge — the bot posts one combined 
 rules:
   # Linear: in-flight sprint work
   - tracker: linear
-    group: morning-roundup
+    tags: morning-roundup
     filterRaw:
       and:
         - cycle: { isActive: { eq: true } }
@@ -32,7 +32,7 @@ rules:
 
   # Jira: assigned tickets with no resolution
   - tracker: jira
-    group: morning-roundup
+    tags: morning-roundup
     filter: "assignee in (membersOf('engineering')) AND resolution is EMPTY"
     notify:
       subject: "Cross-tracker digest"
@@ -41,7 +41,7 @@ rules:
 
   # GitHub: open issues and PRs across the org
   - tracker: github
-    group: morning-roundup
+    tags: morning-roundup
     filter: "is:open org:bigcorp"
     notify:
       subject: "Cross-tracker digest"
@@ -62,9 +62,9 @@ One CLI invocation, three tracker fetches in parallel (each pipeline runs as its
 Run with `Verbose` logging once to see all three pipelines firing:
 
 ```
-INFO 4 rules of type linear found in schedule group 'morning-roundup'
-INFO 2 rules of type jql found in schedule group 'morning-roundup'
-INFO 1 rules of type github found in schedule group 'morning-roundup'
+INFO 4 rules with tracker=linear found for tags [morning-roundup]
+INFO 2 rules with tracker=jql found for tags [morning-roundup]
+INFO 1 rules with tracker=github found for tags [morning-roundup]
 INFO Sent 6 email messages
 ```
 
@@ -72,16 +72,16 @@ The recipient list per email comes from the rule's own `mailTo` — alice can be
 
 ## Adding GitLab and Shortcut
 
-Same pattern. Each tracker gets its own rule entry under `morning-roundup`. The schedule group is just a CLI selector — there's no upper bound on rules per group.
+Same pattern. Each tracker gets its own rule entry tagged `morning-roundup`. The tag is just a CLI selector — there's no upper bound on rules sharing a tag.
 
 ```yaml
   - tracker: gitlab
-    group: morning-roundup
+    tags: morning-roundup
     filter: { state: opened, assigneeUsernames: [...] }
     notify: { subject: "Cross-tracker digest", mailTo: assignee }
 
   - tracker: shortcut
-    group: morning-roundup
+    tags: morning-roundup
     filter: "!state:completed !is:archived owner:..."
     notify: { subject: "Cross-tracker digest", mailTo: assignee }
 ```

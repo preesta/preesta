@@ -6,7 +6,7 @@
 
 ```yaml
 - tracker: jira
-  group: weekly-overdue
+  tags: weekly-overdue
   filter: "duedate < now() AND resolution is EMPTY ORDER BY duedate ASC"
   notify:
     subject: "Overdue tickets"
@@ -21,7 +21,7 @@
 
 ```yaml
 - tracker: linear
-  group: weekly-overdue
+  tags: weekly-overdue
   filterRaw:
     and:
       - state:
@@ -41,7 +41,7 @@
 
 ```yaml
 - tracker: shortcut
-  group: weekly-overdue
+  tags: weekly-overdue
   filter: "!state:completed !is:archived has:deadline deadline:<today"
   notify:
     subject: "Overdue stories"

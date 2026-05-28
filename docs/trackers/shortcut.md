@@ -24,7 +24,7 @@ The token's workspace is implicit — Preesta calls `GET /api/v3/member` once at
 ```yaml
 rules:
   - tracker: shortcut
-    group: morning
+    tags: morning
     filter: "state:\"In Progress\" type:bug !is:archived"
     notify:
       subject: "Open Shortcut bugs"
