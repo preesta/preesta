@@ -60,6 +60,7 @@ namespace Preesta.Formatting
     internal class ReleaseRow
     {
         public string Name { get; set; } = "";
+        public string? Url { get; set; }
         public string ReleaseDate { get; set; } = "";
         public bool Expired { get; set; }
     }

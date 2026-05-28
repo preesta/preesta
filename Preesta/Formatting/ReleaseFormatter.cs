@@ -47,7 +47,12 @@ namespace Preesta.Formatting
                     var expired = build.ReleaseDate != null && build.ReleaseDate.Value.Date < today;
                     var date = build.ReleaseDate?.ToString("dd.MM.yyyy") ?? "";
                     var prefix = expired ? ":warning: " : "";
-                    sb.Append(prefix).Append('*').Append(build.Name ?? "").Append('*');
+                    // Slack mrkdwn: <url|label> links; emphasis inside the link
+                    // body doesn't render, so we drop the bold when linking.
+                    var named = string.IsNullOrEmpty(build.Url)
+                        ? $"*{build.Name ?? ""}*"
+                        : $"<{build.Url}|{build.Name ?? ""}>";
+                    sb.Append(prefix).Append(named);
                     if (!string.IsNullOrEmpty(date))
                         sb.Append(" — ").Append(date);
                     sb.AppendLine();
@@ -66,6 +71,7 @@ namespace Preesta.Formatting
                 Builds = package.Items.Select(b => new ReleaseRow
                 {
                     Name = b.Name ?? "",
+                    Url = b.Url,
                     ReleaseDate = b.ReleaseDate?.ToString("dd.MM.yyyy") ?? "",
                     Expired = b.ReleaseDate != null && b.ReleaseDate.Value.Date < today
                 }).ToList()

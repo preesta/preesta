@@ -31,7 +31,7 @@
   <tbody>
     {{~ for build in section.builds ~}}
     <tr>
-      <td data-label="Release">{{ build.name | html.escape }}</td>
+      <td data-label="Release">{{~ if build.url ~}}<a href="{{ build.url }}" style="color:#0052CC;text-decoration:none;font-weight:600">{{ build.name | html.escape }}</a>{{~ else ~}}{{ build.name | html.escape }}{{~ end ~}}</td>
       <td data-label="Release date">{{ build.release_date }}{{ if build.expired }} <span style="color:#DE350B">(expired)</span>{{ end }}</td>
     </tr>
     {{~ end ~}}

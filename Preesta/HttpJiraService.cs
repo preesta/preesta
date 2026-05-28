@@ -14,9 +14,11 @@ namespace Preesta
         public int MaxIssueCount { get; set; } = 50;
         internal IJiraGateway Connection { get; set; }
         internal ILogger? Logger { get; set; }
+        private readonly string _rootUri;
 
         public HttpJiraService(string rootUri, string user, string password, int maxIssueCount = 50, HttpClient? httpClient = null, ILogger? logger = null)
         {
+            _rootUri = rootUri;
             Connection = IsCloudUri(rootUri)
                 ? (IJiraGateway)new CloudConnection(rootUri, user, password, httpClient)
                 : new Connection(rootUri, user, password, httpClient);
@@ -26,6 +28,7 @@ namespace Preesta
 
         public HttpJiraService(string rootUri, string bearerToken, int maxIssueCount = 50, HttpClient? httpClient = null, ILogger? logger = null)
         {
+            _rootUri = rootUri;
             Connection = new Connection(rootUri, bearerToken, httpClient);
             MaxIssueCount = maxIssueCount;
             Logger = logger;
@@ -70,10 +73,20 @@ namespace Preesta
 
         public virtual Release[] GetReleases(string projectCode)
         {
+            var hostRoot = _rootUri.TrimEnd('/');
             return CallFuncInConnectionContext(jira =>
                 ((IEnumerable<dynamic>)
                     jira.GetReleases(projectCode))
-                    .Select(JToken.ToRelease)
+                    .Select(v =>
+                    {
+                        var release = JToken.ToRelease(v);
+                        if (release != null)
+                        {
+                            string id = v.id;
+                            release.Url = $"{hostRoot}/projects/{projectCode}/versions/{id}";
+                        }
+                        return release;
+                    })
                     .Where(b => b != null)
                     .Cast<Release>()
                     .ToArray()

@@ -10,5 +10,12 @@ namespace Preesta.Data
         public bool Released { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? ReleaseDate { get; set; }
+
+        /// <summary>"Open in Jira" link for the release-watch digest. Populated
+        /// by <see cref="HttpJiraService.GetReleases"/> from rootUri + project
+        /// code + version id (e.g. <c>https://host/projects/SCRUM/versions/10001</c>).
+        /// Jira Cloud redirects that to the "All work" view filtered by
+        /// fixVersion — the digest reader's question "what's in this version?".</summary>
+        public string? Url { get; set; }
     }
 }

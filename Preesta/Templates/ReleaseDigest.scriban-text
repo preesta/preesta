@@ -8,7 +8,7 @@
 {{~ end ~}}
 
 {{~ for build in section.builds ~}}
-• {{ build.name | html.escape }} — {{ build.release_date }}{{ if build.expired }} (expired){{ end }}
+• {{~ if build.url ~}}<a href="{{ build.url }}">{{ build.name | html.escape }}</a>{{~ else ~}}{{ build.name | html.escape }}{{~ end }} — {{ build.release_date }}{{ if build.expired }} (expired){{ end }}
 {{~ end ~}}
 
 {{~ end ~}}
