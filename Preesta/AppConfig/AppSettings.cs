@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Messaging;
 using Microsoft.Extensions.Configuration;
 using NetEscapades.Configuration.Yaml;
@@ -18,7 +19,16 @@ namespace Preesta.AppConfig
 
         private static IConfigurationRoot BuildConfiguration()
         {
+            // Anchor every file lookup at the binary's own directory. With `dotnet run`
+            // the CWD is the .csproj folder, not the publish output, so a plain
+            // File.Exists("appsettings.yaml") used to miss the file copied next to the
+            // assembly and fall through to a hard-coded path-by-extension default.
+            var baseDir = AppContext.BaseDirectory;
+            string? FirstExisting(params string[] names) =>
+                names.Select(n => Path.Combine(baseDir, n)).FirstOrDefault(File.Exists);
+
             var builder = new ConfigurationBuilder()
+                .SetBasePath(baseDir)
                 .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(
 @"
 {
@@ -32,17 +42,17 @@ namespace Preesta.AppConfig
 "
                 )));
 
-            if (File.Exists("appsettings.yaml"))
-                builder.AddYamlFile("appsettings.yaml", optional: false, reloadOnChange: true);
-            else if (File.Exists("appsettings.yml"))
-                builder.AddYamlFile("appsettings.yml", optional: false, reloadOnChange: true);
+            var settings = FirstExisting("appsettings.yaml", "appsettings.yml");
+            if (settings != null)
+                builder.AddYamlFile(Path.GetFileName(settings), optional: false, reloadOnChange: true);
             else
                 builder.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
-            if (File.Exists("secrets/appsettings.secrets.yaml"))
-                builder.AddYamlFile("secrets/appsettings.secrets.yaml", optional: true);
-            else if (File.Exists("secrets/appsettings.secrets.yml"))
-                builder.AddYamlFile("secrets/appsettings.secrets.yml", optional: true);
+            var secrets = FirstExisting(
+                "secrets/appsettings.secrets.yaml",
+                "secrets/appsettings.secrets.yml");
+            if (secrets != null)
+                builder.AddYamlFile(Path.GetRelativePath(baseDir, secrets), optional: true);
             else
                 builder.AddJsonFile("secrets/appsettings.secrets.json", optional: true);
 
