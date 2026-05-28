@@ -6,13 +6,25 @@ Two supported paths: **Docker** (recommended for production) and **plain .NET 8*
 
 The repo ships a `Dockerfile` that builds Preesta on `mcr.microsoft.com/dotnet/runtime:8.0`. Build and run:
 
-```bash
-docker build -t preesta:latest .
-docker run --rm \
-  -v $(pwd)/config:/app/config:ro \
-  -e PREESTA_GROUP=daily \
-  preesta:latest
-```
+=== "Linux / macOS / WSL2 / Git Bash"
+
+    ```bash
+    docker build -t preesta:latest .
+    docker run --rm \
+      -v "$(pwd)/config:/app/config:ro" \
+      -e PREESTA_GROUP=daily \
+      preesta:latest
+    ```
+
+=== "Windows PowerShell"
+
+    ```powershell
+    docker build -t preesta:latest .
+    docker run --rm `
+      -v "${PWD}/config:/app/config:ro" `
+      -e PREESTA_GROUP=daily `
+      preesta:latest
+    ```
 
 The `config/` directory must contain `appsettings.yaml`, `rules.yaml`, and optionally `secrets/appsettings.secrets.yaml`. They're mounted read-only — the container has no other state.
 
@@ -20,12 +32,23 @@ The `config/` directory must contain `appsettings.yaml`, `rules.yaml`, and optio
 
 The repo's `preesta-cron/` directory contains a wrapper image that bundles Preesta + `cron`. Mount your `crontab` file, the rules+secrets, and the image runs them on schedule:
 
-```bash
-docker run --rm \
-  -v $(pwd)/config:/app/config:ro \
-  -v $(pwd)/crontab:/etc/cron.d/preesta:ro \
-  preesta-cron:latest
-```
+=== "Linux / macOS / WSL2 / Git Bash"
+
+    ```bash
+    docker run --rm \
+      -v "$(pwd)/config:/app/config:ro" \
+      -v "$(pwd)/crontab:/etc/cron.d/preesta:ro" \
+      preesta-cron:latest
+    ```
+
+=== "Windows PowerShell"
+
+    ```powershell
+    docker run --rm `
+      -v "${PWD}/config:/app/config:ro" `
+      -v "${PWD}/crontab:/etc/cron.d/preesta:ro" `
+      preesta-cron:latest
+    ```
 
 Example `crontab`:
 

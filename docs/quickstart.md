@@ -54,13 +54,25 @@ Look at what's *not* in the rule: no identity. The JQL says *which issues* (bloc
 
 ## 2. Run
 
-```bash
-docker run --rm \
-  -v "$(pwd)/secrets:/app/secrets:ro" \
-  -v "$(pwd)/rules.yaml:/app/rules.yaml:ro" \
-  ghcr.io/preesta/preesta:latest \
-  preesta blocker-watch
-```
+=== "Linux / macOS / WSL2 / Git Bash"
+
+    ```bash
+    docker run --rm \
+      -v "$(pwd)/secrets:/app/secrets:ro" \
+      -v "$(pwd)/rules.yaml:/app/rules.yaml:ro" \
+      ghcr.io/preesta/preesta:latest \
+      preesta blocker-watch
+    ```
+
+=== "Windows PowerShell"
+
+    ```powershell
+    docker run --rm `
+      -v "${PWD}/secrets:/app/secrets:ro" `
+      -v "${PWD}/rules.yaml:/app/rules.yaml:ro" `
+      ghcr.io/preesta/preesta:latest `
+      preesta blocker-watch
+    ```
 
 A log block prints the matches, then one SMTP send per distinct assignee. Within seconds an email lands in your inbox listing **only the blockers actually assigned to you and stalled for 30+ minutes** — each linked to its Jira page, plus an "Open in Jira →" header pointing at the same JQL. Teammates with a visible Jira email get their own slice in parallel.
 
