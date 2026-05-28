@@ -47,7 +47,7 @@ namespace Preesta.DI
 
             // Each delivery channel is independent — any subset may be configured.
             IMessenger? messenger = appSettings.Smtp is not null
-                ? new SmtpClient(appSettings.Smtp)
+                ? new SmtpClient(appSettings.Smtp, logger)
                 : null;
 
             IMessenger? telegramMessenger = null;

@@ -5,16 +5,19 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
 using MimeKit.Utils;
+using Serilog;
 
 namespace Messaging
 {
     public class SmtpClient : IMessenger
     {
         private readonly SmtpConfig _config;
+        private readonly ILogger? _logger;
 
-        public SmtpClient(SmtpConfig config)
+        public SmtpClient(SmtpConfig config, ILogger? logger = null)
         {
             _config = config;
+            _logger = logger;
         }
 
         public int SendRetriesCount { get; set; } = 20;
@@ -79,14 +82,28 @@ namespace Messaging
 
         public virtual void SendAll(IEnumerable<Message> messages)
         {
-            Send(this, messages, DelayAfterErrorInterval, SendRetriesCount);
+            Send(this, messages, DelayAfterErrorInterval, SendRetriesCount, _logger);
         }
 
-        internal static void Send(IMessenger messenger, IEnumerable<Message> messages, TimeSpan delayInterval, int retryCount)
+        internal static void Send(IMessenger messenger, IEnumerable<Message> messages, TimeSpan delayInterval, int retryCount, ILogger? logger = null)
         {
+            // Per-message isolation: one bounced recipient or one auth failure on a
+            // single address must not abort the rest of the digest batch. SMTP
+            // mirrors Telegram/Slack's log-and-continue contract — exceptions from
+            // SendMessageWithRetries (non-transient errors and retry exhaustion)
+            // are caught here, logged, and the loop proceeds to the next message.
             foreach (var message in messages)
             {
-                SendMessageWithRetries(messenger, message, delayInterval, retryCount);
+                try
+                {
+                    SendMessageWithRetries(messenger, message, delayInterval, retryCount);
+                }
+                catch (Exception ex)
+                {
+                    logger?.Error(ex,
+                        "SMTP send failed for {Recipient}; continuing with the rest of the batch",
+                        message.To);
+                }
             }
         }
 
