@@ -22,6 +22,7 @@ namespace Preesta.DI
     internal class DependencyContainer
     {
         private readonly ServiceProvider _provider;
+        private readonly List<ReactionPipeline<Issue>> _issuePipelines = new();
 
         public DependencyContainer(string @group)
         {
@@ -99,8 +100,18 @@ namespace Preesta.DI
             };
             foreach (var module in modules)
             {
-                if (!module.IsConfigured(appSettings)) continue;
-                services.AddKeyedSingleton(module.Key, module.BuildPipeline(trackerContext));
+                if (!module.IsConfigured(appSettings))
+                {
+                    logger.Information("Tracker module {Key} skipped (not configured)", module.Key);
+                    continue;
+                }
+                var pipeline = module.BuildPipeline(trackerContext);
+                services.AddKeyedSingleton<ReactionPipeline<Issue>>(module.Key, pipeline);
+                // Microsoft.Extensions.DI 8.x's GetKeyedServices(AnyKey) returns
+                // empty for instance-based keyed registrations — track the
+                // pipelines on the side so the orchestrator can iterate them.
+                _issuePipelines.Add(pipeline);
+                logger.Information("Tracker module {Key} registered", module.Key);
             }
 
             // Jira release/version digests are Jira-bound; register only when
@@ -126,8 +137,7 @@ namespace Preesta.DI
         /// tracker module). The caller runs them without knowing which trackers
         /// exist — so adding a tracker never touches the run loop.
         /// </summary>
-        public IEnumerable<ReactionPipeline<Issue>> IssuePipelines() =>
-            _provider.GetKeyedServices<ReactionPipeline<Issue>>(KeyedService.AnyKey);
+        public IEnumerable<ReactionPipeline<Issue>> IssuePipelines() => _issuePipelines;
 
         /// <summary>The release/version pipeline, or null when Jira isn't configured.</summary>
         public ReactionPipeline<Release>? ReleasePipeline() =>

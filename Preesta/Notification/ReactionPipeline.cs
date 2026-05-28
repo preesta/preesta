@@ -37,6 +37,12 @@ namespace Preesta.Notification
                 .OfType<Package<NotificationReaction, TIssueType>>()
                 .ToArray();
 
+            // Trace line so a quiet pipeline can be distinguished from "0 matches".
+            // Without this a misrouted rule looks identical to an empty result set.
+            Logger?.Information(
+                "Pipeline {Item}: {AllCount} package(s), {NotifyCount} for notification",
+                typeof(TIssueType).Name, allPackages.Count(), notificationPackages.Length);
+
             // Each channel runs inside its own try/catch — a misconfigured or
             // unreachable channel (bad SMTP creds, blocked Telegram user, expired
             // Slack token) must not abort the rest of the run. Failures are logged
