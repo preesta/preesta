@@ -16,18 +16,18 @@ slackUsers:
 
 rules:
   # Platform team: urgent issues, fan out to assignees, copy lead, Slack on
-  - type: jql
+  - tracker: jira
     group: team-alerts
-    jql: "labels = 'team-platform' AND priority in (Highest, High) AND resolution is EMPTY"
+    filter: "labels = 'team-platform' AND priority in (Highest, High) AND resolution is EMPTY"
     notify:
       subject: "Urgent items on platform team"
       mailTo: "assignee, platform-lead@example.com"
       columns: [Status, Priority, Updated]
 
   # Mobile team: same shape, different recipients
-  - type: jql
+  - tracker: jira
     group: team-alerts
-    jql: "labels = 'team-mobile' AND priority in (Highest, High) AND resolution is EMPTY"
+    filter: "labels = 'team-mobile' AND priority in (Highest, High) AND resolution is EMPTY"
     notify:
       subject: "Urgent items on mobile team"
       mailTo: "assignee, mobile-lead@example.com"
@@ -58,9 +58,9 @@ Note the `slackUserId:` literal: same digest to both IDs, every fire. The fan-ou
 Stricter teams can layer auto-mutations on top of their per-team rules:
 
 ```yaml
-  - type: jql
+  - tracker: jira
     group: team-alerts
-    jql: "labels = 'team-platform' AND status changed BEFORE -7d AND resolution is EMPTY"
+    filter: "labels = 'team-platform' AND status changed BEFORE -7d AND resolution is EMPTY"
     notify:
       subject: "Platform — stale items auto-bumped"
       mailTo: "assignee, platform-lead@example.com"

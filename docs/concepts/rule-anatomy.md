@@ -1,9 +1,9 @@
 # Rule anatomy
 
-Every rule has four sections. The shape changes a little per `type`, but the four roles are the same.
+Every rule has four sections. The shape changes a little per tracker, but the four roles are the same.
 
 ```yaml
-- type: github            # ① WHICH TRACKER
+- tracker: github            # ① WHICH TRACKER
   group: morning          #    schedule group (CLI argument)
 
   filter: "..."           # ② WHICH ISSUES
@@ -11,7 +11,7 @@ Every rule has four sections. The shape changes a little per `type`, but the fou
 
   notify:                 # ③ WHO TO TELL & WHAT THEY GET
     subject: "..."
-    recommendations: "..."
+    followup: "..."
     mailTo: assignee
     cc: ""
     telegramChatId: "..."
@@ -26,9 +26,9 @@ Every rule has four sections. The shape changes a little per `type`, but the fou
       body: "..."
 ```
 
-## ① `type` and `group`
+## ① `tracker` and `group`
 
-`type:` picks the tracker — one of `jql` / `build` / `linear` / `github` / `gitlab` / `shortcut`.
+`tracker:` picks the source — one of `jira` / `linear` / `github` / `gitlab` / `shortcut`.
 
 `group:` is purely organizational. Rules with the same group run together when you invoke `preesta <group>`. Use it to cluster rules by schedule (`morning`, `nightly`, `weekly`), by team, by anything — it has no semantic meaning beyond "ran in the same CLI invocation".
 
@@ -38,8 +38,7 @@ The shape is per-tracker because each tracker's native query language is differe
 
 | Tracker | `filter` shape | Example |
 |---|---|---|
-| `jql` | JQL string | `"project = INFRA AND status = 'In Progress'"` |
-| `build` | (uses `mask:` regex instead) | `mask: "^9\\.0\\.0\\."` |
+| `jira` | JQL string | `"project = INFRA AND status = 'In Progress'"` |
 | `linear` | one of three modes (mutually exclusive) | `filter: "issues assigned to me"` (AI prompt), `filterRaw: {...}` (raw GraphQL), `viewId: "..."` (saved view) |
 | `github` | raw GitHub search string | `"is:open is:issue org:bigcorp label:urgent"` |
 | `gitlab` | structured chip mapping | `{ state: opened, labelName: [urgent], assigneeUsernames: [alice] }` |
@@ -54,7 +53,7 @@ The reasoning behind each choice is in the per-tracker page; the short version i
 ```yaml
 notify:
   subject: "Urgent items on you"        # email subject + digest header
-  recommendations: "Triage by EOD."     # one-line intro shown in the digest
+  followup: "Triage by EOD."     # one-line intro shown in the digest
   mailTo: assignee                      # primary recipients
   cc: ""                                # carbon copy
   telegramChatId: "12345678"           # literal Telegram chat ID (one-for-all)

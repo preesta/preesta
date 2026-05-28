@@ -5,12 +5,12 @@
 ## Jira flavour
 
 ```yaml
-- type: jql
+- tracker: jira
   group: weekly-overdue
-  jql: "duedate < now() AND resolution is EMPTY ORDER BY duedate ASC"
+  filter: "duedate < now() AND resolution is EMPTY ORDER BY duedate ASC"
   notify:
     subject: "Overdue tickets"
-    recommendations: "These are past their due date and still open. Triage urgency or move the date."
+    followup: "These are past their due date and still open. Triage urgency or move the date."
     mailTo: "assignee, team-lead@example.com"   # lead always gets a copy
     columns: [Status, Priority, DueDate, Updated]
 ```
@@ -20,7 +20,7 @@
 ## Linear flavour
 
 ```yaml
-- type: linear
+- tracker: linear
   group: weekly-overdue
   filterRaw:
     and:
@@ -40,7 +40,7 @@
 ## Shortcut flavour
 
 ```yaml
-- type: shortcut
+- tracker: shortcut
   group: weekly-overdue
   filter: "!state:completed !is:archived has:deadline deadline:<today"
   notify:

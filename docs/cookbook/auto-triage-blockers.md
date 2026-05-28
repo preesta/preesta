@@ -9,9 +9,9 @@ JQL has the native `status`, `priority`, and relative-time vocabulary this patte
 ```yaml
 rules:
   # 1. Open blocker, no owner → assign to the triager so it can't sit ownerless.
-  - type: jql
+  - tracker: jira
     group: blocker-watch
-    jql: 'priority = Blocker AND status = "Open" AND assignee is EMPTY'
+    filter: 'priority = Blocker AND status = "Open" AND assignee is EMPTY'
     notify:
       subject: "Unassigned blocker — auto-assigned to you"
       mailTo: triager@example.com
@@ -21,9 +21,9 @@ rules:
         body: '{"name": "triager-jira-username"}'
 
   # 2. Open blocker, owned but not picked up in 30 minutes.
-  - type: jql
+  - tracker: jira
     group: blocker-watch
-    jql: 'priority = Blocker AND status = "Open" AND assignee is not EMPTY AND updated < -30m'
+    filter: 'priority = Blocker AND status = "Open" AND assignee is not EMPTY AND updated < -30m'
     notify:
       subject: "Your blocker hasn't been picked up (30+ min)"
       mailTo: assignee
@@ -52,7 +52,7 @@ GitHub Issues have no native `status` field — only `open` / `closed`. The patt
 ```yaml
 rules:
   # 1. Blocker exists, nobody owns it — auto-assign to the triager.
-  - type: github
+  - tracker: github
     group: blocker-watch
     filter: "is:open is:issue repo:your-org/your-repo label:blocker no:assignee"
     notify:
@@ -68,7 +68,7 @@ rules:
           }
 
   # 2. Blocker has an owner but isn't moving yet — ping the owner.
-  - type: github
+  - tracker: github
     group: blocker-watch
     filter: "is:open is:issue repo:your-org/your-repo label:blocker -label:in-progress"
     notify:

@@ -38,9 +38,9 @@ One rule, one notification: every owner of a blocker that's been sitting more th
 
 ```yaml
 rules:
-  - type: jql
+  - tracker: jira
     group: blocker-watch
-    jql: 'priority = Blocker AND status = "Open" AND assignee is not EMPTY AND updated < -30m'
+    filter: 'priority = Blocker AND status = "Open" AND assignee is not EMPTY AND updated < -30m'
     notify:
       subject: "Your blocker hasn't been picked up (30+ min)"
       mailTo: assignee
@@ -48,7 +48,7 @@ rules:
 
 Look at what's *not* in the rule: no identity. The JQL says *which issues* (blocker priority, still in *Open* status, assigned to someone, last touched more than 30 minutes ago), and `mailTo: assignee` is a marker that resolves per matched issue. Preesta groups matches by assignee email and sends each distinct owner their own slice. Add a teammate to the project and **they start receiving their digest the moment they get assigned a stalled blocker** — without you touching `rules.yaml`.
 
-`jql:` is raw JQL — the same expression you type into Jira's advanced search bar. Use whatever query catches a real "this needs eyes today" condition. The marker mechanics (`assignee` / `reporter` / `creator`, mixing literals with markers, email→Telegram/Slack ID maps) are in [Routing model](concepts/routing-model.md).
+`filter:` is raw JQL — the same expression you type into Jira's advanced search bar. Use whatever query catches a real "this needs eyes today" condition. The marker mechanics (`assignee` / `reporter` / `creator`, mixing literals with markers, email→Telegram/Slack ID maps) are in [Routing model](concepts/routing-model.md).
 
 > Unassigned blockers don't match `mailTo: assignee` and silently drop. Closing that gap — auto-assigning the unowned ones to a triager so the queue can't grow — is a two-rule loop in the cookbook: [Auto-triage blockers](cookbook/auto-triage-blockers.md).
 

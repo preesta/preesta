@@ -19,7 +19,7 @@ The Telegram and Slack DMs follow the same merge — the bot posts one combined 
 ```yaml
 rules:
   # Linear: in-flight sprint work
-  - type: linear
+  - tracker: linear
     group: morning-roundup
     filterRaw:
       and:
@@ -31,16 +31,16 @@ rules:
       columns: [Status, Priority, Updated]
 
   # Jira: assigned tickets with no resolution
-  - type: jql
+  - tracker: jira
     group: morning-roundup
-    jql: "assignee in (membersOf('engineering')) AND resolution is EMPTY"
+    filter: "assignee in (membersOf('engineering')) AND resolution is EMPTY"
     notify:
       subject: "Cross-tracker digest"
       mailTo: assignee
       columns: [Status, Priority, DueDate]
 
   # GitHub: open issues and PRs across the org
-  - type: github
+  - tracker: github
     group: morning-roundup
     filter: "is:open org:bigcorp"
     notify:
@@ -75,12 +75,12 @@ The recipient list per email comes from the rule's own `mailTo` — alice can be
 Same pattern. Each tracker gets its own rule entry under `morning-roundup`. The schedule group is just a CLI selector — there's no upper bound on rules per group.
 
 ```yaml
-  - type: gitlab
+  - tracker: gitlab
     group: morning-roundup
     filter: { state: opened, assigneeUsernames: [...] }
     notify: { subject: "Cross-tracker digest", mailTo: assignee }
 
-  - type: shortcut
+  - tracker: shortcut
     group: morning-roundup
     filter: "!state:completed !is:archived owner:..."
     notify: { subject: "Cross-tracker digest", mailTo: assignee }

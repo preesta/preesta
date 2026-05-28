@@ -29,7 +29,7 @@ Github:
 ```yaml
 rules:
   # All open urgent issues across an org — one digest per assignee
-  - type: github
+  - tracker: github
     group: morning
     filter: "is:open is:issue org:bigcorp label:urgent"
     notify:
@@ -37,7 +37,7 @@ rules:
       mailTo: assignee
 
   # Stale PRs across two specific repos
-  - type: github
+  - tracker: github
     group: morning
     filter: "is:open is:pr repo:foo/api repo:foo/web review:required updated:<2026-05-01"
     notify:
@@ -73,7 +73,7 @@ The `filter:` is the GitHub search query, verbatim. Multi-repo: `repo:foo/a repo
 A `github` rule can carry a `mutations:` list of raw GraphQL mutations against `https://api.github.com/graphql`:
 
 ```yaml
-- type: github
+- tracker: github
   filter: "is:open is:issue label:stale"
   mutations:
     - mutation: |

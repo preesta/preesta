@@ -5,7 +5,7 @@
 ## Linear flavour
 
 ```yaml
-- type: linear
+- tracker: linear
   group: morning-standup
   filterRaw:
     and:
@@ -22,7 +22,7 @@
               lte: P0D
   notify:
     subject: "Morning standup"
-    recommendations: "Tickets in the active cycle that are on you today — focus list."
+    followup: "Tickets in the active cycle that are on you today — focus list."
     mailTo: assignee
     columns: [Status, Priority, DueDate, Updated]
 ```
@@ -39,9 +39,9 @@ We use `filterRaw` instead of `filter` (AI prompt) because the `OR` boolean is e
 ## Jira flavour
 
 ```yaml
-- type: jql
+- tracker: jira
   group: morning-standup
-  jql: "assignee in (currentUser()) AND resolution is EMPTY AND (priority in (Highest, High) OR duedate <= now())"
+  filter: "assignee in (currentUser()) AND resolution is EMPTY AND (priority in (Highest, High) OR duedate <= now())"
   notify:
     subject: "Morning standup"
     mailTo: assignee

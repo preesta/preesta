@@ -31,7 +31,7 @@ Linear rules support **three mutually-exclusive** ways to say "which issues":
 ### a) AI prompt (`filter:`) — primary
 
 ```yaml
-- type: linear
+- tracker: linear
   filter: "issues assigned to me, not completed"
 ```
 
@@ -40,7 +40,7 @@ Internally a two-hop GraphQL fetch: Linear's `issueFilterSuggestion(prompt:)` AP
 ### b) Raw GraphQL filter (`filterRaw:`) — escape hatch
 
 ```yaml
-- type: linear
+- tracker: linear
   filterRaw:
     and:
       - state:
@@ -58,7 +58,7 @@ The mapping goes verbatim into `issues(filter:)`. You write the filter exactly a
 ### c) Saved view (`viewId:`) — escape hatch
 
 ```yaml
-- type: linear
+- tracker: linear
   viewId: "0e8a3b41-1234-4321-aaaa-bbbbbbbbbbbb"
 ```
 
@@ -88,7 +88,7 @@ Exactly one of the three must be set. Rules with zero or 2+ are dropped with an 
 Raw GraphQL bodies against `https://api.linear.app/graphql`:
 
 ```yaml
-- type: linear
+- tracker: linear
   filter: "issues in 'Done' with no assignee"
   mutations:
     - mutation: |

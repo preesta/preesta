@@ -27,7 +27,7 @@ Gitlab:
 
 ```yaml
 rules:
-  - type: gitlab
+  - tracker: gitlab
     group: morning
     filter:
       state: opened
@@ -56,7 +56,7 @@ rules:
 
 ## Issues only, no MRs
 
-Phase 13 covers Issues only. Merge Requests are deferred — GitLab's GraphQL exposes MR listings under `Project.mergeRequests` / `Group.mergeRequests`, which requires a different rule shape with mandatory project/group scope. Once added it will be a separate `type: gitlab-mr` rule.
+Issues only for now. Merge Requests are deferred — GitLab's GraphQL exposes MR listings under `Project.mergeRequests` / `Group.mergeRequests`, which requires a different rule shape with mandatory project/group scope. They'll arrive as a separate rule shape once we tackle them.
 
 ## Issue mapping
 
@@ -81,7 +81,7 @@ Phase 13 covers Issues only. Merge Requests are deferred — GitLab's GraphQL ex
 Raw GraphQL bodies against `https://gitlab.com/api/graphql` (or your self-hosted endpoint):
 
 ```yaml
-- type: gitlab
+- tracker: gitlab
   filter:
     state: opened
     labelName: [stale]

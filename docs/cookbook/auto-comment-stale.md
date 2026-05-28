@@ -5,12 +5,12 @@
 ## GitHub flavour
 
 ```yaml
-- type: github
+- tracker: github
   group: weekly-stale
   filter: "is:open is:issue label:stale updated:<-14d"
   notify:
     subject: "Stale issues — auto-bumped"
-    recommendations: "These have been quiet 14+ days. Auto-comment added; please update or close."
+    followup: "These have been quiet 14+ days. Auto-comment added; please update or close."
     mailTo: assignee
   mutations:
     - mutation: |
@@ -27,9 +27,9 @@ Two things happen per matched issue: (1) the auto-comment posts via the GraphQL 
 ## Jira flavour
 
 ```yaml
-- type: jql
+- tracker: jira
   group: weekly-stale
-  jql: "labels = stale AND resolution is EMPTY AND updated < -14d"
+  filter: "labels = stale AND resolution is EMPTY AND updated < -14d"
   notify:
     subject: "Stale Jira tickets — auto-bumped"
     mailTo: assignee
@@ -43,7 +43,7 @@ Two things happen per matched issue: (1) the auto-comment posts via the GraphQL 
 ## Linear flavour
 
 ```yaml
-- type: linear
+- tracker: linear
   group: weekly-stale
   filterRaw:
     and:

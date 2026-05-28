@@ -29,8 +29,8 @@ Two orthogonal mechanisms — combine as needed.
 **Per-rule explicit user IDs** (always-on, one-for-all):
 
 ```yaml
-- type: jql
-  jql: "DueDate < startOfDay() AND Resolution is EMPTY"
+- tracker: jira
+  filter: "DueDate < startOfDay() AND Resolution is EMPTY"
   notify:
     subject: "Due-date expired"
     mailTo: assignee
@@ -48,8 +48,8 @@ slackUsers:
   bob@example.com:   U02HIJKLMN
 
 rules:
-  - type: jql
-    jql: "..."
+  - tracker: jira
+    filter: "..."
     notify:
       mailTo: assignee   # marker → email → Slack ID via the map above
 ```

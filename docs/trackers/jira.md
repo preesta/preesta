@@ -16,37 +16,21 @@ Jira:
 
 API token for Cloud: [id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens). Pick "Classic" — full-access token if you want `callRest` mutations, read-only if you only want digests.
 
-## 2. Rule shape — `jql`
+## 2. Rule shape
 
 ```yaml
-- type: jql
+- tracker: jira
   group: daily
-  jql: "project = INFRA AND assignee = currentUser() AND resolution is EMPTY ORDER BY priority DESC"
+  filter: "project = INFRA AND assignee = currentUser() AND resolution is EMPTY ORDER BY priority DESC"
   notify:
     subject: "Open INFRA tickets on you"
     mailTo: assignee
     columns: [Status, Priority, DueDate]
 ```
 
-`jql:` is a raw JQL expression. Same syntax the Jira web search bar uses. The standard `currentUser()`, `now()`, `endOfDay()` etc. functions all work.
+`filter:` is a raw JQL expression — the same syntax the Jira web search bar uses. The standard `currentUser()`, `now()`, `endOfDay()` etc. functions all work.
 
-## 3. Rule shape — `build` (release monitoring)
-
-A second rule type for Jira specifically — tracking releases/versions, not issues:
-
-```yaml
-- type: build
-  group: releases
-  mask: "^9\\.0\\.0\\."          # regex matching version names
-  remainingDays: 1               # alert when version is < N days from release
-  expiredOnly: false             # true to fire only after the release date
-  projectCode: "INFRA"
-  notify:
-    subject: "Releases due soon"
-    mailTo: release-team@example.com
-```
-
-## 4. Custom fields
+## 3. Custom fields
 
 Preesta auto-discovers Jira custom fields at startup via `GET /rest/api/?/field`. Reference them in `columns:` by display name — no `customfield_NNNNN` ids in config:
 
@@ -62,8 +46,8 @@ See [Rules YAML schema → Custom fields](../reference/rules-yaml-schema.md#cust
 Jira mutations use the REST `verb` / `urlPattern` / `body` shape:
 
 ```yaml
-- type: jql
-  jql: "..."
+- tracker: jira
+  filter: "..."
   mutations:
     - verb: POST
       urlPattern: "{{@jiraRoot}}/rest/api/2/issue/{{@issueKey}}/comment"

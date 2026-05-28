@@ -13,12 +13,12 @@ The same digest delivered to Telegram and Slack:
 ## GitHub flavour
 
 ```yaml
-- type: github
+- tracker: github
   group: stale-prs
   filter: "is:open is:pr org:bigcorp review:required updated:<2026-05-01"
   notify:
     subject: "Stale PRs waiting on review"
-    recommendations: "Bump or close. Reviews older than 5 days hurt cycle time."
+    followup: "Bump or close. Reviews older than 5 days hurt cycle time."
     mailTo: reporter   # PR author
     cc: ""
     columns: [Type, Status, Updated, Labels]
@@ -33,7 +33,7 @@ The same digest delivered to Telegram and Slack:
 ## Shortcut flavour (PR-equivalent: stories awaiting review)
 
 ```yaml
-- type: shortcut
+- tracker: shortcut
   group: stale-prs
   filter: "state:\"Ready for Review\" updated:<-5d !is:archived"
   notify:
@@ -49,7 +49,7 @@ The same digest delivered to Telegram and Slack:
 Linear treats PRs as linked from the GitHub side, not first-class. The Linear-side digest is "issues that should be closed because their PR has merged but the issue is still Done":
 
 ```yaml
-- type: linear
+- tracker: linear
   group: stale-prs
   filterRaw:
     state:

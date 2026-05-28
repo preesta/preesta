@@ -6,28 +6,27 @@ The full grammar of the rules file. For prose-level explanation of each section,
 
 ```yaml
 rules:
-  - type: ...           # required, picks the rule type
+  - tracker: ...        # required, picks the tracker
     group: ...          # required, schedule group (the CLI argument)
-    # ... type-specific fields ...
+    # ... tracker-specific fields ...
     notify: { ... }     # optional, but typically present
     mutations: [ ... ]  # optional
 
 # Workspace-level (used by every rule)
-redirectionRules: {}          # email → email rerouting (e.g. for dev environments)
-telegramUsers: {}             # email → Telegram chat ID
-slackUsers: {}                # email → Slack user ID
+aliases: {}             # marker → recipients (group emails, on-leave fallbacks)
+telegramUsers: {}       # email → Telegram chat ID
+slackUsers: {}          # email → Slack user ID
 ```
 
 ## Common rule fields
 
-Every rule type accepts:
+Every rule accepts:
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `type` | string | yes | One of `jql` / `build` / `linear` / `github` / `gitlab` / `shortcut` |
+| `tracker` | string | yes | One of `jira` / `linear` / `github` / `gitlab` / `shortcut` |
 | `group` | string | yes | Schedule group — must match the CLI argument when the rule should fire |
 | `active` | bool | no | Default `true`. Set `false` to disable a rule without deleting it |
-| `additionalPredicate` | string | no | Name of a C# method in `ExtendedFilteringPredicates` to post-filter matches |
 | `notify` | object | typically yes | See below |
 | `mutations` | array | no | See below |
 
@@ -36,7 +35,7 @@ Every rule type accepts:
 ```yaml
 notify:
   subject: "..."                       # required if notify is present
-  recommendations: "..."               # optional, one-line intro in digest
+  followup: "..."               # optional, one-line intro in digest
   mailTo: "assignee, lead@example.com" # comma-separated; markers or literals
   cc: "..."                            # same shape as mailTo
   telegramChatId: "ID,ID"              # literal IDs only, no markers
@@ -56,9 +55,9 @@ Custom fields (Jira only): any custom field's display name (e.g. `Severity`, `"S
 
 ## `mutations` shape
 
-Two flavours depending on tracker type.
+Two flavours depending on the tracker.
 
-### REST (`jql`, `shortcut`)
+### REST (`jira`, `shortcut`)
 
 ```yaml
 mutations:
@@ -76,60 +75,43 @@ mutations:
       mutation { ... }      # raw GraphQL body, marker-substituted
 ```
 
-The two are mutually exclusive: a `linear` / `github` / `gitlab` rule reads `mutation:` and discards any REST `verb`/`urlPattern`/`body` siblings, a `jql` / `shortcut` rule reads the REST shape and discards `mutation:`. Mixing them on one entry is silently truncated to the rule's flavour.
+The two are mutually exclusive: a `linear` / `github` / `gitlab` rule reads `mutation:` and discards any REST `verb`/`urlPattern`/`body` siblings, a `jira` / `shortcut` rule reads the REST shape and discards `mutation:`. Mixing them on one entry is silently truncated to the rule's flavour.
 
-## Per-type fields
+## Per-tracker fields
 
-### `jql` (Jira)
+### `jira`
 
 ```yaml
-- type: jql
-  jql: "project = INFRA AND assignee = currentUser()"
+- tracker: jira
+  filter: "project = INFRA AND assignee = currentUser()"
 ```
 
 | Field | Type | Notes |
 |---|---|---|
-| `jql` | string | Raw JQL — the same expression the Jira web search bar accepts |
-
-### `build` (Jira release monitoring)
-
-```yaml
-- type: build
-  mask: "^9\\.0\\.0\\."
-  remainingDays: 1
-  expiredOnly: false
-  projectCode: "INFRA"
-```
-
-| Field | Type | Notes |
-|---|---|---|
-| `mask` | regex string | Match against version names |
-| `remainingDays` | int | Fire when version is < N days from release |
-| `expiredOnly` | bool | If true, fire only after the release date |
-| `projectCode` | string | Jira project filter |
+| `filter` | string | Raw JQL — the same expression the Jira web search bar accepts |
 
 ### `linear`
 
 Mutually-exclusive filter mode — exactly one of `filter` / `filterRaw` / `viewId`:
 
 ```yaml
-- type: linear
+- tracker: linear
   filter: "issues assigned to me, not completed"
 # or
-- type: linear
+- tracker: linear
   filterRaw:
     state:
       type:
         neq: completed
 # or
-- type: linear
+- tracker: linear
   viewId: "0e8a3b41-1234-..."
 ```
 
 ### `github`
 
 ```yaml
-- type: github
+- tracker: github
   filter: "is:open is:issue org:bigcorp label:urgent"
 ```
 
@@ -138,7 +120,7 @@ Single `filter:` field, raw GitHub search string. Multi-repo / org / `is:issue` 
 ### `gitlab`
 
 ```yaml
-- type: gitlab
+- tracker: gitlab
   filter:
     state: opened
     labelName: [urgent]
@@ -150,7 +132,7 @@ Structured chip mapping — keys match `Query.issues` GraphQL argument names ver
 ### `shortcut`
 
 ```yaml
-- type: shortcut
+- tracker: shortcut
   filter: "state:\"In Progress\" type:bug !is:archived"
 ```
 
@@ -181,7 +163,7 @@ Empty / missing values render as nothing — no crash.
 
 Malformed rules are dropped with `ILogger.Error` and Preesta keeps going for the rest of the file:
 
-- Linear: rules with zero or 2+ of {filter, filterRaw, viewId}
+- Linear: rules with zero or 2+ of {`filter`, `filterRaw`, `viewId`}
 - GitHub / Shortcut: rules with empty/missing `filter:` string
 - Any rule: missing `notify` and no mutations (nothing for the rule to do)
 

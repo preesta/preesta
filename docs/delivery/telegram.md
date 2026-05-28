@@ -41,8 +41,8 @@ Two orthogonal mechanisms — combine as needed.
 **Per-rule explicit chat IDs** (always-on, one-for-all):
 
 ```yaml
-- type: jql
-  jql: "..."
+- tracker: jira
+  filter: "..."
   notify:
     subject: "Daily digest"
     mailTo: assignee
@@ -60,8 +60,8 @@ telegramUsers:
   bob@example.com:   "987654321"
 
 rules:
-  - type: jql
-    jql: "..."
+  - tracker: jira
+    filter: "..."
     notify:
       subject: "Daily digest"
       mailTo: assignee   # ← marker resolves to email; map turns email into chat ID

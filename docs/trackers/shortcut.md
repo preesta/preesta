@@ -23,14 +23,14 @@ The token's workspace is implicit — Preesta calls `GET /api/v3/member` once at
 
 ```yaml
 rules:
-  - type: shortcut
+  - tracker: shortcut
     group: morning
     filter: "state:\"In Progress\" type:bug !is:archived"
     notify:
       subject: "Open Shortcut bugs"
       mailTo: assignee
 
-  - type: shortcut
+  - tracker: shortcut
     filter: "team:platform !state:completed has:deadline deadline:<today"
     notify:
       subject: "Overdue Shortcut stories"
@@ -73,7 +73,7 @@ Resolution isn't separately exposed by Shortcut — the workflow state name carr
 REST `verb` / `urlPattern` / `body` shape, same as Jira:
 
 ```yaml
-- type: shortcut
+- tracker: shortcut
   filter: "state:\"Ready for Review\" updated:<-7d"
   mutations:
     - verb: POST

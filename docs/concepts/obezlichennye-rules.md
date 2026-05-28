@@ -10,7 +10,7 @@ The wrong way (which is how most tracker notification systems work):
 
 ```yaml
 # Don't do this
-- type: github
+- tracker: github
   filter: "is:open is:issue assignee:alice"
   notify:
     mailTo: alice@example.com
@@ -21,7 +21,7 @@ That rule has Alice's name in two places. To produce the same digest for Bob you
 The Preesta way:
 
 ```yaml
-- type: github
+- tracker: github
   filter: "is:open is:issue label:urgent"
   notify:
     mailTo: assignee
