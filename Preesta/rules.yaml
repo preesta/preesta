@@ -1,22 +1,22 @@
 # Preesta rules configuration (YAML format)
 
 rules:
-  - type: jql
+  - tracker: jira
     group: e2etest
-    jql: "assignee = currentUser() AND resolution is EMPTY ORDER BY priority DESC, created ASC"
+    filter: "assignee = currentUser() AND resolution is EMPTY ORDER BY priority DESC, created ASC"
     notify:
       subject: "Daily Jira digest"
-      recommendations: "Tickets assigned to you — move blockers to In Progress before standup."
+      followup: "Tickets assigned to you — move blockers to In Progress before standup."
       mailTo: you@example.com
       cc: ""
       telegramChatId: "12345678"
 
-  - type: jql
+  - tracker: jira
     group: e2etest
-    jql: "reporter = currentUser() AND resolution is EMPTY ORDER BY created ASC"
+    filter: "reporter = currentUser() AND resolution is EMPTY ORDER BY created ASC"
     notify:
       subject: "Daily Jira digest"
-      recommendations: "Tickets you reported that are still open."
+      followup: "Tickets you reported that are still open."
       mailTo: you@example.com
       cc: ""
       telegramChatId: "12345678"
@@ -26,12 +26,12 @@ rules:
         - Assignee
         - Status
 
-  - type: jql
+  - tracker: jira
     group: e2etest
-    jql: "project = SCRUM AND resolved >= -7d ORDER BY resolved DESC"
+    filter: "project = SCRUM AND resolved >= -7d ORDER BY resolved DESC"
     notify:
       subject: "Daily Jira digest"
-      recommendations: "Recently resolved — review and close the loop with stakeholders."
+      followup: "Recently resolved — review and close the loop with stakeholders."
       mailTo: you@example.com
       cc: ""
       telegramChatId: "12345678"
@@ -41,37 +41,37 @@ rules:
         - Assignee
         - Updated
 
-  - type: jql
+  - tracker: jira
     group: e2etest
-    jql: "key = SCRUM-7"
+    filter: "key = SCRUM-7"
     notify:
       subject: "Daily Jira digest"
-      recommendations: "Full field showcase — every populated field on a single ticket."
+      followup: "Full field showcase — every populated field on a single ticket."
       mailTo: you@example.com
       cc: ""
       telegramChatId: "12345678"
       columns:
         - all-non-empty
 
-  - type: linear
+  - tracker: linear
     group: e2etest
     filter: "issues assigned to me, not completed"
     notify:
       subject: "Linear digest"
-      recommendations: "Open Linear tickets assigned to you."
+      followup: "Open Linear tickets assigned to you."
       mailTo: you@example.com
       cc: ""
       telegramChatId: "12345678"
       columns: [Status, Priority, Updated]
 
-  - type: gitlab
+  - tracker: gitlab
     group: e2etest-gitlab
     filter:
       state: opened
       assigneeUsernames: [your-username]
     notify:
       subject: "GitLab digest"
-      recommendations: "Open issues across your GitLab projects."
+      followup: "Open issues across your GitLab projects."
       mailTo: you@example.com
       cc: ""
       telegramChatId: "12345678"
@@ -85,12 +85,12 @@ rules:
             }) { note { id } }
           }
 
-  - type: shortcut
+  - tracker: shortcut
     group: e2etest-shortcut
     filter: "id:26"
     notify:
       subject: "Shortcut digest"
-      recommendations: "Open Shortcut stories assigned to you."
+      followup: "Open Shortcut stories assigned to you."
       mailTo: you@example.com
       cc: ""
       telegramChatId: "12345678"
@@ -101,12 +101,12 @@ rules:
         body: |
           {"text": "Hi from Preesta live e2e — Shortcut REST mutation pipeline. Posted on `{{@issueKey}}`: *{{@title}}*."}
 
-  - type: github
+  - tracker: github
     group: e2etest-gh
     filter: "is:open is:issue repo:your-org/your-repo"
     notify:
       subject: "GitHub digest"
-      recommendations: "Open issues and PRs in your personal repos."
+      followup: "Open issues and PRs in your personal repos."
       mailTo: you@example.com
       cc: ""
       telegramChatId: "12345678"
@@ -120,7 +120,7 @@ rules:
             }) { clientMutationId commentEdge { node { url } } }
           }
 
-  - type: linear
+  - tracker: linear
     group: morning-standup
     filterRaw:
       and:
@@ -140,7 +140,7 @@ rules:
                 lte: P0D
     notify:
       subject: "Morning standup"
-      recommendations: "Tickets in the active cycle that are on you today — focus list."
+      followup: "Tickets in the active cycle that are on you today — focus list."
       mailTo: you@example.com
       cc: ""
       telegramChatId: "12345678"
@@ -148,4 +148,4 @@ rules:
       columns: [Status, Priority, DueDate, Updated]
 
 # Email alias mappings
-redirectionRules: {}
+aliases: {}

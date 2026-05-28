@@ -23,7 +23,7 @@ namespace Tests.Formatting
 
         private static Message[] Render(NotificationSpec notify, params Issue[] issues)
         {
-            var rule = new Preesta.Configuration.JqlRule { Jql = "any", Notification = notify };
+            var rule = new Preesta.Configuration.JqlRule { Filter = "any", Notification = notify };
             var supplier = new JqlSupplier(JiraReturning(issues), new[] { rule }, Substitute.For<ILogger>());
             var converter = new IssuePackageConverter("http://jira", subjectPrefix: "");
             var packages = supplier.GetPackages().Cast<Package<NotificationReaction, Issue>>().ToArray();
@@ -135,7 +135,7 @@ namespace Tests.Formatting
             // custom-field value resolved by display name.
             var rule = new Preesta.Configuration.JqlRule
             {
-                Jql = "any",
+                Filter = "any",
                 Notification = NotifyWith(new[] { "Severity" })
             };
             var issue = new Issue

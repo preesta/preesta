@@ -62,7 +62,7 @@ namespace End2End.Tests
 
             var jqlRule = new JqlRule
             {
-                Jql = "any",
+                Filter = "any",
                 Mutations = new[]
                 {
                     new RestMutationSpec

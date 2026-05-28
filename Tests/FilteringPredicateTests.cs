@@ -36,7 +36,7 @@ namespace Tests
                         new JqlRule
                         {
                             AdditionalPredicateName = "MoreThanOneFixVersion",
-                            Jql = "any jql",
+                            Filter = "any jql",
                             Notification = new NotificationSpec
                             {
                                 RawRecipients = new[] {"1"},

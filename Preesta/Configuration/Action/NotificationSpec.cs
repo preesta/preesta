@@ -5,7 +5,7 @@ namespace Preesta.Configuration.Action
     {
         public string Subject { get; set; } = Empty;
 
-        public string? Recommendations { get; set; }
+        public string? Followup { get; set; }
         public string[] RawRecipients { get; set; } = new string[]{};
         public string[] RawCc { get; set; } = new string[]{};
         public string[] TelegramChatIds { get; set; } = new string[]{};

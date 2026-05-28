@@ -3,8 +3,8 @@
 ———
 {{~ end ~}}
 <b>{{ section.subject | html.escape }}</b>
-{{~ if section.recommendations ~}}
-<i>{{ section.recommendations | html.escape }}</i>
+{{~ if section.followup ~}}
+<i>{{ section.followup | html.escape }}</i>
 {{~ end ~}}
 
 {{~ for build in section.builds ~}}

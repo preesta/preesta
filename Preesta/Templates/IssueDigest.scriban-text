@@ -2,8 +2,8 @@
 {{~ if !for.first ~}}
 ———
 {{~ end ~}}
-{{~ if section.recommendations ~}}
-<i>{{ section.recommendations | html.escape }}</i>
+{{~ if section.followup ~}}
+<i>{{ section.followup | html.escape }}</i>
 {{~ end ~}}
 {{~ if section.jql_uri ~}}
 <a href="{{ section.jql_uri }}">Open in Jira</a>

@@ -2,6 +2,6 @@
 {
     public class JqlRule : Rule
     {
-        public string Jql { get; set; } = string.Empty;
+        public string Filter { get; set; } = string.Empty;
     }
 }

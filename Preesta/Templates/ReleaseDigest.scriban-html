@@ -21,8 +21,8 @@
 <div style="margin-top:48px"></div>
 {{~ end ~}}
 <h3 style="color:#172B4D;margin:24px 0 8px">{{ section.subject | html.escape }}</h3>
-{{~ if section.recommendations ~}}
-<div style="border-left:3px solid #0052CC;background:#F4F5F7;padding:10px 14px;margin:0 0 12px;color:#172B4D;border-radius:0 4px 4px 0">{{ section.recommendations | html.escape }}</div>
+{{~ if section.followup ~}}
+<div style="border-left:3px solid #0052CC;background:#F4F5F7;padding:10px 14px;margin:0 0 12px;color:#172B4D;border-radius:0 4px 4px 0">{{ section.followup | html.escape }}</div>
 {{~ end ~}}
 <table class="preesta-builds">
   <thead>

@@ -22,7 +22,7 @@ namespace Preesta.Data.Supplying
             {
                 // JqlSupplier's own ctor takes a non-null IJiraService, so the
                 // nullable base property is guaranteed non-null here.
-                return JiraService!.GetIssuesForJql(rule.Jql);
+                return JiraService!.GetIssuesForJql(rule.Filter);
             }
             catch (Exception e)
             {
@@ -30,8 +30,8 @@ namespace Preesta.Data.Supplying
                 {
                     throw;
                 }
-                
-                _logger.Error(e, "Failed to get issues from Jira Service for Jql Rule: {@rule}", rule);
+
+                _logger.Error(e, "Failed to get issues from Jira Service for Jira rule: {@rule}", rule);
                 return new Issue[] { };
             }
         }
@@ -40,7 +40,10 @@ namespace Preesta.Data.Supplying
 
         protected internal override PackageBase Enrich(PackageBase basePackage, JqlRule rule)
         {
-            basePackage.Properties["Jql"] = rule.Jql;
+            // The Properties bag key stays "Jql" — downstream templates and the
+            // mail digest reference it by that name to build the "Open in Jira"
+            // link from the original filter string.
+            basePackage.Properties["Jql"] = rule.Filter;
             return basePackage;
         }
 

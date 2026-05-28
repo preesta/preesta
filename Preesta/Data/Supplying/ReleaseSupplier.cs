@@ -39,7 +39,7 @@ namespace Preesta.Data.Supplying
                                 Cc = ag.Key.Cc.Split(',')
                             },
                             Subject = ag.Key.Subject,
-                            Recommendations = ag.First().rule.Notification!.Recommendations
+                            Followup = ag.First().rule.Notification!.Followup
                         }
                     })
                 .Cast<PackageBase>()

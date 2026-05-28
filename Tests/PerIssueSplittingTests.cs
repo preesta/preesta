@@ -25,7 +25,7 @@ namespace Tests
         {
             var rule = new JqlRule
             {
-                Jql = "DueDate < startOfDay() AND Resolution is EMPTY",
+                Filter = "DueDate < startOfDay() AND Resolution is EMPTY",
                 Notification = new NotificationSpec
                 {
                     Subject = "DueDate expired",
@@ -58,7 +58,7 @@ namespace Tests
         {
             var rule = new JqlRule
             {
-                Jql = "any",
+                Filter = "any",
                 Notification = new NotificationSpec
                 {
                     Subject = "S",
@@ -106,7 +106,7 @@ namespace Tests
         {
             var rule = new JqlRule
             {
-                Jql = "any",
+                Filter = "any",
                 Notification = new NotificationSpec
                 {
                     Subject = "S",
@@ -140,7 +140,7 @@ namespace Tests
         {
             var rule = new JqlRule
             {
-                Jql = "any",
+                Filter = "any",
                 Notification = new NotificationSpec
                 {
                     Subject = "S",

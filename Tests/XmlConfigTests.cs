@@ -65,7 +65,7 @@ namespace Tests
 
             var config = new XmlRulesConfig(XDocument.Parse(xml), Substitute.For<ILogger>());
 
-            var redirectionMap = config.GetRedirectionMap();
+            var redirectionMap = config.GetAliasMap();
             string? to;
             Assert.IsTrue(redirectionMap.TryGetValue("Bender", out to));
             Assert.AreEqual(to, "Phillip");

@@ -9,7 +9,7 @@ namespace Preesta.Formatting
 
     internal class DigestSection
     {
-        public string? Recommendations { get; set; }
+        public string? Followup { get; set; }
         // Jira: pre-Phase-12.2 link to the JQL view. Kept verbatim — Jira section
         // rendering must not change byte-for-byte.
         public string? JqlUri { get; set; }
@@ -27,7 +27,7 @@ namespace Preesta.Formatting
         // Shortcut: link to /<workspace>/stories?query=… with the raw search string.
         public string? ShortcutSearchUri { get; set; }
         // Human-readable description of what produced the list, shown under
-        // recommendations. Format depends on the rule type:
+        // the followup line. Format depends on the rule type:
         //   Linear AI prompt   → "AI filter: «<prompt>»"
         //   Linear saved view  → "View: <name or id>"
         //   GitHub             → "Search: <filter>"
@@ -53,7 +53,7 @@ namespace Preesta.Formatting
     internal class ReleaseDigestSection
     {
         public string Subject { get; set; } = "";
-        public string? Recommendations { get; set; }
+        public string? Followup { get; set; }
         public IReadOnlyList<ReleaseRow> Builds { get; set; } = new List<ReleaseRow>();
     }
 

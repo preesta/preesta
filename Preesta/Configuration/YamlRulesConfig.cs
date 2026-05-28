@@ -41,26 +41,33 @@ namespace Preesta.Configuration
 
             foreach (var rule in _config.Rules)
             {
-                if (string.IsNullOrEmpty(rule.Type))
-                    _logger.Warning("Rule is missing 'type' field");
+                if (string.IsNullOrEmpty(rule.Tracker) && string.IsNullOrEmpty(rule.Type))
+                    _logger.Warning("Rule is missing 'tracker' field");
                 if (string.IsNullOrEmpty(rule.Group))
-                    _logger.Warning("Rule of type {Type} is missing 'group' field", rule.Type);
+                    _logger.Warning("Rule with tracker={Tracker} type={Type} is missing 'group' field",
+                        rule.Tracker, rule.Type);
             }
         }
 
         public JqlRule[] GetJqlRules(string @group)
         {
-            return GetRules<JqlRule>(@group, "jql", entry =>
+            return GetTrackerRules<JqlRule>(@group, "jira", entry =>
             {
                 var rule = ToBaseRule<JqlRule>(entry);
-                rule.Jql = entry.Jql ?? string.Empty;
+                // The Jira filter is a raw JQL string (Jira's own query language).
+                // YAML may keep using the legacy `jql:` key for back-compat in this
+                // pre-1.0 phase isn't a goal — `filter:` is the single canonical key.
+                rule.Filter = entry.Filter as string ?? string.Empty;
                 return rule;
             });
         }
 
         public ReleaseRule[] GetReleaseRules(string @group)
         {
-            return GetRules<ReleaseRule>(@group, "build", entry =>
+            // Build rules keep the legacy `type: build` discriminator (no `tracker:`).
+            // Releases aren't a tracker — they're a separate artefact inside Jira —
+            // and the schema reflects that by living on the older key.
+            return GetTypeRules<ReleaseRule>(@group, "build", entry =>
             {
                 var rule = ToBaseRule<ReleaseRule>(entry);
                 rule.Mask = entry.Mask ?? string.Empty;
@@ -73,7 +80,7 @@ namespace Preesta.Configuration
 
         public Action.LinearRule[] GetLinearRules(string @group)
         {
-            return GetRules<Action.LinearRule>(@group, "linear", entry =>
+            return GetTrackerRules<Action.LinearRule>(@group, "linear", entry =>
             {
                 var rule = ToBaseRule<Action.LinearRule>(entry);
                 // Linear's `filter:` is an AI-prompt string. We accept only string-typed
@@ -104,7 +111,7 @@ namespace Preesta.Configuration
 
         public Action.GitlabRule[] GetGitlabRules(string @group)
         {
-            return GetRules<Action.GitlabRule>(@group, "gitlab", entry =>
+            return GetTrackerRules<Action.GitlabRule>(@group, "gitlab", entry =>
             {
                 var rule = ToBaseRule<Action.GitlabRule>(entry);
 
@@ -180,7 +187,7 @@ namespace Preesta.Configuration
 
         public Action.GithubRule[] GetGithubRules(string @group)
         {
-            return GetRules<Action.GithubRule>(@group, "github", entry =>
+            return GetTrackerRules<Action.GithubRule>(@group, "github", entry =>
             {
                 var rule = ToBaseRule<Action.GithubRule>(entry);
                 // GitHub's `filter:` is a raw search-string scalar. A mapping there would
@@ -213,7 +220,7 @@ namespace Preesta.Configuration
 
         public Action.ShortcutRule[] GetShortcutRules(string @group)
         {
-            return GetRules<Action.ShortcutRule>(@group, "shortcut", entry =>
+            return GetTrackerRules<Action.ShortcutRule>(@group, "shortcut", entry =>
             {
                 var rule = ToBaseRule<Action.ShortcutRule>(entry);
                 // Shortcut's `filter:` is a raw search-string scalar. Coerce non-string
@@ -284,10 +291,10 @@ namespace Preesta.Configuration
             _ => new JValue(raw.ToString())
         };
 
-        public IReadOnlyDictionary<string, string> GetRedirectionMap()
+        public IReadOnlyDictionary<string, string> GetAliasMap()
         {
             return new ReadOnlyDictionary<string, string>(
-                _config.RedirectionRules ?? new Dictionary<string, string>());
+                _config.Aliases ?? new Dictionary<string, string>());
         }
 
         public IReadOnlyDictionary<string, string> GetTelegramUserMap()
@@ -302,20 +309,36 @@ namespace Preesta.Configuration
                 _config.SlackUsers ?? new Dictionary<string, string>());
         }
 
-        private TRule[] GetRules<TRule>(string group, string type, Func<YamlRuleEntry, TRule> converter) where TRule : Rule
+        // Tracker rules use the new `tracker:` YAML key (jira / linear / github /
+        // gitlab / shortcut). The build rule still uses the legacy `type: build`
+        // key — see GetTypeRules below. Two paths, no fallback between them: each
+        // YAML entry uses exactly one of the two discriminator keys.
+        private TRule[] GetTrackerRules<TRule>(string group, string tracker, Func<YamlRuleEntry, TRule> converter) where TRule : Rule
+            => MatchRules(group, tracker, e => e.Tracker, "tracker", converter);
+
+        private TRule[] GetTypeRules<TRule>(string group, string type, Func<YamlRuleEntry, TRule> converter) where TRule : Rule
+            => MatchRules(group, type, e => e.Type, "type", converter);
+
+        private TRule[] MatchRules<TRule>(
+            string group,
+            string expected,
+            Func<YamlRuleEntry, string?> discriminator,
+            string discriminatorName,
+            Func<YamlRuleEntry, TRule> converter) where TRule : Rule
         {
             if (_config.Rules == null)
                 return Array.Empty<TRule>();
 
             var foundRules = _config.Rules
-                .Where(e => string.Equals(e.Type, type, StringComparison.OrdinalIgnoreCase))
+                .Where(e => string.Equals(discriminator(e), expected, StringComparison.OrdinalIgnoreCase))
                 .Where(e => e.Active != false)
                 .Where(e => string.IsNullOrEmpty(group) || string.Equals(e.Group, group, StringComparison.Ordinal))
                 .Select(e => TryConvert(e, converter))
                 .Where(r => r != null)
                 .ToArray()!;
 
-            _logger?.Information("{Count} rules of type {Type} found in schedule group '{Group}'", foundRules.Length, type, group);
+            _logger?.Information("{Count} rules with {Discriminator}={Value} found in schedule group '{Group}'",
+                foundRules.Length, discriminatorName, expected, group);
             return foundRules!;
         }
 
@@ -344,7 +367,7 @@ namespace Preesta.Configuration
                 rule.Notification = new NotificationSpec
                 {
                     Subject = entry.Notify.Subject ?? string.Empty,
-                    Recommendations = entry.Notify.Recommendations,
+                    Followup = entry.Notify.Followup,
                     RawRecipients = (entry.Notify.MailTo ?? string.Empty).ToLower()
                         .Split(',', StringSplitOptions.RemoveEmptyEntries),
                     RawCc = (entry.Notify.Cc ?? string.Empty).ToLower()
@@ -374,32 +397,36 @@ namespace Preesta.Configuration
     internal class YamlConfigModel
     {
         public List<YamlRuleEntry>? Rules { get; set; }
-        public Dictionary<string, string>? RedirectionRules { get; set; }
+        public Dictionary<string, string>? Aliases { get; set; }
         public Dictionary<string, string>? TelegramUsers { get; set; }
         public Dictionary<string, string>? SlackUsers { get; set; }
     }
 
     internal class YamlRuleEntry
     {
+        // Discriminator: tracker rules use Tracker (jira/linear/github/gitlab/shortcut);
+        // build rules (Jira releases) keep the legacy Type key with value "build".
+        // Exactly one of these is expected per entry.
+        public string? Tracker { get; set; }
         public string? Type { get; set; }
+
         public string? Group { get; set; }
         public bool? Active { get; set; }
         public string? AdditionalPredicate { get; set; }
 
-        // JQL
-        public string? Jql { get; set; }
-
-        // Release
+        // Release (build rules)
         public string? Mask { get; set; }
         public int? RemainingDays { get; set; }
         public bool? ExpiredOnly { get; set; }
         public string? ProjectCode { get; set; }
 
-        // `filter:` shape depends on rule type:
-        //   linear (filter):  string — AI prompt
-        //   github (filter):  string — raw GitHub search query
-        //   gitlab (filter):  mapping — structured chips (state, labelName, …)
-        // Type is therefore `object?` and each rule-type converter casts/inspects it.
+        // `filter:` shape depends on tracker:
+        //   jira:     string — raw JQL
+        //   linear:   string — AI prompt
+        //   github:   string — raw GitHub search query
+        //   gitlab:   mapping — structured chips (state, labelName, …)
+        //   shortcut: string — raw Shortcut search query
+        // Type is `object?` and each tracker's converter casts/inspects it.
         // FilterRaw / ViewId are Linear-only escape hatches (kept as their own keys).
         public object? Filter { get; set; }
         public object? FilterRaw { get; set; }
@@ -416,28 +443,28 @@ namespace Preesta.Configuration
         public string? Subject { get; set; }
         public string? MailTo { get; set; }
         public string? Cc { get; set; }
-        public string? Recommendations { get; set; }
+        public string? Followup { get; set; }
         public string? TelegramChatId { get; set; }
         public string? SlackUserId { get; set; }
         public List<string>? Columns { get; set; }
     }
 
     /// <summary>
-    /// One entry in a rule's <c>mutations:</c> list. Shape differs by rule type:
+    /// One entry in a rule's <c>mutations:</c> list. Shape differs by tracker:
     /// <list type="bullet">
-    /// <item><description><b>jql</b>: REST request — populates <see cref="Verb"/>, <see cref="UrlPattern"/>, <see cref="Body"/>.</description></item>
-    /// <item><description><b>linear</b>: GraphQL — populates <see cref="Mutation"/>.</description></item>
+    /// <item><description><b>jira / shortcut</b>: REST request — populates <see cref="Verb"/>, <see cref="UrlPattern"/>, <see cref="Body"/>.</description></item>
+    /// <item><description><b>linear / github / gitlab</b>: GraphQL — populates <see cref="Mutation"/>.</description></item>
     /// </list>
     /// All four fields are nullable; the relevant converter (in <see cref="YamlRulesConfig"/>) picks the ones it needs.
     /// </summary>
     internal class YamlMutationsEntry
     {
-        // REST (jql rules)
+        // REST (jira / shortcut rules)
         public string? Verb { get; set; }
         public string? UrlPattern { get; set; }
         public string? Body { get; set; }
 
-        // GraphQL (linear rules)
+        // GraphQL (linear / github / gitlab rules)
         public string? Mutation { get; set; }
     }
 }

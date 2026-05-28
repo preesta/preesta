@@ -46,7 +46,7 @@ namespace Tests
 
             var rule = new Preesta.Configuration.JqlRule
             {
-                Jql = "any",
+                Filter = "any",
                 Notification = new NotificationSpec
                 {
                     Subject = "Alert",
@@ -76,7 +76,7 @@ namespace Tests
         {
             var rule = new Preesta.Configuration.JqlRule
             {
-                Jql = "any",
+                Filter = "any",
                 Notification = new NotificationSpec
                 {
                     Subject = "Alert",
@@ -110,7 +110,7 @@ namespace Tests
 
             var rule = new Preesta.Configuration.JqlRule
             {
-                Jql = "any",
+                Filter = "any",
                 Notification = new NotificationSpec
                 {
                     Subject = "Alert",
@@ -144,7 +144,7 @@ namespace Tests
 
             var rule = new Preesta.Configuration.JqlRule
             {
-                Jql = "any",
+                Filter = "any",
                 Notification = new NotificationSpec
                 {
                     Subject = "Alert",
@@ -181,7 +181,7 @@ namespace Tests
 
             var rule = new Preesta.Configuration.JqlRule
             {
-                Jql = "any",
+                Filter = "any",
                 Notification = new NotificationSpec
                 {
                     Subject = "Alert",
@@ -236,7 +236,7 @@ namespace Tests
 
             var rule = new Preesta.Configuration.JqlRule
             {
-                Jql = "any",
+                Filter = "any",
                 Notification = new NotificationSpec
                 {
                     Subject = "Alert",
@@ -271,7 +271,7 @@ namespace Tests
 
             var rule = new Preesta.Configuration.JqlRule
             {
-                Jql = "any",
+                Filter = "any",
                 Notification = new NotificationSpec
                 {
                     Subject = "Alert",
@@ -307,7 +307,7 @@ namespace Tests
 
             var rule = new Preesta.Configuration.JqlRule
             {
-                Jql = "any",
+                Filter = "any",
                 Notification = new NotificationSpec
                 {
                     Subject = "Alert",
@@ -350,7 +350,7 @@ namespace Tests
 
             var rule = new Preesta.Configuration.JqlRule
             {
-                Jql = "any",
+                Filter = "any",
                 Notification = new NotificationSpec
                 {
                     Subject = "Alert",
@@ -397,7 +397,7 @@ namespace Tests
 
             var rule = new Preesta.Configuration.JqlRule
             {
-                Jql = "any",
+                Filter = "any",
                 Notification = new NotificationSpec
                 {
                     Subject = "Alert",

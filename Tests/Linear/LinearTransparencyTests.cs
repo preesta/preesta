@@ -87,7 +87,7 @@ namespace Tests.Linear
             Subject = "T",
             RawRecipients = new[] { "a@x" },
             RawCc = new string[] { },
-            Recommendations = "Take a look",
+            Followup = "Take a look",
         };
 
         private static (LinearIssueSource source, MockLinearServer server) AiPromptStubbed()
@@ -259,7 +259,7 @@ namespace Tests.Linear
             var pkg = new Package<NotificationReaction, Issue>
             {
                 Items = new[] { new Issue { Key = "T-1", Summary = "x" } },
-                Reaction = new NotificationReaction { Subject = "T", Recommendations = "look" },
+                Reaction = new NotificationReaction { Subject = "T", Followup = "look" },
                 Properties = { { "Jql", "project = T" } }
             };
             var html = IssueFormatter.ToHtml(new[] { pkg }, "https://jira.example.com/");

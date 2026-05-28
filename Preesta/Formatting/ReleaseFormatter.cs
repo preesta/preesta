@@ -37,8 +37,8 @@ namespace Preesta.Formatting
                 if (!first) sb.AppendLine("———");
                 first = false;
 
-                if (!string.IsNullOrEmpty(package.Reaction.Recommendations))
-                    sb.AppendLine(package.Reaction.Recommendations);
+                if (!string.IsNullOrEmpty(package.Reaction.Followup))
+                    sb.AppendLine(package.Reaction.Followup);
 
                 sb.AppendLine();
 
@@ -67,7 +67,7 @@ namespace Preesta.Formatting
             var sections = packages.Select(package => new ReleaseDigestSection
             {
                 Subject = package.Reaction.Subject,
-                Recommendations = package.Reaction.Recommendations,
+                Followup = package.Reaction.Followup,
                 Builds = package.Items.Select(b => new ReleaseRow
                 {
                     Name = b.Name ?? "",

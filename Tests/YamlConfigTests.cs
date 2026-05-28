@@ -12,26 +12,26 @@ namespace Tests
     {
         private const string YamlConfig = @"
 rules:
-  - type: jql
+  - tracker: jira
     group: daily
-    jql: ""DueDate < startOfDay() AND Resolution is EMPTY""
+    filter: ""DueDate < startOfDay() AND Resolution is EMPTY""
     notify:
       subject: DueDate expired
       mailTo: assignee
       cc: reporter,managers
-      recommendations: Please resolve
+      followup: Please resolve
 
-  - type: jql
+  - tracker: jira
     group: daily
     active: false
-    jql: ""should be skipped""
+    filter: ""should be skipped""
     notify:
       subject: inactive
       mailTo: nobody
 
-  - type: jql
+  - tracker: jira
     group: hourly
-    jql: ""Type = Support""
+    filter: ""Type = Support""
     mutations:
       - verb: PUT
         urlPattern: ""{{@jiraRoot}}/rest/api/2/issue/{{@issueKey}}""
@@ -48,7 +48,7 @@ rules:
       subject: Release alert
       mailTo: admin
 
-redirectionRules:
+aliases:
   managers: ""super_boss@example.com,super_boss2@example.com""
   admin: ""administrator@example.com""
 ";
@@ -66,7 +66,7 @@ redirectionRules:
         {
             var rules = _config.GetJqlRules("daily");
             Assert.AreEqual(1, rules.Length);
-            Assert.AreEqual("DueDate < startOfDay() AND Resolution is EMPTY", rules[0].Jql);
+            Assert.AreEqual("DueDate < startOfDay() AND Resolution is EMPTY", rules[0].Filter);
         }
 
         [Test]
@@ -76,14 +76,14 @@ redirectionRules:
             Assert.AreEqual("DueDate expired", rule.Notification!.Subject);
             Assert.AreEqual(new[] { "assignee" }, rule.Notification.RawRecipients);
             Assert.AreEqual(new[] { "reporter", "managers" }, rule.Notification.RawCc);
-            Assert.AreEqual("Please resolve", rule.Notification.Recommendations);
+            Assert.AreEqual("Please resolve", rule.Notification.Followup);
         }
 
         [Test]
         public void GetJqlRules_InactiveRulesSkipped()
         {
             var rules = _config.GetJqlRules("daily");
-            Assert.IsFalse(rules.Any(r => r.Jql == "should be skipped"));
+            Assert.IsFalse(rules.Any(r => r.Filter == "should be skipped"));
         }
 
         [Test]
@@ -109,9 +109,9 @@ redirectionRules:
         }
 
         [Test]
-        public void GetRedirectionMap_ParsedCorrectly()
+        public void GetAliasMap_ParsedCorrectly()
         {
-            var map = _config.GetRedirectionMap();
+            var map = _config.GetAliasMap();
             Assert.AreEqual(2, map.Count);
             Assert.AreEqual("super_boss@example.com,super_boss2@example.com", map["managers"]);
             Assert.AreEqual("administrator@example.com", map["admin"]);
@@ -135,32 +135,32 @@ redirectionRules:
 
         private const string LinearYaml = @"
 rules:
-  - type: linear
+  - tracker: linear
     group: linear-prompt
     filter: ""issues assigned to me, not completed""
 
-  - type: linear
+  - tracker: linear
     group: linear-raw
     filterRaw:
       state:
         type:
           neq: completed
 
-  - type: linear
+  - tracker: linear
     group: linear-view
     viewId: ""0e8a3b41-1234-4321-aaaa-bbbbbbbbbbbb""
 
-  - type: linear
+  - tracker: linear
     group: linear-bad
     # zero filter sources — should be dropped
 
-  - type: linear
+  - tracker: linear
     group: linear-bad
     filter: ""whatever""
     viewId: ""abc""
     # two filter sources — should be dropped
 
-  - type: linear
+  - tracker: linear
     group: linear-bad
     filter: ""ok""
     filterRaw:
@@ -173,7 +173,7 @@ rules:
         {
             const string yaml = @"
 rules:
-  - type: linear
+  - tracker: linear
     group: linear-mutations
     filter: ""issues with no assignee in Done""
     mutations:
@@ -202,7 +202,7 @@ rules:
             // GraphQL doesn't reject e.g. { gte: ""2"" } where it expects { gte: 2 }.
             const string yaml = @"
 rules:
-  - type: linear
+  - tracker: linear
     group: types
     filterRaw:
       priority:
@@ -299,9 +299,9 @@ rules:
         {
             const string yaml = @"
 rules:
-  - type: jql
+  - tracker: jira
     group: daily
-    jql: ""any""
+    filter: ""any""
     notify:
       subject: alert
       mailTo: assignee
@@ -319,9 +319,9 @@ rules:
         {
             const string yaml = @"
 rules:
-  - type: jql
+  - tracker: jira
     group: daily
-    jql: ""x""
+    filter: ""x""
     notify:
       subject: alert
       mailTo: assignee
@@ -345,7 +345,7 @@ slackUsers:
         {
             const string yaml = @"
 rules:
-  - type: github
+  - tracker: github
     group: gh
     filter: ""is:open is:issue org:bigcorp label:urgent""
     mutations:
@@ -376,7 +376,7 @@ rules:
         {
             const string yaml = @"
 rules:
-  - type: github
+  - tracker: github
     group: gh-bad
     filter: """"
     notify:
@@ -397,7 +397,7 @@ rules:
         {
             const string yaml = @"
 rules:
-  - type: github
+  - tracker: github
     group: gh-bad
     notify:
       subject: x
@@ -419,7 +419,7 @@ rules:
         {
             const string yaml = @"
 rules:
-  - type: gitlab
+  - tracker: gitlab
     group: gl
     filter:
       state: opened
@@ -453,7 +453,7 @@ rules:
         {
             const string yaml = @"
 rules:
-  - type: gitlab
+  - tracker: gitlab
     group: gl
     filter:
       state: opened
@@ -484,14 +484,14 @@ rules:
             // it, logs a warning, and the run continues).
             const string emptyFilter = @"
 rules:
-  - type: gitlab
+  - tracker: gitlab
     group: gl
     filter: {}
     notify: { subject: x, mailTo: assignee }
 ";
             const string noFilter = @"
 rules:
-  - type: gitlab
+  - tracker: gitlab
     group: gl
     notify: { subject: x, mailTo: assignee }
 ";
@@ -512,7 +512,7 @@ rules:
         {
             const string yaml = @"
 rules:
-  - type: gitlab
+  - tracker: gitlab
     group: gl
     filter:
       labelName: urgent
@@ -532,7 +532,7 @@ rules:
         {
             const string yaml = @"
 rules:
-  - type: shortcut
+  - tracker: shortcut
     group: sc
     filter: ""state:\""In Progress\"" type:bug""
     mutations:
@@ -567,7 +567,7 @@ rules:
         {
             const string yaml = @"
 rules:
-  - type: shortcut
+  - tracker: shortcut
     group: sc-bad
     filter: """"
     notify:
@@ -588,7 +588,7 @@ rules:
         {
             const string yaml = @"
 rules:
-  - type: shortcut
+  - tracker: shortcut
     group: sc-bad
     notify:
       subject: x
@@ -611,7 +611,7 @@ rules:
         {
             const string yaml = @"
 rules:
-  - type: linear
+  - tracker: linear
     group: bad
     filter: ""x""
     filterRaw:

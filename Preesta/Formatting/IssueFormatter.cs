@@ -68,8 +68,8 @@ namespace Preesta.Formatting
                 if (!firstSection) sb.AppendLine("———");
                 firstSection = false;
 
-                if (!string.IsNullOrEmpty(package.Reaction.Recommendations))
-                    sb.AppendLine(package.Reaction.Recommendations);
+                if (!string.IsNullOrEmpty(package.Reaction.Followup))
+                    sb.AppendLine(package.Reaction.Followup);
 
                 var filterDesc = LinearFilterDescriptionOrNull(package);
                 if (!string.IsNullOrEmpty(filterDesc))
@@ -257,7 +257,7 @@ namespace Preesta.Formatting
 
                 return new DigestSection
                 {
-                    Recommendations = package.Reaction.Recommendations,
+                    Followup = package.Reaction.Followup,
                     JqlUri = JqlUriOrNull(package, rootUri),
                     LinearViewUri = LinearViewUriOrNull(package, linearWorkspace),
                     GithubSearchUri = GithubSearchUriOrNull(package),

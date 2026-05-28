@@ -6,7 +6,7 @@ namespace Preesta.Data.Supplying
     {
         public Addressees Addressees { get; set; } = new Addressees();
         public string Subject { get; set; } = Empty;
-        public string? Recommendations { get; set; }
+        public string? Followup { get; set; }
         public string[] TelegramChatIds { get; set; } = new string[]{};
         public string[] SlackUserIds { get; set; } = new string[]{};
         public string[]? Columns { get; set; }

@@ -133,7 +133,7 @@ namespace End2End.Tests
 
 			var jqlRule = new JqlRule
 			{
-				Jql = "any",
+				Filter = "any",
 				Notification = new NotificationSpec
 				{
 					Subject = "subject",
@@ -181,7 +181,7 @@ namespace End2End.Tests
 
 			var jqlRule = new JqlRule
 			{
-				Jql = "any",
+				Filter = "any",
 				Notification = new NotificationSpec
 				{
 					Subject = "subject",

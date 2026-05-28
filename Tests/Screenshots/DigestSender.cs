@@ -221,7 +221,7 @@ namespace Tests.Screenshots
             Reaction = new NotificationReaction
             {
                 Subject = "Stale PRs — needs your attention",
-                Recommendations = "These PRs have been waiting on review for more than 7 days. " +
+                Followup = "These PRs have been waiting on review for more than 7 days. " +
                                   "Please review, ping the author, or close if no longer relevant.",
                 Columns = new[] { "Status", "Type", "Assignee", "Updated" }
             },

@@ -10,7 +10,7 @@ namespace Preesta.Configuration.Convert
         public static JqlRule ToJqlRule(XElement src)
         {
             var rule = ToIssueRule<JqlRule>(src);
-            rule.Jql = src.Element("jql")!.Value;
+            rule.Filter = src.Element("jql")!.Value;
             return rule;
         }
 
@@ -40,7 +40,7 @@ namespace Preesta.Configuration.Convert
                 rule.Notification = new NotificationSpec
                 {
                     Subject = (string) notify.Attribute("subject")!,
-                    Recommendations = (string?) notify.Attribute("recommendations"),
+                    Followup = (string?) notify.Attribute("recommendations"),
 
                     RawRecipients = ((string) notify.Attribute("mailTo")!).ToLower()
                         .Split(',', StringSplitOptions.RemoveEmptyEntries)

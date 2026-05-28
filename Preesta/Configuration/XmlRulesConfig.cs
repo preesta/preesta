@@ -57,7 +57,7 @@ namespace Preesta.Configuration
         public Action.GitlabRule[] GetGitlabRules(string @group) => Array.Empty<Action.GitlabRule>();
         public Action.ShortcutRule[] GetShortcutRules(string @group) => Array.Empty<Action.ShortcutRule>();
 
-        public IReadOnlyDictionary<string, string> GetRedirectionMap()
+        public IReadOnlyDictionary<string, string> GetAliasMap()
         {
             return new ReadOnlyDictionary<string, string>(
                 (_config.Root!.Element("redirection_rules") ?? new XElement("redirection_rules"))
