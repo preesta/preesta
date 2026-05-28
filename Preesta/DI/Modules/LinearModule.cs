@@ -23,7 +23,7 @@ namespace Preesta.DI.Modules
             var connection = new LinearConnection(c.Settings.LinearApiKey!);
             var source = new LinearIssueSource(connection, c.Logger);
             var supplier = new LinearIssueSupplier(
-                source, c.JiraService, c.Rules.GetLinearRules(c.Group), c.Logger);
+                source, c.JiraService, c.Rules.GetLinearRules(c.Tags), c.Logger);
             var executor = new LinearMutationExecutor(connection, c.Logger);
 
             // For Linear issues, Issue.Url is populated by the source and the

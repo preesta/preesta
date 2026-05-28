@@ -24,7 +24,7 @@ namespace Tests
 
             var config = new XmlRulesConfig(XDocument.Parse(xml), Substitute.For<ILogger>());
 
-            Rule rule = config.GetJqlRules("test").Single();
+            Rule rule = config.GetJqlRules(new[] { "test" }).Single();
             Assert.AreEqual(string.Join(",", rule.Notification!.RawRecipients), string.Join(",", "admin"));
             Assert.AreEqual(rule.Notification.Subject, "test");
         }
@@ -46,7 +46,7 @@ namespace Tests
 
             var config = new XmlRulesConfig(XDocument.Parse(xml), Substitute.For<ILogger>());
 
-            var rule = config.GetReleaseRules("test").Single();
+            var rule = config.GetReleaseRules(new[] { "test" }).Single();
             Assert.IsFalse(rule.ExpiredOnly);
             Assert.AreEqual(string.Join(",", rule.Notification!.RawRecipients), string.Join(",", new[] { "admin" }));
             Assert.AreEqual(rule.Notification.Subject, "test");
@@ -91,7 +91,7 @@ namespace Tests
 
             var config = new XmlRulesConfig(XDocument.Parse(xml), logger);
 
-            Assert.IsFalse(config.GetReleaseRules("test").Any());
+            Assert.IsFalse(config.GetReleaseRules(new[] { "test" }).Any());
             logger.Received(1).Error(Arg.Is<Exception>(e => e != null), Arg.Any<string>());
         }
     }

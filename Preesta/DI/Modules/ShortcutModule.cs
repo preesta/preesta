@@ -19,7 +19,7 @@ namespace Preesta.DI.Modules
             var connection = new ShortcutRest.ShortcutConnection(c.Settings.ShortcutApiToken!);
             var source = new ShortcutIssueSource(connection, c.Logger);
             var supplier = new ShortcutIssueSupplier(
-                source, c.JiraService, c.Rules.GetShortcutRules(c.Group), c.Logger);
+                source, c.JiraService, c.Rules.GetShortcutRules(c.Tags), c.Logger);
             var executor = new ShortcutMutationExecutor(connection, c.Logger);
 
             // Issue.Url is populated by the source (app_url); the API root here is

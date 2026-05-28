@@ -23,7 +23,7 @@ namespace Preesta.DI.Modules
         {
             // IsConfigured guarantees a Jira service was built for this run.
             var jira = c.JiraService!;
-            var supplier = new JqlSupplier(jira, c.Rules.GetJqlRules(c.Group), c.Logger);
+            var supplier = new JqlSupplier(jira, c.Rules.GetJqlRules(c.Tags), c.Logger);
             var converter = new IssuePackageConverter(
                 c.Settings.Jira!.RootUri, c.Settings.SubjectPrefix, customFields: c.CustomFields);
 

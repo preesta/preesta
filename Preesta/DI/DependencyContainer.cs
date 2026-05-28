@@ -24,7 +24,7 @@ namespace Preesta.DI
         private readonly ServiceProvider _provider;
         private readonly List<ReactionPipeline<Issue>> _issuePipelines = new();
 
-        public DependencyContainer(string @group)
+        public DependencyContainer(IReadOnlyList<string> tags)
         {
             var appSettings = new AppSettings();
             appSettings.Validate();
@@ -70,7 +70,7 @@ namespace Preesta.DI
 
             WarnOnEmailOnlyRecipientsWithoutSmtp(
                 smtpConfigured: messenger != null,
-                rulesConfig, @group, slackUserMap, telegramUserMap, logger);
+                rulesConfig, tags, slackUserMap, telegramUserMap, logger);
 
             // Assemble the delivery targets once — every pipeline shares them.
             var channels = DeliveryChannels.Build(
@@ -89,7 +89,7 @@ namespace Preesta.DI
             // under their key. Adding a tracker is one new ITrackerModule plus
             // one list entry — nothing here changes.
             var trackerContext = new TrackerBuildContext(
-                appSettings, rulesConfig, @group, channels, customFields, jiraService, logger);
+                appSettings, rulesConfig, tags, channels, customFields, jiraService, logger);
             var modules = new ITrackerModule[]
             {
                 new JqlModule(),
@@ -121,7 +121,7 @@ namespace Preesta.DI
             {
                 services.AddSingleton(new ReactionPipeline<Release>
                 {
-                    PackageSupplier = new ReleaseSupplier(jiraService, rulesConfig.GetReleaseRules(@group)),
+                    PackageSupplier = new ReleaseSupplier(jiraService, rulesConfig.GetReleaseRules(tags)),
                     PackageConverter = new ReleasePackageConverter(appSettings.SubjectPrefix),
                     Channels = channels,
                     Mutations = new RestMutations(jiraService),
@@ -181,7 +181,7 @@ namespace Preesta.DI
         private static void WarnOnEmailOnlyRecipientsWithoutSmtp(
             bool smtpConfigured,
             IRulesConfig rulesConfig,
-            string group,
+            IReadOnlyList<string> tags,
             IReadOnlyDictionary<string, string> slackUserMap,
             IReadOnlyDictionary<string, string> telegramUserMap,
             ILogger logger)
@@ -190,12 +190,12 @@ namespace Preesta.DI
 
             var allRules = new IEnumerable<Configuration.Rule>[]
             {
-                rulesConfig.GetJqlRules(group),
-                rulesConfig.GetReleaseRules(group),
-                rulesConfig.GetLinearRules(group),
-                rulesConfig.GetGitlabRules(group),
-                rulesConfig.GetGithubRules(group),
-                rulesConfig.GetShortcutRules(group),
+                rulesConfig.GetJqlRules(tags),
+                rulesConfig.GetReleaseRules(tags),
+                rulesConfig.GetLinearRules(tags),
+                rulesConfig.GetGitlabRules(tags),
+                rulesConfig.GetGithubRules(tags),
+                rulesConfig.GetShortcutRules(tags),
             }.SelectMany(r => r);
 
             var slack = new HashSet<string>(slackUserMap.Keys, StringComparer.OrdinalIgnoreCase);

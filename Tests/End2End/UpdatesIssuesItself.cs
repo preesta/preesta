@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Messaging;
 using JiraRest;
@@ -225,7 +226,7 @@ $@"<configuration>
                 Connection = connection
             };
 
-            var packageSupplier = new JqlSupplier(jiraService, rulesConfig.GetJqlRules("test"), Substitute.For<ILogger>());
+            var packageSupplier = new JqlSupplier(jiraService, rulesConfig.GetJqlRules(new[] { "test" }), Substitute.For<ILogger>());
             var pipe = new ReactionPipeline<Issue>()
                 {
                     PackageSupplier = packageSupplier,

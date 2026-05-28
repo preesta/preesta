@@ -25,7 +25,7 @@ namespace Preesta.DI.Modules
                 : new GitlabGraphQL.GitlabConnection(c.Settings.GitlabToken!, apiBase!);
             var source = new GitlabIssueSource(connection, c.Logger);
             var supplier = new GitlabIssueSupplier(
-                source, c.JiraService, c.Rules.GetGitlabRules(c.Group), c.Logger);
+                source, c.JiraService, c.Rules.GetGitlabRules(c.Tags), c.Logger);
             var executor = new GitlabMutationExecutor(connection, c.Logger);
 
             // Issue.Url is populated by the source and preferred by the formatter;

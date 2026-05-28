@@ -2,7 +2,7 @@
 
 rules:
   - tracker: jira
-    group: e2etest
+    tags: e2etest
     filter: "assignee = currentUser() AND resolution is EMPTY ORDER BY priority DESC, created ASC"
     notify:
       subject: "Daily Jira digest"
@@ -12,7 +12,7 @@ rules:
       telegramChatId: "12345678"
 
   - tracker: jira
-    group: e2etest
+    tags: e2etest
     filter: "reporter = currentUser() AND resolution is EMPTY ORDER BY created ASC"
     notify:
       subject: "Daily Jira digest"
@@ -27,7 +27,7 @@ rules:
         - Status
 
   - tracker: jira
-    group: e2etest
+    tags: e2etest
     filter: "project = SCRUM AND resolved >= -7d ORDER BY resolved DESC"
     notify:
       subject: "Daily Jira digest"
@@ -42,7 +42,7 @@ rules:
         - Updated
 
   - tracker: jira
-    group: e2etest
+    tags: e2etest
     filter: "key = SCRUM-7"
     notify:
       subject: "Daily Jira digest"
@@ -54,7 +54,7 @@ rules:
         - all-non-empty
 
   - tracker: linear
-    group: e2etest
+    tags: e2etest
     filter: "issues assigned to me, not completed"
     notify:
       subject: "Linear digest"
@@ -65,7 +65,7 @@ rules:
       columns: [Status, Priority, Updated]
 
   - tracker: gitlab
-    group: e2etest-gitlab
+    tags: e2etest-gitlab
     filter:
       state: opened
       assigneeUsernames: [your-username]
@@ -86,7 +86,7 @@ rules:
           }
 
   - tracker: shortcut
-    group: e2etest-shortcut
+    tags: e2etest-shortcut
     filter: "id:26"
     notify:
       subject: "Shortcut digest"
@@ -102,7 +102,7 @@ rules:
           {"text": "Hi from Preesta live e2e — Shortcut REST mutation pipeline. Posted on `{{@issueKey}}`: *{{@title}}*."}
 
   - tracker: github
-    group: e2etest-gh
+    tags: e2etest-gh
     filter: "is:open is:issue repo:your-org/your-repo"
     notify:
       subject: "GitHub digest"
@@ -121,7 +121,7 @@ rules:
           }
 
   - tracker: linear
-    group: morning-standup
+    tags: morning-standup
     filterRaw:
       and:
         - assignee:

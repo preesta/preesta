@@ -11,7 +11,10 @@ namespace Preesta
     {
         public static void Run(IList<string> args)
         {
-            var container = new DependencyContainer(args[0]);
+            // CLI args are the lefthook-style tag filter. Zero args = run every
+            // rule (no filter); one or more = OR-match against each rule's
+            // `tags:`, with untagged rules dropping out per lefthook semantics.
+            var container = new DependencyContainer((IReadOnlyList<string>)args.ToList());
             container.ValidateRules();
 
             // Run every configured tracker's pipeline plus the release pipeline.

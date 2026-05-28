@@ -41,21 +41,21 @@ namespace Preesta.Configuration
             _config.Validate(schemas, (o, e) => _logger.Warning(e.Exception, "Rules file issue [{Severity}] {Message}", e.Severity, e.Message));
         }
 
-        public JqlRule[] GetJqlRules(string @group)
+        public JqlRule[] GetJqlRules(IReadOnlyList<string> tags)
         {
-            return GetRules(@group, new[] {"request", "jqlRule"}, XRuleSource.ToJqlRule);
+            return GetRules(tags, new[] {"request", "jqlRule"}, XRuleSource.ToJqlRule);
         }
 
-        public ReleaseRule[] GetReleaseRules(string @group)
+        public ReleaseRule[] GetReleaseRules(IReadOnlyList<string> tags)
         {
-            return GetRules(@group, new[] { "build" }, XRuleSource.ToReleaseRule);
+            return GetRules(tags, new[] { "build" }, XRuleSource.ToReleaseRule);
         }
 
         // XML rules format is legacy; Linear, GitHub, GitLab and Shortcut rules are YAML-only.
-        public Action.LinearRule[] GetLinearRules(string @group) => Array.Empty<Action.LinearRule>();
-        public Action.GithubRule[] GetGithubRules(string @group) => Array.Empty<Action.GithubRule>();
-        public Action.GitlabRule[] GetGitlabRules(string @group) => Array.Empty<Action.GitlabRule>();
-        public Action.ShortcutRule[] GetShortcutRules(string @group) => Array.Empty<Action.ShortcutRule>();
+        public Action.LinearRule[] GetLinearRules(IReadOnlyList<string> tags) => Array.Empty<Action.LinearRule>();
+        public Action.GithubRule[] GetGithubRules(IReadOnlyList<string> tags) => Array.Empty<Action.GithubRule>();
+        public Action.GitlabRule[] GetGitlabRules(IReadOnlyList<string> tags) => Array.Empty<Action.GitlabRule>();
+        public Action.ShortcutRule[] GetShortcutRules(IReadOnlyList<string> tags) => Array.Empty<Action.ShortcutRule>();
 
         public IReadOnlyDictionary<string, string> GetAliasMap()
         {
@@ -78,8 +78,13 @@ namespace Preesta.Configuration
         public IReadOnlyDictionary<string, string> GetSlackUserMap() =>
             new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
 
-        private TRule[] GetRules<TRule>(string periodType, IEnumerable<string> rulesTypes, Func<XElement, TRule> converter) where TRule : Rule
+        private TRule[] GetRules<TRule>(IReadOnlyList<string> tags, IEnumerable<string> rulesTypes, Func<XElement, TRule> converter) where TRule : Rule
         {
+            // Legacy XML treats the `group="X"` attribute as a single tag for
+            // lefthook-style matching: empty CLI filter runs everything, a
+            // non-empty filter runs rules whose group is in the requested set.
+            // Untagged-style XML rules (no `group=`) only run when the filter
+            // is empty.
             var foundRules =
                     (
                         from e in _config.Root!.Elements()
@@ -87,14 +92,15 @@ namespace Preesta.Configuration
                         let a = e.Attribute("active")
                         let g = e.Attribute("group")
                         where (a == null || a.Value != "0")
-                              && (string.IsNullOrEmpty(periodType) || g != null && g.Value == periodType)
+                              && (tags.Count == 0 || (g != null && tags.Contains(g.Value)))
                         let rule = TryConvert(e, converter)
                         where rule != default(TRule)
                         select rule
                    )
                    .ToArray();
-            
-            _logger?.Information("{Count} rules of type {@rulesTypes} found in schedule group '{PeriodType}'", foundRules.Count(), rulesTypes, periodType);
+
+            _logger?.Information("{Count} rules of type {@rulesTypes} found for tags [{Tags}]",
+                foundRules.Count(), rulesTypes, string.Join(", ", tags));
             _logger?.Verbose("Found rules: {@FoundRules}", foundRules);
 
             return foundRules;

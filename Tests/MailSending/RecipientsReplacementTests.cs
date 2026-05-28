@@ -1,3 +1,4 @@
+using System;
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
@@ -131,7 +132,7 @@ namespace Tests.MailSending
         [Test]
         public void JqlSupplierReplaceMarkersByRealAddresses()
         {
-            IPackageSupplier packageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test"), _logger!);
+            IPackageSupplier packageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules(new[] { "test" }), _logger!);
             var message = new IssuePackageConverter("https://jira.express.ship/jira/")
                 .ToMessages(packageSupplier.GetPackages().Cast<Package<NotificationReaction, Issue>>())
                 .Redirect(new Redirector(_rulesConfig.GetAliasMap(), Enumerable.Empty<string>(), Enumerable.Empty<string>()))
@@ -145,7 +146,7 @@ namespace Tests.MailSending
         public void RedirectionRulesAreCaseInsensitive()
         {
 
-            IPackageSupplier packageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test-2"), _logger!);
+            IPackageSupplier packageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules(new[] { "test-2" }), _logger!);
             var message = new IssuePackageConverter("https://jira.express.ship/jira/")
                 .ToMessages(packageSupplier.GetPackages().Cast<Package<NotificationReaction, Issue>>())
                 .Redirect(new Redirector(_rulesConfig.GetAliasMap(), Enumerable.Empty<string>(), Enumerable.Empty<string>()))
@@ -163,7 +164,7 @@ namespace Tests.MailSending
             
             var pipe = new ReactionPipeline<Issue>()
             {
-                PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test-for-faired-supervisor"), _logger!),
+                PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules(new[] { "test-for-faired-supervisor" }), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
                 Channels = Channels.Email(messenger,
                     new Redirector(_rulesConfig.GetAliasMap(), new[] { "expired_supervisor" }, Enumerable.Empty<string>()))
@@ -184,7 +185,7 @@ namespace Tests.MailSending
 
             var pipe = new ReactionPipeline<Issue>()
             {
-                PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("supervisor-in-To"), _logger!),
+                PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules(new[] { "supervisor-in-To" }), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
                 Channels = Channels.Email(messenger,
                     new Redirector(_rulesConfig.GetAliasMap(), new[] { "supervisor" }, Enumerable.Empty<string>()))
@@ -205,7 +206,7 @@ namespace Tests.MailSending
 
             var pipe = new ReactionPipeline<Issue>()
             {
-                PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("supervisor-in-Cc"), _logger!),
+                PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules(new[] { "supervisor-in-Cc" }), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
                 Channels = Channels.Email(messenger,
                     new Redirector(_rulesConfig.GetAliasMap(), new[] { "supervisor" }, Enumerable.Empty<string>()))
@@ -226,7 +227,7 @@ namespace Tests.MailSending
 
             var pipe = new ReactionPipeline<Issue>()
             {
-                PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test-for-empty-addressers"), _logger!),
+                PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules(new[] { "test-for-empty-addressers" }), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
                 Channels = Channels.Email(messenger,
                     new Redirector(_rulesConfig.GetAliasMap(), new[] { "supervisor" }, Enumerable.Empty<string>()))
@@ -248,7 +249,7 @@ namespace Tests.MailSending
 
             var pipe = new ReactionPipeline<Issue>()
             {
-                PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("test-for-empty-addressers"), _logger!),
+                PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules(new[] { "test-for-empty-addressers" }), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
                 Channels = Channels.Email(messenger,
                     new Redirector(_rulesConfig.GetAliasMap(), Enumerable.Empty<string>(), new[] { "maintainer" }))
@@ -269,7 +270,7 @@ namespace Tests.MailSending
 
             var pipe = new ReactionPipeline<Issue>()
             {
-                PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules("expired-supervisor-in-addressees"), _logger!),
+                PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules(new[] { "expired-supervisor-in-addressees" }), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
                 Channels = Channels.Email(messenger,
                     new Redirector(_rulesConfig.GetAliasMap(), new[] { "expired_supervisor" }, Enumerable.Empty<string>()))

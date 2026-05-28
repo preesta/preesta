@@ -14,17 +14,10 @@ namespace Preesta
                 return 0;
             }
 
-            if (args.Length == 0 || args.Any(a => a == "--help" || a == "-h"))
+            if (args.Any(a => a == "--help" || a == "-h"))
             {
                 Console.WriteLine(GetHelpText());
-                return args.Length == 0 ? 1 : 0;
-            }
-
-            if (args.Length != 1)
-            {
-                Console.Error.WriteLine("Preesta takes exactly one argument: the schedule group name.");
-                Console.Error.WriteLine("Run `preesta --help` for usage.");
-                return 1;
+                return 0;
             }
 
             Application.Run(args);
@@ -42,9 +35,11 @@ namespace Preesta
 @"preesta — rule-based digests for your issue trackers.
 
 Usage:
-  preesta <schedule-group>    Run all rules whose `group:` matches.
-  preesta --version | -v      Print version and exit.
-  preesta --help    | -h      Show this help.
+  preesta                    Run every rule (no tag filter).
+  preesta <tag> [<tag>…]     Run rules whose `tags:` include any of these.
+                             Untagged rules are skipped when a tag is given.
+  preesta --version | -v     Print version and exit.
+  preesta --help    | -h     Show this help.
 
 Configuration lives in:
   appsettings.yaml          non-secret defaults

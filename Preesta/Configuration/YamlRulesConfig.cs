@@ -43,15 +43,15 @@ namespace Preesta.Configuration
             {
                 if (string.IsNullOrEmpty(rule.Tracker) && string.IsNullOrEmpty(rule.Type))
                     _logger.Warning("Rule is missing 'tracker' field");
-                if (string.IsNullOrEmpty(rule.Group))
-                    _logger.Warning("Rule with tracker={Tracker} type={Type} is missing 'group' field",
-                        rule.Tracker, rule.Type);
+                // `tags:` is optional. A rule without tags runs on every preesta
+                // invocation that does not pass a tag filter, by lefthook-style
+                // semantics — that's a feature, not a problem to warn about.
             }
         }
 
-        public JqlRule[] GetJqlRules(string @group)
+        public JqlRule[] GetJqlRules(IReadOnlyList<string> tags)
         {
-            return GetTrackerRules<JqlRule>(@group, "jira", entry =>
+            return GetTrackerRules<JqlRule>(tags, "jira", entry =>
             {
                 var rule = ToBaseRule<JqlRule>(entry);
                 // The Jira filter is a raw JQL string (Jira's own query language).
@@ -62,12 +62,12 @@ namespace Preesta.Configuration
             });
         }
 
-        public ReleaseRule[] GetReleaseRules(string @group)
+        public ReleaseRule[] GetReleaseRules(IReadOnlyList<string> tags)
         {
             // Build rules keep the legacy `type: build` discriminator (no `tracker:`).
             // Releases aren't a tracker — they're a separate artefact inside Jira —
             // and the schema reflects that by living on the older key.
-            return GetTypeRules<ReleaseRule>(@group, "build", entry =>
+            return GetTypeRules<ReleaseRule>(tags, "build", entry =>
             {
                 var rule = ToBaseRule<ReleaseRule>(entry);
                 rule.Mask = entry.Mask ?? string.Empty;
@@ -78,9 +78,9 @@ namespace Preesta.Configuration
             });
         }
 
-        public Action.LinearRule[] GetLinearRules(string @group)
+        public Action.LinearRule[] GetLinearRules(IReadOnlyList<string> tags)
         {
-            return GetTrackerRules<Action.LinearRule>(@group, "linear", entry =>
+            return GetTrackerRules<Action.LinearRule>(tags, "linear", entry =>
             {
                 var rule = ToBaseRule<Action.LinearRule>(entry);
                 // Linear's `filter:` is an AI-prompt string. We accept only string-typed
@@ -109,9 +109,9 @@ namespace Preesta.Configuration
             });
         }
 
-        public Action.GitlabRule[] GetGitlabRules(string @group)
+        public Action.GitlabRule[] GetGitlabRules(IReadOnlyList<string> tags)
         {
-            return GetTrackerRules<Action.GitlabRule>(@group, "gitlab", entry =>
+            return GetTrackerRules<Action.GitlabRule>(tags, "gitlab", entry =>
             {
                 var rule = ToBaseRule<Action.GitlabRule>(entry);
 
@@ -185,9 +185,9 @@ namespace Preesta.Configuration
             return f;
         }
 
-        public Action.GithubRule[] GetGithubRules(string @group)
+        public Action.GithubRule[] GetGithubRules(IReadOnlyList<string> tags)
         {
-            return GetTrackerRules<Action.GithubRule>(@group, "github", entry =>
+            return GetTrackerRules<Action.GithubRule>(tags, "github", entry =>
             {
                 var rule = ToBaseRule<Action.GithubRule>(entry);
                 // GitHub's `filter:` is a raw search-string scalar. A mapping there would
@@ -218,9 +218,9 @@ namespace Preesta.Configuration
             });
         }
 
-        public Action.ShortcutRule[] GetShortcutRules(string @group)
+        public Action.ShortcutRule[] GetShortcutRules(IReadOnlyList<string> tags)
         {
-            return GetTrackerRules<Action.ShortcutRule>(@group, "shortcut", entry =>
+            return GetTrackerRules<Action.ShortcutRule>(tags, "shortcut", entry =>
             {
                 var rule = ToBaseRule<Action.ShortcutRule>(entry);
                 // Shortcut's `filter:` is a raw search-string scalar. Coerce non-string
@@ -313,14 +313,14 @@ namespace Preesta.Configuration
         // gitlab / shortcut). The build rule still uses the legacy `type: build`
         // key — see GetTypeRules below. Two paths, no fallback between them: each
         // YAML entry uses exactly one of the two discriminator keys.
-        private TRule[] GetTrackerRules<TRule>(string group, string tracker, Func<YamlRuleEntry, TRule> converter) where TRule : Rule
-            => MatchRules(group, tracker, e => e.Tracker, "tracker", converter);
+        private TRule[] GetTrackerRules<TRule>(IReadOnlyList<string> tags, string tracker, Func<YamlRuleEntry, TRule> converter) where TRule : Rule
+            => MatchRules(tags, tracker, e => e.Tracker, "tracker", converter);
 
-        private TRule[] GetTypeRules<TRule>(string group, string type, Func<YamlRuleEntry, TRule> converter) where TRule : Rule
-            => MatchRules(group, type, e => e.Type, "type", converter);
+        private TRule[] GetTypeRules<TRule>(IReadOnlyList<string> tags, string type, Func<YamlRuleEntry, TRule> converter) where TRule : Rule
+            => MatchRules(tags, type, e => e.Type, "type", converter);
 
         private TRule[] MatchRules<TRule>(
-            string group,
+            IReadOnlyList<string> tags,
             string expected,
             Func<YamlRuleEntry, string?> discriminator,
             string discriminatorName,
@@ -332,15 +332,45 @@ namespace Preesta.Configuration
             var foundRules = _config.Rules
                 .Where(e => string.Equals(discriminator(e), expected, StringComparison.OrdinalIgnoreCase))
                 .Where(e => e.Active != false)
-                .Where(e => string.IsNullOrEmpty(group) || string.Equals(e.Group, group, StringComparison.Ordinal))
+                .Where(e => MatchesTags(e, tags))
                 .Select(e => TryConvert(e, converter))
                 .Where(r => r != null)
                 .ToArray()!;
 
-            _logger?.Information("{Count} rules with {Discriminator}={Value} found in schedule group '{Group}'",
-                foundRules.Length, discriminatorName, expected, group);
+            _logger?.Information("{Count} rules with {Discriminator}={Value} found for tags [{Tags}]",
+                foundRules.Length, discriminatorName, expected, string.Join(", ", tags));
             return foundRules!;
         }
+
+        /// <summary>
+        /// Lefthook-style positive tag selector. Empty <paramref name="requested"/>
+        /// means "no tag filter" — every rule matches, including ones with no
+        /// tags. A non-empty filter requires the rule to carry at least one of
+        /// the requested tags; untagged rules drop out.
+        /// </summary>
+        private static bool MatchesTags(YamlRuleEntry entry, IReadOnlyList<string> requested)
+        {
+            if (requested.Count == 0) return true;
+            var ruleTags = NormalizeTags(entry.Tags);
+            if (ruleTags.Length == 0) return false;
+            return ruleTags.Any(t => requested.Contains(t, StringComparer.Ordinal));
+        }
+
+        /// <summary>
+        /// YAML <c>tags:</c> may be a scalar (single tag), a comma-separated
+        /// scalar (lefthook quirk), or a list. Normalise to a string[]; missing
+        /// or empty input returns an empty array.
+        /// </summary>
+        internal static string[] NormalizeTags(object? raw) => raw switch
+        {
+            null => Array.Empty<string>(),
+            string s => s.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+            IList<object> list => list
+                .Select(v => v?.ToString()?.Trim() ?? string.Empty)
+                .Where(s => !string.IsNullOrEmpty(s))
+                .ToArray(),
+            _ => Array.Empty<string>()
+        };
 
         private TRule? TryConvert<TRule>(YamlRuleEntry entry, Func<YamlRuleEntry, TRule> converter) where TRule : Rule
         {
@@ -410,7 +440,11 @@ namespace Preesta.Configuration
         public string? Tracker { get; set; }
         public string? Type { get; set; }
 
-        public string? Group { get; set; }
+        // `tags:` accepts a scalar (single tag), a comma-separated scalar, or a
+        // list of strings. Normalisation lives in YamlRulesConfig.NormalizeTags.
+        // Rules with no tags run only when preesta is invoked without a tag
+        // filter; tagged rules require an intersect with the CLI args.
+        public object? Tags { get; set; }
         public bool? Active { get; set; }
         public string? AdditionalPredicate { get; set; }
 

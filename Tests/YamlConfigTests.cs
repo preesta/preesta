@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Preesta.Configuration;
 using Newtonsoft.Json.Linq;
@@ -13,7 +14,7 @@ namespace Tests
         private const string YamlConfig = @"
 rules:
   - tracker: jira
-    group: daily
+    tags: daily
     filter: ""DueDate < startOfDay() AND Resolution is EMPTY""
     notify:
       subject: DueDate expired
@@ -22,7 +23,7 @@ rules:
       followup: Please resolve
 
   - tracker: jira
-    group: daily
+    tags: daily
     active: false
     filter: ""should be skipped""
     notify:
@@ -30,7 +31,7 @@ rules:
       mailTo: nobody
 
   - tracker: jira
-    group: hourly
+    tags: hourly
     filter: ""Type = Support""
     mutations:
       - verb: PUT
@@ -39,7 +40,7 @@ rules:
           {""update"": {""comment"": [{""add"": {""body"": ""auto""}}]}}
 
   - type: build
-    group: daily
+    tags: daily
     mask: ""^9\\.0\\.0\\.""
     projectCode: MYPROJ
     remainingDays: 2
@@ -64,7 +65,7 @@ aliases:
         [Test]
         public void GetJqlRules_ReturnsActiveRulesForGroup()
         {
-            var rules = _config.GetJqlRules("daily");
+            var rules = _config.GetJqlRules(new[] { "daily" });
             Assert.AreEqual(1, rules.Length);
             Assert.AreEqual("DueDate < startOfDay() AND Resolution is EMPTY", rules[0].Filter);
         }
@@ -72,7 +73,7 @@ aliases:
         [Test]
         public void GetJqlRules_NotifyParsedCorrectly()
         {
-            var rule = _config.GetJqlRules("daily").Single();
+            var rule = _config.GetJqlRules(new[] { "daily" }).Single();
             Assert.AreEqual("DueDate expired", rule.Notification!.Subject);
             Assert.AreEqual(new[] { "assignee" }, rule.Notification.RawRecipients);
             Assert.AreEqual(new[] { "reporter", "managers" }, rule.Notification.RawCc);
@@ -82,14 +83,14 @@ aliases:
         [Test]
         public void GetJqlRules_InactiveRulesSkipped()
         {
-            var rules = _config.GetJqlRules("daily");
+            var rules = _config.GetJqlRules(new[] { "daily" });
             Assert.IsFalse(rules.Any(r => r.Filter == "should be skipped"));
         }
 
         [Test]
         public void GetJqlRules_CallRestParsedCorrectly()
         {
-            var rules = _config.GetJqlRules("hourly");
+            var rules = _config.GetJqlRules(new[] { "hourly" });
             Assert.AreEqual(1, rules.Length);
             Assert.AreEqual(1, rules[0].Mutations.Length);
             Assert.AreEqual("PUT", rules[0].Mutations[0].Verb);
@@ -100,7 +101,7 @@ aliases:
         [Test]
         public void GetReleaseRules_ParsedCorrectly()
         {
-            var rules = _config.GetReleaseRules("daily");
+            var rules = _config.GetReleaseRules(new[] { "daily" });
             Assert.AreEqual(1, rules.Length);
             Assert.AreEqual(@"^9\.0\.0\.", rules[0].Mask);
             Assert.AreEqual("MYPROJ", rules[0].ProjectCode);
@@ -118,17 +119,79 @@ aliases:
         }
 
         [Test]
-        public void GetRules_EmptyGroupReturnsAll()
+        public void GetRules_EmptyTagFilterReturnsAll()
         {
-            var rules = _config.GetJqlRules("");
+            var rules = _config.GetJqlRules(Array.Empty<string>());
             Assert.AreEqual(2, rules.Length);
         }
 
         [Test]
-        public void GetRules_NonexistentGroupReturnsEmpty()
+        public void GetRules_NonexistentTagReturnsEmpty()
         {
-            var rules = _config.GetJqlRules("nonexistent");
+            var rules = _config.GetJqlRules(new[] { "nonexistent" });
             Assert.AreEqual(0, rules.Length);
+        }
+
+        // ----- lefthook-style tag semantics -----
+
+        private const string TagYaml = @"
+rules:
+  - tracker: jira
+    filter: ""untagged-rule""
+
+  - tracker: jira
+    tags: morning
+    filter: ""single-tag""
+
+  - tracker: jira
+    tags: [morning, standup]
+    filter: ""list-tags""
+
+  - tracker: jira
+    tags: ""release, hotfix""
+    filter: ""comma-separated""
+";
+
+        [Test]
+        public void Tags_EmptyFilter_RunsEveryRuleIncludingUntagged()
+        {
+            var cfg = new YamlRulesConfig(TagYaml, Substitute.For<ILogger>());
+            var rules = cfg.GetJqlRules(Array.Empty<string>());
+            Assert.AreEqual(4, rules.Length, "no tag filter = run everything");
+        }
+
+        [Test]
+        public void Tags_NonEmptyFilter_SkipsUntaggedRules()
+        {
+            var cfg = new YamlRulesConfig(TagYaml, Substitute.For<ILogger>());
+            var rules = cfg.GetJqlRules(new[] { "morning" });
+            // morning matches: single-tag (morning), list-tags (morning ∈ {morning, standup})
+            // untagged-rule and comma-separated (tags release/hotfix) drop out
+            Assert.AreEqual(2, rules.Length);
+            CollectionAssert.AreEquivalent(
+                new[] { "single-tag", "list-tags" },
+                rules.Select(r => r.Filter).ToArray());
+        }
+
+        [Test]
+        public void Tags_OrMatch_MultipleCliTags()
+        {
+            var cfg = new YamlRulesConfig(TagYaml, Substitute.For<ILogger>());
+            var rules = cfg.GetJqlRules(new[] { "standup", "release" });
+            // standup matches list-tags; release matches comma-separated
+            Assert.AreEqual(2, rules.Length);
+            CollectionAssert.AreEquivalent(
+                new[] { "list-tags", "comma-separated" },
+                rules.Select(r => r.Filter).ToArray());
+        }
+
+        [Test]
+        public void Tags_CommaSeparatedScalar_ParsedAsMultipleTags()
+        {
+            var cfg = new YamlRulesConfig(TagYaml, Substitute.For<ILogger>());
+            // Both "release" and "hotfix" target the same comma-separated rule
+            Assert.AreEqual(1, cfg.GetJqlRules(new[] { "release" }).Length);
+            Assert.AreEqual(1, cfg.GetJqlRules(new[] { "hotfix" }).Length);
         }
 
         // ----- Phase 12.1: Linear filter modes -----
@@ -136,32 +199,32 @@ aliases:
         private const string LinearYaml = @"
 rules:
   - tracker: linear
-    group: linear-prompt
+    tags: linear-prompt
     filter: ""issues assigned to me, not completed""
 
   - tracker: linear
-    group: linear-raw
+    tags: linear-raw
     filterRaw:
       state:
         type:
           neq: completed
 
   - tracker: linear
-    group: linear-view
+    tags: linear-view
     viewId: ""0e8a3b41-1234-4321-aaaa-bbbbbbbbbbbb""
 
   - tracker: linear
-    group: linear-bad
+    tags: linear-bad
     # zero filter sources — should be dropped
 
   - tracker: linear
-    group: linear-bad
+    tags: linear-bad
     filter: ""whatever""
     viewId: ""abc""
     # two filter sources — should be dropped
 
   - tracker: linear
-    group: linear-bad
+    tags: linear-bad
     filter: ""ok""
     filterRaw:
       state: { type: { neq: completed } }
@@ -174,7 +237,7 @@ rules:
             const string yaml = @"
 rules:
   - tracker: linear
-    group: linear-mutations
+    tags: linear-mutations
     filter: ""issues with no assignee in Done""
     mutations:
       - mutation: |
@@ -183,7 +246,7 @@ rules:
           mutation { issueUpdate(id: ""{{@issueId}}"", input: { assigneeId: null }) { success } }
 ";
             var config = new YamlRulesConfig(yaml, Substitute.For<ILogger>());
-            var rules = config.GetLinearRules("linear-mutations");
+            var rules = config.GetLinearRules(new[] { "linear-mutations" });
 
             Assert.AreEqual(1, rules.Length);
             Assert.AreEqual(2, rules[0].GraphQLMutations.Length);
@@ -203,7 +266,7 @@ rules:
             const string yaml = @"
 rules:
   - tracker: linear
-    group: types
+    tags: types
     filterRaw:
       priority:
         gte: 2
@@ -217,7 +280,7 @@ rules:
         eq: ""9""
 ";
             var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>())
-                .GetLinearRules("types");
+                .GetLinearRules(new[] { "types" });
             var f = rules[0].FilterRaw!;
 
             Assert.AreEqual(JTokenType.Integer, f.SelectToken("priority.gte")!.Type);
@@ -244,7 +307,7 @@ rules:
         public void Linear_FilterPromptMode_ParsedCorrectly()
         {
             var config = new YamlRulesConfig(LinearYaml, Substitute.For<ILogger>());
-            var rules = config.GetLinearRules("linear-prompt");
+            var rules = config.GetLinearRules(new[] { "linear-prompt" });
             Assert.AreEqual(1, rules.Length);
             Assert.AreEqual("issues assigned to me, not completed", rules[0].Filter);
             Assert.IsNull(rules[0].FilterRaw);
@@ -255,7 +318,7 @@ rules:
         public void Linear_FilterRawMode_ParsedAsJObject()
         {
             var config = new YamlRulesConfig(LinearYaml, Substitute.For<ILogger>());
-            var rules = config.GetLinearRules("linear-raw");
+            var rules = config.GetLinearRules(new[] { "linear-raw" });
             Assert.AreEqual(1, rules.Length);
             Assert.IsNull(rules[0].Filter);
             Assert.IsNotNull(rules[0].FilterRaw);
@@ -268,7 +331,7 @@ rules:
         public void Linear_ViewIdMode_ParsedCorrectly()
         {
             var config = new YamlRulesConfig(LinearYaml, Substitute.For<ILogger>());
-            var rules = config.GetLinearRules("linear-view");
+            var rules = config.GetLinearRules(new[] { "linear-view" });
             Assert.AreEqual(1, rules.Length);
             Assert.AreEqual("0e8a3b41-1234-4321-aaaa-bbbbbbbbbbbb", rules[0].ViewId);
             Assert.IsNull(rules[0].Filter);
@@ -281,7 +344,7 @@ rules:
             var logger = Substitute.For<ILogger>();
             var config = new YamlRulesConfig(LinearYaml, logger);
 
-            var rules = config.GetLinearRules("linear-bad");
+            var rules = config.GetLinearRules(new[] { "linear-bad" });
 
             Assert.AreEqual(0, rules.Length);
             // Three malformed rules in linear-bad group (zero/two/two sources).
@@ -300,7 +363,7 @@ rules:
             const string yaml = @"
 rules:
   - tracker: jira
-    group: daily
+    tags: daily
     filter: ""any""
     notify:
       subject: alert
@@ -308,7 +371,7 @@ rules:
       slackUserId: ""U111,U222,U333""
 ";
             var config = new YamlRulesConfig(yaml, Substitute.For<ILogger>());
-            var rules = config.GetJqlRules("daily");
+            var rules = config.GetJqlRules(new[] { "daily" });
 
             Assert.AreEqual(1, rules.Length);
             Assert.AreEqual(new[] { "U111", "U222", "U333" }, rules[0].Notification!.SlackUserIds);
@@ -320,7 +383,7 @@ rules:
             const string yaml = @"
 rules:
   - tracker: jira
-    group: daily
+    tags: daily
     filter: ""x""
     notify:
       subject: alert
@@ -346,7 +409,7 @@ slackUsers:
             const string yaml = @"
 rules:
   - tracker: github
-    group: gh
+    tags: gh
     filter: ""is:open is:issue org:bigcorp label:urgent""
     mutations:
       - mutation: |
@@ -358,7 +421,7 @@ rules:
       mailTo: assignee
 ";
             var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>())
-                .GetGithubRules("gh");
+                .GetGithubRules(new[] { "gh" });
 
             Assert.AreEqual(1, rules.Length);
             Assert.AreEqual("is:open is:issue org:bigcorp label:urgent", rules[0].Filter);
@@ -377,14 +440,14 @@ rules:
             const string yaml = @"
 rules:
   - tracker: github
-    group: gh-bad
+    tags: gh-bad
     filter: """"
     notify:
       subject: x
       mailTo: assignee
 ";
             var logger = Substitute.For<ILogger>();
-            var rules = new YamlRulesConfig(yaml, logger).GetGithubRules("gh-bad");
+            var rules = new YamlRulesConfig(yaml, logger).GetGithubRules(new[] { "gh-bad" });
 
             Assert.AreEqual(0, rules.Length);
             Assert.IsTrue(
@@ -398,13 +461,13 @@ rules:
             const string yaml = @"
 rules:
   - tracker: github
-    group: gh-bad
+    tags: gh-bad
     notify:
       subject: x
       mailTo: assignee
 ";
             var logger = Substitute.For<ILogger>();
-            var rules = new YamlRulesConfig(yaml, logger).GetGithubRules("gh-bad");
+            var rules = new YamlRulesConfig(yaml, logger).GetGithubRules(new[] { "gh-bad" });
 
             Assert.AreEqual(0, rules.Length);
             Assert.IsTrue(
@@ -420,7 +483,7 @@ rules:
             const string yaml = @"
 rules:
   - tracker: gitlab
-    group: gl
+    tags: gl
     filter:
       state: opened
       labelName: [urgent, blocker]
@@ -434,7 +497,7 @@ rules:
       mailTo: assignee
 ";
             var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>())
-                .GetGitlabRules("gl");
+                .GetGitlabRules(new[] { "gl" });
 
             Assert.AreEqual(1, rules.Length);
             var f = rules[0].Filter;
@@ -454,7 +517,7 @@ rules:
             const string yaml = @"
 rules:
   - tracker: gitlab
-    group: gl
+    tags: gl
     filter:
       state: opened
       labelName: [stale]
@@ -465,7 +528,7 @@ rules:
           mutation { updateIssue(input: { id: ""{{@issueId}}"", stateEvent: CLOSE }) { issue { state } } }
 ";
             var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>())
-                .GetGitlabRules("gl");
+                .GetGitlabRules(new[] { "gl" });
 
             Assert.AreEqual(1, rules.Length);
             Assert.AreEqual(2, rules[0].GraphQLMutations.Length);
@@ -485,20 +548,20 @@ rules:
             const string emptyFilter = @"
 rules:
   - tracker: gitlab
-    group: gl
+    tags: gl
     filter: {}
     notify: { subject: x, mailTo: assignee }
 ";
             const string noFilter = @"
 rules:
   - tracker: gitlab
-    group: gl
+    tags: gl
     notify: { subject: x, mailTo: assignee }
 ";
             foreach (var yaml in new[] { emptyFilter, noFilter })
             {
                 var logger = Substitute.For<ILogger>();
-                var rules = new YamlRulesConfig(yaml, logger).GetGitlabRules("gl");
+                var rules = new YamlRulesConfig(yaml, logger).GetGitlabRules(new[] { "gl" });
 
                 Assert.AreEqual(1, rules.Length, "Rule should be accepted, not dropped");
                 Assert.IsFalse(
@@ -513,11 +576,11 @@ rules:
             const string yaml = @"
 rules:
   - tracker: gitlab
-    group: gl
+    tags: gl
     filter:
       labelName: urgent
 ";
-            var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>()).GetGitlabRules("gl");
+            var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>()).GetGitlabRules(new[] { "gl" });
 
             Assert.AreEqual(1, rules.Length);
             CollectionAssert.AreEqual(new[] { "urgent" }, rules[0].Filter.LabelName!);
@@ -533,7 +596,7 @@ rules:
             const string yaml = @"
 rules:
   - tracker: shortcut
-    group: sc
+    tags: sc
     filter: ""state:\""In Progress\"" type:bug""
     mutations:
       - verb: POST
@@ -549,7 +612,7 @@ rules:
       mailTo: assignee
 ";
             var rules = new YamlRulesConfig(yaml, Substitute.For<ILogger>())
-                .GetShortcutRules("sc");
+                .GetShortcutRules(new[] { "sc" });
 
             Assert.AreEqual(1, rules.Length);
             Assert.AreEqual("state:\"In Progress\" type:bug", rules[0].Filter);
@@ -568,14 +631,14 @@ rules:
             const string yaml = @"
 rules:
   - tracker: shortcut
-    group: sc-bad
+    tags: sc-bad
     filter: """"
     notify:
       subject: x
       mailTo: assignee
 ";
             var logger = Substitute.For<ILogger>();
-            var rules = new YamlRulesConfig(yaml, logger).GetShortcutRules("sc-bad");
+            var rules = new YamlRulesConfig(yaml, logger).GetShortcutRules(new[] { "sc-bad" });
 
             Assert.AreEqual(0, rules.Length);
             Assert.IsTrue(
@@ -589,13 +652,13 @@ rules:
             const string yaml = @"
 rules:
   - tracker: shortcut
-    group: sc-bad
+    tags: sc-bad
     notify:
       subject: x
       mailTo: assignee
 ";
             var logger = Substitute.For<ILogger>();
-            var rules = new YamlRulesConfig(yaml, logger).GetShortcutRules("sc-bad");
+            var rules = new YamlRulesConfig(yaml, logger).GetShortcutRules(new[] { "sc-bad" });
 
             Assert.AreEqual(0, rules.Length);
             Assert.IsTrue(
@@ -612,7 +675,7 @@ rules:
             const string yaml = @"
 rules:
   - tracker: linear
-    group: bad
+    tags: bad
     filter: ""x""
     filterRaw:
       state: { type: { neq: completed } }
@@ -620,7 +683,7 @@ rules:
             var logger = Substitute.For<ILogger>();
             var config = new YamlRulesConfig(yaml, logger);
 
-            var rules = config.GetLinearRules("bad");
+            var rules = config.GetLinearRules(new[] { "bad" });
 
             Assert.AreEqual(0, rules.Length);
             Assert.IsTrue(

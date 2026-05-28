@@ -19,7 +19,7 @@ namespace Preesta.DI.Modules
             var connection = new GithubGraphQL.GithubConnection(c.Settings.GithubToken!);
             var source = new GithubIssueSource(connection, c.Logger);
             var supplier = new GithubIssueSupplier(
-                source, c.JiraService, c.Rules.GetGithubRules(c.Group), c.Logger);
+                source, c.JiraService, c.Rules.GetGithubRules(c.Tags), c.Logger);
             var executor = new GithubMutationExecutor(connection, c.Logger);
 
             // Issue.Url is populated by the source and preferred by the formatter;
