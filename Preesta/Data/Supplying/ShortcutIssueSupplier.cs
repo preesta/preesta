@@ -60,13 +60,20 @@ namespace Preesta.Data.Supplying
                 // not as a query param on /stories (which redirects to a default
                 // space and ignores ?query=). Verified live: the web UI generates
                 // exactly this form when you type into the in-page Search Stories box.
-                // Fragment-encoding is intentionally minimal: percent-encode only
-                // whitespace + the fragment delimiter itself. Uri.EscapeDataString
-                // would escape `:` and `!` too, which Shortcut then renders back to
-                // the user as literal `%3A` / `%21` in the search box.
+                // Fragment-encoding is intentionally minimal: percent-encode only the
+                // characters that break the URL or the HTML attribute the URL ends up
+                // in — whitespace, the fragment delimiter itself, and the double
+                // quote (which Shortcut wraps multi-word values in: `state:"In Progress"`).
+                // Uri.EscapeDataString would escape `:` and `!` too, which Shortcut
+                // then renders back to the user as literal `%3A` / `%21` in the
+                // search box.
                 if (!string.IsNullOrEmpty(slug))
                     basePackage.Properties["ShortcutSearchUri"] =
-                        $"https://app.shortcut.com/{slug}/search#{rule.Filter!.Replace("#", "%23").Replace(" ", "%20")}";
+                        $"https://app.shortcut.com/{slug}/search#" +
+                        rule.Filter!
+                            .Replace("#", "%23")
+                            .Replace("\"", "%22")
+                            .Replace(" ", "%20");
             }
             return basePackage;
         }
