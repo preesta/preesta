@@ -291,10 +291,10 @@ namespace Preesta.Configuration
             _ => new JValue(raw.ToString())
         };
 
-        public IReadOnlyDictionary<string, string> GetAliasMap()
+        public IReadOnlyDictionary<string, string> GetMailAliasMap()
         {
             return new ReadOnlyDictionary<string, string>(
-                _config.Aliases ?? new Dictionary<string, string>());
+                _config.MailAliases ?? new Dictionary<string, string>());
         }
 
         public IReadOnlyDictionary<string, string> GetTelegramUserMap()
@@ -427,7 +427,7 @@ namespace Preesta.Configuration
     internal class YamlConfigModel
     {
         public List<YamlRuleEntry>? Rules { get; set; }
-        public Dictionary<string, string>? Aliases { get; set; }
+        public Dictionary<string, string>? MailAliases { get; set; }
         public Dictionary<string, string>? TelegramUsers { get; set; }
         public Dictionary<string, string>? SlackUsers { get; set; }
     }

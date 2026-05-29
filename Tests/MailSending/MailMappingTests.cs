@@ -26,7 +26,7 @@ namespace Tests.MailSending
 ");
 
             var logger = Substitute.For<ILogger>();
-            var redirector = new Redirector(new XmlRulesConfig(config, logger).GetAliasMap(), Enumerable.Empty<string>(), Enumerable.Empty<string>());
+            var redirector = new Redirector(new XmlRulesConfig(config, logger).GetMailAliasMap(), Enumerable.Empty<string>(), Enumerable.Empty<string>());
             var initialMessage = new Message { To = "ivanov" };
             var actualizedMessage = redirector.ActualizeAddressees(initialMessage);
                            

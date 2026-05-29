@@ -49,7 +49,7 @@ rules:
       subject: Release alert
       mailTo: admin
 
-aliases:
+mailAliases:
   managers: ""super_boss@example.com,super_boss2@example.com""
   admin: ""administrator@example.com""
 ";
@@ -110,9 +110,9 @@ aliases:
         }
 
         [Test]
-        public void GetAliasMap_ParsedCorrectly()
+        public void GetMailAliasMap_ParsedCorrectly()
         {
-            var map = _config.GetAliasMap();
+            var map = _config.GetMailAliasMap();
             Assert.AreEqual(2, map.Count);
             Assert.AreEqual("super_boss@example.com,super_boss2@example.com", map["managers"]);
             Assert.AreEqual("administrator@example.com", map["admin"]);

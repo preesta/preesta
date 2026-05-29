@@ -13,7 +13,7 @@ rules:
     mutations: [ ... ]     # optional
 
 # Workspace-level (used by every rule)
-aliases: {}             # marker → recipients (group emails, on-leave fallbacks)
+mailAliases: {}         # sendmail-style email-only forwarding/expansion
 telegramUsers: {}       # email → Telegram chat ID
 slackUsers: {}          # email → Slack user ID
 ```

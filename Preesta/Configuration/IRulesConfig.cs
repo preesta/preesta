@@ -16,7 +16,7 @@ namespace Preesta.Configuration
         GithubRule[] GetGithubRules(IReadOnlyList<string> tags);
         GitlabRule[] GetGitlabRules(IReadOnlyList<string> tags);
         ShortcutRule[] GetShortcutRules(IReadOnlyList<string> tags);
-        IReadOnlyDictionary<string, string> GetAliasMap();
+        IReadOnlyDictionary<string, string> GetMailAliasMap();
         IReadOnlyDictionary<string, string> GetTelegramUserMap();
         IReadOnlyDictionary<string, string> GetSlackUserMap();
         void ValidateSchema();

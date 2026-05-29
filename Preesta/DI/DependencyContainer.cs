@@ -64,7 +64,7 @@ namespace Preesta.DI
             var rulesConfig = CreateRulesConfig(rulesFileName, logger);
 
             var redirector = new Redirector(
-                rulesConfig.GetAliasMap(), appSettings.Supervisors, appSettings.Maintainers);
+                rulesConfig.GetMailAliasMap(), appSettings.Supervisors, appSettings.Maintainers);
             var telegramUserMap = rulesConfig.GetTelegramUserMap();
             var slackUserMap = rulesConfig.GetSlackUserMap();
 

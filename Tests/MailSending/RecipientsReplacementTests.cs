@@ -135,7 +135,7 @@ namespace Tests.MailSending
             IPackageSupplier packageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules(new[] { "test" }), _logger!);
             var message = new IssuePackageConverter("https://jira.express.ship/jira/")
                 .ToMessages(packageSupplier.GetPackages().Cast<Package<NotificationReaction, Issue>>())
-                .Redirect(new Redirector(_rulesConfig.GetAliasMap(), Enumerable.Empty<string>(), Enumerable.Empty<string>()))
+                .Redirect(new Redirector(_rulesConfig.GetMailAliasMap(), Enumerable.Empty<string>(), Enumerable.Empty<string>()))
                 .Single();
 
             Assert.AreEqual("administrator,assignee@express.ship,creator@express.ship", message.To);
@@ -149,7 +149,7 @@ namespace Tests.MailSending
             IPackageSupplier packageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules(new[] { "test-2" }), _logger!);
             var message = new IssuePackageConverter("https://jira.express.ship/jira/")
                 .ToMessages(packageSupplier.GetPackages().Cast<Package<NotificationReaction, Issue>>())
-                .Redirect(new Redirector(_rulesConfig.GetAliasMap(), Enumerable.Empty<string>(), Enumerable.Empty<string>()))
+                .Redirect(new Redirector(_rulesConfig.GetMailAliasMap(), Enumerable.Empty<string>(), Enumerable.Empty<string>()))
                 .Single();
 
             Assert.AreEqual("reporter@express.ship,Zoldberg@express.ship,Amy_Wong@express.ship", message.To);
@@ -167,7 +167,7 @@ namespace Tests.MailSending
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules(new[] { "test-for-faired-supervisor" }), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
                 Channels = Channels.Email(messenger,
-                    new Redirector(_rulesConfig.GetAliasMap(), new[] { "expired_supervisor" }, Enumerable.Empty<string>()))
+                    new Redirector(_rulesConfig.GetMailAliasMap(), new[] { "expired_supervisor" }, Enumerable.Empty<string>()))
             };
 
             pipe.Run();
@@ -188,7 +188,7 @@ namespace Tests.MailSending
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules(new[] { "supervisor-in-To" }), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
                 Channels = Channels.Email(messenger,
-                    new Redirector(_rulesConfig.GetAliasMap(), new[] { "supervisor" }, Enumerable.Empty<string>()))
+                    new Redirector(_rulesConfig.GetMailAliasMap(), new[] { "supervisor" }, Enumerable.Empty<string>()))
             };
 
             pipe.Run();
@@ -209,7 +209,7 @@ namespace Tests.MailSending
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules(new[] { "supervisor-in-Cc" }), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
                 Channels = Channels.Email(messenger,
-                    new Redirector(_rulesConfig.GetAliasMap(), new[] { "supervisor" }, Enumerable.Empty<string>()))
+                    new Redirector(_rulesConfig.GetMailAliasMap(), new[] { "supervisor" }, Enumerable.Empty<string>()))
             };
 
             pipe.Run();
@@ -230,7 +230,7 @@ namespace Tests.MailSending
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules(new[] { "test-for-empty-addressers" }), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
                 Channels = Channels.Email(messenger,
-                    new Redirector(_rulesConfig.GetAliasMap(), new[] { "supervisor" }, Enumerable.Empty<string>()))
+                    new Redirector(_rulesConfig.GetMailAliasMap(), new[] { "supervisor" }, Enumerable.Empty<string>()))
             };
 
             pipe.Run();
@@ -252,7 +252,7 @@ namespace Tests.MailSending
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules(new[] { "test-for-empty-addressers" }), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
                 Channels = Channels.Email(messenger,
-                    new Redirector(_rulesConfig.GetAliasMap(), Enumerable.Empty<string>(), new[] { "maintainer" }))
+                    new Redirector(_rulesConfig.GetMailAliasMap(), Enumerable.Empty<string>(), new[] { "maintainer" }))
             };
 
             pipe.Run();
@@ -273,7 +273,7 @@ namespace Tests.MailSending
                 PackageSupplier = new JqlSupplier(_jiraService!, _rulesConfig!.GetJqlRules(new[] { "expired-supervisor-in-addressees" }), _logger!),
                 PackageConverter = new IssuePackageConverter("https://jira.example.com"),
                 Channels = Channels.Email(messenger,
-                    new Redirector(_rulesConfig.GetAliasMap(), new[] { "expired_supervisor" }, Enumerable.Empty<string>()))
+                    new Redirector(_rulesConfig.GetMailAliasMap(), new[] { "expired_supervisor" }, Enumerable.Empty<string>()))
             };
 
             pipe.Run();
