@@ -50,23 +50,15 @@ Shortcut's search response gives you workflow state IDs (integers) and owner IDs
 
 Both are fetched lazily on the first `GetIssues` call. Failures (HTTP error, restricted token) log a warning and degrade gracefully — owner email becomes empty, marker routing skips that recipient, the digest still goes to others.
 
-## Issue mapping
+## What appears in a Shortcut digest
 
-| Shortcut field | Preesta `Issue` field |
-|---|---|
-| `id` (integer) | `Key = "sc-{id}"` (Shortcut's own branch-naming convention) |
-| `id` (stringified) | `ShortcutId` — `{{@issueId}}` |
-| `name` | `Summary` |
-| `app_url` | `Url` |
-| `workflow_state_id` → cache lookup | `Status` |
-| `story_type` (`feature` / `bug` / `chore`) | `Type` |
-| `owner_ids[0]` → cache lookup | `Participants.Assignee` |
-| `requested_by_id` → cache lookup | `Participants.Reporter` + `Participants.Creator` |
-| `labels[].name` | `Labels` (comma-joined) |
-| `deadline` | `DueDate` |
-| `created_at` / `updated_at` | `CreatedDate` / `UpdatedDate` (UTC) |
+Each item shows the key (`sc-26` — Shortcut's own branch-naming convention), the title, and any `columns:` you ask for. Shortcut-specific notes:
 
-Resolution isn't separately exposed by Shortcut — the workflow state name carries that meaning (`"Completed"`, `"Cancelled"`).
+- `Type` is the story type (`feature` / `bug` / `chore`).
+- `Status` is the workflow state name (e.g. `In Progress`, `Done`).
+- The story's requester fills both `Reporter` and `Creator` columns.
+- Resolution isn't separately exposed — the workflow state name carries that meaning (`Completed`, `Cancelled`).
+- `DueDate` comes from the story's deadline.
 
 ## Mutations
 

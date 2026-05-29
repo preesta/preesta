@@ -1,10 +1,10 @@
 # Installation
 
-Two supported paths: **Docker** (recommended for production) and **plain .NET 8** (development, custom hosts).
+Two production-ready paths: **Docker** (recommended) and **Kubernetes CronJob**. A self-contained binary release is also available for hosts without a container runtime — see [Quickstart → Self-contained binary alternative](../quickstart.md#self-contained-binary-alternative).
 
 ## Docker
 
-The repo ships a `Dockerfile` that builds Preesta on `mcr.microsoft.com/dotnet/runtime:8.0`. Build and run:
+The official image is `ghcr.io/preesta/preesta:latest`. To use a locally built image instead, run:
 
 === "Linux / macOS / WSL2 / Git Bash"
 
@@ -98,26 +98,6 @@ spec:
 ```
 
 `preesta-config` ConfigMap holds `appsettings.yaml` + `rules.yaml`; `preesta-secrets` Secret holds `appsettings.secrets.yaml`. Multiple CronJobs (one per tag) keep the schedule definition in Kubernetes rather than a separate cron file.
-
-## Plain .NET 8 (development)
-
-```bash
-git clone https://github.com/preesta/preesta.git
-cd preesta
-dotnet build
-cd Preesta
-dotnet run -- [<tag>…]
-```
-
-`bin/Debug/net8.0` is added to `Preesta.csproj` as the working directory for `dotnet run` — that's where the built `appsettings.yaml` / `rules.yaml` end up.
-
-For tests:
-
-```bash
-dotnet test
-```
-
-200+ tests, all in-process (WireMock for HTTP-server stubs, NSubstitute for unit-level mocks). No external service dependencies.
 
 ## Upgrading
 

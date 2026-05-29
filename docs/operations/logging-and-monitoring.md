@@ -1,6 +1,6 @@
 # Logging and monitoring
 
-Preesta uses [Serilog](https://serilog.net/). The `Logger` block in `appsettings.yaml` is read by `Serilog.Settings.Configuration` — every Serilog sink and enricher is available, configured declaratively.
+Logs are emitted as structured events. The `Logger` block in `appsettings.yaml` controls them entirely — destination, severity, formatting.
 
 ## Default configuration
 
@@ -8,17 +8,10 @@ Preesta uses [Serilog](https://serilog.net/). The `Logger` block in `appsettings
 Logger:
   Serilog:
     MinimumLevel: Verbose
-    Using:
-      - Serilog.Sinks.Console
-      - Preesta
-      - Serilog.Enrichers.Thread
-    Enrich:
-      - WithThreadId
     WriteTo:
       - Name: Console
         Args:
           outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {NewLine}{Exception}{NewLine}{Properties:j}{NewLine}"
-          theme: "Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme::Literate, Serilog.Sinks.Console"
 ```
 
 `MinimumLevel: Verbose` is good for development, noisy in production. Override in `appsettings.secrets.yaml` (which loads on top):
@@ -41,39 +34,13 @@ Logger:
 
 The "swallow + log + continue" pattern is universal. There's no "stop on first error" mode.
 
-## Adding sinks
+## Routing logs elsewhere
 
-Common production setups:
-
-### File sink
+### Sentry (built into the official image)
 
 ```yaml
 Logger:
   Serilog:
-    Using:
-      - Serilog.Sinks.Console
-      - Serilog.Sinks.File
-    WriteTo:
-      - Name: Console
-      - Name: File
-        Args:
-          path: "/var/log/preesta/preesta-.log"
-          rollingInterval: Day
-          retainedFileCountLimit: 30
-```
-
-Add the `Serilog.Sinks.File` NuGet package reference to `Preesta.csproj` first.
-
-### Sentry
-
-`Sentry.Serilog` is already referenced in `Preesta.csproj`. Configure with a DSN:
-
-```yaml
-Logger:
-  Serilog:
-    Using:
-      - Serilog.Sinks.Console
-      - Sentry.Serilog
     WriteTo:
       - Name: Console
       - Name: Sentry
@@ -85,20 +52,9 @@ Logger:
 
 Errors land in Sentry as events, lower-level messages as breadcrumbs.
 
-### JSON sink
+### File / JSON output
 
-For Loki / Loki-compatible aggregators or any pipeline that wants structured logs:
-
-```yaml
-WriteTo:
-  - Name: File
-    Args:
-      path: "/var/log/preesta/preesta-.jsonl"
-      formatter: "Serilog.Formatting.Compact.CompactJsonFormatter, Serilog.Formatting.Compact"
-      rollingInterval: Day
-```
-
-Requires the `Serilog.Formatting.Compact` package.
+Tail Preesta's stdout from your container runtime — most production setups already pipe container logs to a file or shipper. If you really need Preesta itself to write a rolling file (or JSON for Loki), you need a custom image with the file sink added; see the engineering notes in `dev-notes/` in the repo.
 
 ## Metrics
 
@@ -119,4 +75,4 @@ INFO 2026-05-18 09:00:03  GitHub mutation succeeded: mutation { addComment ...
 INFO 2026-05-18 09:00:04  Sent 4 email messages
 ```
 
-These three lines belong to the same run if the timestamps are within a few seconds and the tag lines up. A more rigorous correlation ID can be added via `LogContext.PushProperty` if it becomes a real need.
+These three lines belong to the same run if the timestamps are within a few seconds and the tag lines up.

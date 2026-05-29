@@ -67,7 +67,6 @@ nav:
   - Home: index.md
   - Quickstart: quickstart.md
   - Concepts:
-    - concepts/architecture.md
     - concepts/obezlichennye-rules.md
     - concepts/rule-anatomy.md
     - concepts/routing-model.md
@@ -103,7 +102,3 @@ nav:
     - cookbook/auto-triage-blockers.md
     - cookbook/multi-tracker-digest.md
     - cookbook/per-team-routing.md
-  - Contributing:
-    - contributing/adding-a-tracker.md
-    - contributing/testing.md
-    - contributing/release.md

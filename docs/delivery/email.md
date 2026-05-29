@@ -16,7 +16,7 @@ Smtp:
   # SecurityMode: Auto              # optional; Auto|None|SslOnConnect|StartTls|StartTlsWhenAvailable
 ```
 
-`Host`, `User`, `Password`, `From` are required. `Port` and `SecurityMode` are optional — Preesta uses MailKit's defaults (`Port: 0`, `SecurityMode: Auto`) which auto-negotiate STARTTLS when the server advertises it. Override only when your provider expects a specific port or wire mode.
+`Host`, `User`, `Password`, `From` are required. `Port` and `SecurityMode` are optional — by default Preesta picks the right port and auto-negotiates STARTTLS when the server advertises it. Override only when your provider expects a specific port or wire mode.
 
 For unauthenticated relays (MailHog, local MTAs), omit both `User` and `Password` — Preesta skips the `AUTH` step entirely. Setting just one of the pair is a configuration error and Preesta fails loud.
 
@@ -53,5 +53,5 @@ Common failure modes:
 
 - **Authentication failed (5.7.8)** — wrong password or, for Gmail, you used your account password instead of an app password.
 - **Relay denied (5.7.1)** — `From` address is a domain the SMTP server isn't authorized to send for.
-- **Connection refused** — wrong host/port, or SSL/TLS mismatch. With the default `SecurityMode: Auto` MailKit picks the wire mode by port (465 = SSL-on-connect, 587/25 = STARTTLS-when-available). Pin `SecurityMode` explicitly only if your provider needs it.
-- **No email but no error in logs either** — check `Application:subjectPrefix` and the recipient list resolution: `mailTo: assignee` with a tracker that returned empty `Email` for the assignee produces a package with no recipients, which SMTP silently skips. See [Routing model → When the assignee has no email](../concepts/routing-model.md#when-the-assignee-has-no-email).
+- **Connection refused** — wrong host/port, or SSL/TLS mismatch. With the default `SecurityMode: Auto`, Preesta picks the wire mode by port (465 = SSL-on-connect, 587/25 = STARTTLS-when-available). Pin `SecurityMode` explicitly only if your provider needs it.
+- **No email but no error in logs either** — `mailTo: assignee` against a tracker that returned no email for the assignee produces a package with no recipients, which SMTP silently skips. See [Routing model → When the assignee has no email](../concepts/routing-model.md#when-the-assignee-has-no-email).

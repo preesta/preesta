@@ -1,6 +1,6 @@
 # GitHub
 
-Preesta talks to GitHub via the **GraphQL `search(type: ISSUE)`** endpoint. `type: ISSUE` covers both real issues and pull requests (a PR is a subtype of Issue in GitHub's data model); `__typename` discriminates and maps to `Issue.Type` of `"Issue"` or `"PR"`.
+Preesta queries GitHub's GraphQL **search** endpoint. The same query returns issues and pull requests — GitHub treats a PR as an issue subtype — and Preesta tags each item with `Type = "Issue"` or `Type = "PR"` so you can filter or column on it.
 
 Multi-repo / org-wide / PR-vs-issue selection all live **inside the user's filter string** via GitHub's standard search qualifiers (`repo:`, `org:`, `is:issue`, `is:pr`, …). No DSL, no per-field YAML — whatever you would paste into the web UI's search bar works in `filter:`.
 
@@ -49,24 +49,15 @@ The `filter:` is the GitHub search query, verbatim. Multi-repo: `repo:foo/a repo
 
 **No identity in filters.** `assignee:@me` or `author:@me` resolve to the token's owner, which is almost never the right person. Route via the `mailTo` marker layer instead — see [Impersonal rules](../concepts/obezlichennye-rules.md).
 
-## Issue mapping
+## What appears in a GitHub digest
 
-| GitHub GraphQL field | Preesta `Issue` field |
-|---|---|
-| `repository.nameWithOwner + "#" + number` | `Key` (e.g. `octo/repo#42`) |
-| `id` (GraphQL node id, opaque base64) | `GithubNodeId` — used by `{{@issueId}}` marker in mutations |
-| `title` | `Summary` |
-| `url` | `Url` |
-| `state` (OPEN/CLOSED) → title-case | `Status` |
-| CLOSED → `"Closed"` | `Resolution` |
-| `__typename` | `Type` = `"Issue"` or `"PR"` |
-| `assignees.nodes[0]` | `Participants.Assignee` |
-| `author` | `Participants.Reporter` and `Participants.Creator` (GitHub has no separate reporter) |
-| `labels.nodes[].name` | `Labels` (comma-joined) |
-| `milestone.title` | `ProjectKey` |
-| `createdAt` / `updatedAt` | `CreatedDate` / `UpdatedDate` |
+Each item shows the key (`owner/repo#42`), the title, and any `columns:` you ask for. GitHub-specific notes:
 
-**Hidden email.** GitHub returns `""` for `User.email` if the user has hidden their email in profile settings. The User object stays (login → display name shows in the digest) but `Email=""`, and the marker resolver skips routing for that recipient — see [Routing model → When the assignee has no email](../concepts/routing-model.md#when-the-assignee-has-no-email).
+- `Type` distinguishes `Issue` from `PR` — useful as a column if you mix both in one rule.
+- GitHub has no separate reporter field — author fills both `Reporter` and `Creator` columns.
+- Milestones map to `ProjectKey`.
+
+**Hidden email.** GitHub returns no email if the user has hidden it in profile settings. The author still shows up by display name, but `mailTo: assignee` (or other email markers) silently skips that recipient — see [Routing model → When the assignee has no email](../concepts/routing-model.md#when-the-assignee-has-no-email).
 
 ## Mutations
 

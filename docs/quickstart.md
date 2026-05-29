@@ -95,27 +95,11 @@ Or use any external scheduler — host cron, systemd timer, Kubernetes CronJob, 
 
 ## Next steps
 
-- Browse the [Concepts](concepts/architecture.md) section — three short pages cover the rest of the surface area.
+- Browse the [Concepts](concepts/rule-anatomy.md) section — three short pages cover the rest of the surface area.
 - Add another tracker: [Linear](trackers/linear.md), [GitHub](trackers/github.md), [GitLab](trackers/gitlab.md), [Shortcut](trackers/shortcut.md). All four are equal sources — pick the ones you actually use.
 - Wire up [Telegram](delivery/telegram.md) or [Slack](delivery/slack.md) — same digest, different channel.
 - Copy a realistic rule from the [Cookbook](cookbook/index.md).
 
-## Other install paths
+## Self-contained binary alternative
 
-### Self-contained binary
-
-Tagged releases (`vX.Y.Z`) ship binaries for linux-x64/arm64, osx-x64/arm64, win-x64 on the [Releases page](https://github.com/preesta/preesta/releases). Unpack, drop your `secrets/` and `rules.yaml` next to it, run `./preesta` (or `./preesta <tag>` to filter). No Docker, no .NET install — the runtime is bundled.
-
-### From source
-
-For contributors and people running off `main`:
-
-```bash
-git clone https://github.com/preesta/preesta.git
-cd preesta
-dotnet build
-cd Preesta/bin/Debug/net8.0
-./Preesta blocker-watch
-```
-
-Needs the .NET 8 SDK; the build copies the project's `appsettings.yaml` and your `secrets/`, `rules.yaml` into the output directory.
+Tagged releases (`vX.Y.Z`) ship binaries for linux-x64/arm64, osx-x64/arm64, win-x64 on the [Releases page](https://github.com/preesta/preesta/releases). Unpack, drop your `secrets/` and `rules.yaml` next to it, run `./preesta` (or `./preesta <tag>` to filter). No Docker — the runtime is bundled.

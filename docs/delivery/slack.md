@@ -72,11 +72,10 @@ Slack mrkdwn (note: **not** standard Markdown):
 
 Preesta renders status (`:hourglass_flowing_sand:` In Progress, `:white_check_mark:` Done, …), priority (`:red_circle:` Urgent, `:large_orange_circle:` High, …), and other meta chips in mrkdwn natively.
 
-The format is built inline (`StringBuilder` in `IssueFormatter.ToSlackMrkdwn`), not via a Scriban template — Slack-specific enough to be worth keeping close to the code.
 
 ## Failure handling
 
-Slack's `chat.postMessage` returns HTTP 200 with `{ok: false, error: "..."}` for application-level failures. Preesta treats those as failures: logs at `Error` with the Slack error code, swallows. One bad user ID never aborts the digest run. Common errors:
+Slack returns HTTP 200 even for app-level failures (with `{ok: false, error: "..."}` in the body). Preesta logs the error and moves on — one bad user ID never aborts the run. Common errors:
 
 - `channel_not_found` — invalid user ID (typo or user is in a different workspace)
 - `not_in_channel` — user has disabled DMs from the app

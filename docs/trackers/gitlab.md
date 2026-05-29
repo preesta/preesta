@@ -58,23 +58,14 @@ rules:
 
 Issues only for now. Merge Requests are deferred — GitLab's GraphQL exposes MR listings under `Project.mergeRequests` / `Group.mergeRequests`, which requires a different rule shape with mandatory project/group scope. They'll arrive as a separate rule shape once we tackle them.
 
-## Issue mapping
+## What appears in a GitLab digest
 
-| GitLab field | Preesta `Issue` field |
-|---|---|
-| `reference(full: true)` (`group/project#42`) | `Key` |
-| `id` (`gid://gitlab/Issue/N`) | `GitlabGlobalId` — `{{@issueId}}` |
-| `title` | `Summary` |
-| `webUrl` | `Url` |
-| `state` (opened/closed) → title-case | `Status` |
-| closed → `"Closed"` | `Resolution` |
-| `author` | `Reporter` + `Creator` |
-| `assignees.nodes[0]` | `Assignee` |
-| `labels.nodes[].title` | `Labels` (note: GitLab uses `title`, not `name`) |
-| `milestone.title` | `ProjectKey` |
-| `createdAt` / `updatedAt` | `CreatedDate` / `UpdatedDate` |
+Each item shows the key (`group/project#42`), the title, and any `columns:` you ask for. GitLab-specific notes:
 
-**Hidden email.** GitLab returns `null` for `User.publicEmail` when the user hasn't exposed it in profile settings. Same skip-on-empty behavior as GitHub.
+- GitLab has no separate reporter — the issue's author fills both `Reporter` and `Creator` columns.
+- Milestone maps to `ProjectKey`.
+
+**Hidden email.** GitLab returns no email when the user hasn't exposed one in profile settings. The author still shows up by display name, but `mailTo: assignee` silently skips that recipient — same as GitHub.
 
 ## Mutations
 

@@ -76,7 +76,7 @@ Telegram-compatible HTML (`<b>`, `<i>`, `<a>`, `<code>`, `<pre>` — same set Te
 ## Limits
 
 - 4096 chars per message
-- 30 messages/second per bot, 1 message/sec to the same chat — Preesta doesn't batch, so for very-bulk digests across many recipients there's a built-in rate window in `TelegramMessenger` (low overhead in normal use).
+- 30 messages/second per bot, 1 message/sec to the same chat — Preesta paces sends to stay inside those windows.
 - Bots can't initiate conversations with users — recipient has to `/start` the bot first.
 
 ## Troubleshooting

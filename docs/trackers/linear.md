@@ -66,22 +66,14 @@ You build the view in Linear's UI, copy its UUID from the URL, paste here. Prees
 
 Exactly one of the three must be set. Rules with zero or 2+ are dropped and an error appears in the log.
 
-## Issue mapping
+## What appears in a Linear digest
 
-| Linear GraphQL field | Preesta `Issue` field |
-|---|---|
-| `identifier` (e.g. `PRE-42`) | `Key` |
-| `id` (UUID) | `LinearId` — used by `{{@issueId}}` marker in mutations |
-| `title` | `Summary` |
-| `url` | `Url` |
-| `state.name` | `Status` |
-| `state.type == "completed"` ? `state.name` : null | `Resolution` |
-| `priorityLabel` (`Urgent` / `High` / …) | `Priority` |
-| `assignee` | `Participants.Assignee` |
-| `creator` | `Participants.Reporter` **and** `Participants.Creator` (Linear has no separate reporter) |
-| `labels.nodes[].name` | `Labels` |
-| `project.name` | `ProjectKey` |
-| `dueDate`, `createdAt`, `updatedAt` | `DueDate`, `CreatedDate`, `UpdatedDate` |
+Each item shows the key (`PRE-42`), the title, and any `columns:` you ask for. Linear-specific notes:
+
+- Status is the state's name (`In Progress`, `Triage`, etc.); Resolution is populated only for completed-type states.
+- Priority renders the label (`Urgent`, `High`, …) — not the numeric value.
+- Linear has no separate reporter — the issue creator fills both `Reporter` and `Creator` columns.
+- Project name maps to `ProjectKey`.
 
 ## Mutations
 
