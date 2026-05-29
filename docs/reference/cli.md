@@ -45,9 +45,7 @@ For deployments, `cd /path/to/preesta && dotnet Preesta.dll [<tag>…]` is the i
 
 ## Logging
 
-Stdout/stderr. Serilog driven by the `Logger:` block in `appsettings.yaml`. The default in-repo config writes to console with an ANSI theme — production usually adds a file or Sentry sink in `appsettings.secrets.yaml`.
-
-Logs are structured (Serilog's `MessageTemplate` system) — every field is keyed, JSON sinks reconstruct them cleanly.
+Stdout/stderr. By default — colorized console. Production typically adds a file or Sentry destination in the config; see [Logging and monitoring](../operations/logging-and-monitoring.md) for the options.
 
 ## Help / version
 

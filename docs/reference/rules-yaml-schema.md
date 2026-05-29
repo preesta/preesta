@@ -159,14 +159,12 @@ Render shapes (auto-detected per value):
 
 Empty / missing values render as nothing — no crash.
 
-## Validation behaviour
+## What if a rule is malformed?
 
-Malformed rules are dropped with `ILogger.Error` and Preesta keeps going for the rest of the file:
+Preesta logs an error for that rule and keeps processing the rest of the file. Common cases:
 
-- Linear: rules with zero or 2+ of {`filter`, `filterRaw`, `viewId`}
-- GitHub / Shortcut: rules with empty/missing `filter:` string
-- Any rule: missing `notify` and no mutations (nothing for the rule to do)
+- A Linear rule with zero or 2+ of `filter` / `filterRaw` / `viewId` — exactly one is required.
+- A GitHub or Shortcut rule with an empty or missing `filter:`.
+- A rule with no `notify:` and no `mutations:` — nothing for it to do.
 
-GitLab is **not** in this list: filter breadth isn't statically validated (an unscoped query is fine on a small self-hosted instance, times out on gitlab.com). Over-broad GitLab queries fail at fetch time and are logged, not rejected up front — see [GitLab → scope the filter](../trackers/gitlab.md#3-write-rules-filter-chips).
-
-If a digest you expected isn't going out, check the log first — there's almost always an `Error` line naming the rejected rule.
+If a digest you expected isn't going out, check the log first — there's usually one line naming the rule that got dropped and why.

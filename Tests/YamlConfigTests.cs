@@ -298,7 +298,7 @@ rules:
             // Quoted scalars in YAML come through as strings even if the content looks
             // numeric. Our walker can't distinguish "9" (quoted) from 9 (unquoted) since
             // YamlDotNet hands both to us as plain string — known limitation, documented.
-            // Acceptable behaviour: "9" parses as Integer here too. Power users wanting
+            // Acceptable behavior: "9" parses as Integer here too. Power users wanting
             // string-typed numerics should rename the field or rely on the AI prompt.
             Assert.AreEqual(JTokenType.Integer, f.SelectToken("quoted.eq")!.Type);
         }

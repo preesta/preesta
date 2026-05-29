@@ -107,12 +107,10 @@ See **[Markers reference](../reference/markers.md)** for the full substitution l
 
 ## Validation
 
-The YAML converter drops malformed rules with an `ILogger.Error` log line — Preesta keeps going for the rest of the file:
+If a rule is malformed, Preesta logs an error for that rule and keeps processing the rest. Common cases:
 
-- Mutually-exclusive filter modes set together (Linear)
-- Empty/missing `filter:` string (GitHub, Shortcut)
-- Non-string filter where a string is expected, or vice-versa
+- Mutually-exclusive Linear filter modes set together (`filter` + `filterRaw`, etc.)
+- Empty or missing `filter:` on a GitHub or Shortcut rule
+- Filter value in the wrong shape — e.g. a string where the tracker expects a chip mapping
 
-Filter *breadth* is not validated — a too-broad query (e.g. an unscoped GitLab filter on gitlab.com) isn't rejected up front; it fails at fetch time, gets logged, and the run continues.
-
-If something is silently not happening, check the log — there's almost always an `Error` line explaining which rule got dropped and why.
+If a digest you expected isn't going out, check the log — there's almost always one line naming the rule that got dropped and why.

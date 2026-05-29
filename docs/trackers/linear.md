@@ -64,7 +64,7 @@ The mapping goes verbatim into `issues(filter:)`. You write the filter exactly a
 
 You build the view in Linear's UI, copy its UUID from the URL, paste here. Preesta uses `customView(id:){ issues { nodes { ... } } }` and gets back exactly what the view evaluates to. Bonus: `viewId` mode is the only mode with a canonical shareable URL, so the digest header gets a real "Open in Linear →" link to `linear.app/<workspace>/view/<id>`. For the other two modes the link is omitted (Linear stores AI prompts and raw filters in localStorage, not URL).
 
-Exactly one of the three must be set. Rules with zero or 2+ are dropped with an `ILogger.Error`.
+Exactly one of the three must be set. Rules with zero or 2+ are dropped and an error appears in the log.
 
 ## Issue mapping
 

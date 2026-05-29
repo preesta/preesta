@@ -220,7 +220,7 @@ query(
                 // it in profile settings. We keep the User object (login/displayName
                 // still useful for the digest header) but Email="" so the marker
                 // resolver simply skips routing for this issue, mirroring GitHub's
-                // hidden-email behaviour.
+                // hidden-email behavior.
                 Email = string.IsNullOrEmpty(email) ? string.Empty : email!,
                 Key = login
             };

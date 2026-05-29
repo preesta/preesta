@@ -38,7 +38,7 @@ dotnet test --filter "Category!=Slow"             # skip the slow ones (if you m
 - `MockLinearServer` — GraphQL responses with `issues` / `customView` envelopes
 - `MockSlackServer` — `chat.postMessage` responses
 
-When adding a new tracker, consider adding a `Mock<TrackerName>Server` — it pays off the second time you write a test that needs HTTP behaviour, not just mapping.
+When adding a new tracker, consider adding a `Mock<TrackerName>Server` — it pays off the second time you write a test that needs HTTP behavior, not just mapping.
 
 ## NSubstitute vs Moq
 

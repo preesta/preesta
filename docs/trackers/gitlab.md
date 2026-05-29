@@ -74,7 +74,7 @@ Issues only for now. Merge Requests are deferred — GitLab's GraphQL exposes MR
 | `milestone.title` | `ProjectKey` |
 | `createdAt` / `updatedAt` | `CreatedDate` / `UpdatedDate` |
 
-**Hidden email.** GitLab returns `null` for `User.publicEmail` when the user hasn't exposed it in profile settings. Same skip-on-empty behaviour as GitHub.
+**Hidden email.** GitLab returns `null` for `User.publicEmail` when the user hasn't exposed it in profile settings. Same skip-on-empty behavior as GitHub.
 
 ## Mutations
 

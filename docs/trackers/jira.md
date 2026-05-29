@@ -61,6 +61,6 @@ Jira mutations use the REST `verb` / `urlPattern` / `body` shape:
 
 `{{@jiraRoot}}` resolves to the configured `Jira:rootUri`. `{{@issueKey}}` is the human key (`INFRA-123`). Per-mutation failures are logged + skipped, identical to GraphQL trackers.
 
-## Issue mapping
+## Custom fields in digests
 
-Standard Jira fields map to the obvious `Issue` properties. Anything else lives in `Issue.CustomFields` (`Dictionary<string, JToken?>` keyed by `customfield_NNNNN`) and renders via the auto-discovered name map.
+Standard fields (Status, Priority, Assignee, etc.) render out of the box. Custom fields are auto-discovered at startup — list them in `columns:` by their display name (`Severity`, `"Story point estimate"`) and they appear in the digest alongside the standard ones. See [Custom fields](../reference/rules-yaml-schema.md#custom-fields) for the supported value shapes.
