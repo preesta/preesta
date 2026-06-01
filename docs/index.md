@@ -34,7 +34,7 @@ Preesta is a thin scheduled layer **on top of** existing trackers. It deliberate
 ## What you read next
 
 - **[Quickstart](quickstart.md)** — zero to first digest in 10 minutes.
-- **[Concepts](concepts/architecture.md)** — the mental model in three pages.
+- **[Concepts](concepts/rule-anatomy.md)** — the mental model in three pages.
 - **[Trackers](trackers/index.md)** — per-tracker setup walkthroughs.
 - **[Cookbook](cookbook/index.md)** — realistic rules you can copy.
 

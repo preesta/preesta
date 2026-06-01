@@ -12,4 +12,4 @@ Preesta supports five issue trackers as **sources** (which issues to digest) and
 
 ## Designing a new tracker integration
 
-Preesta is structured so adding the sixth tracker is a well-scoped piece of work — `git log --grep "^Phase 12.5"` for the GitHub addition is a clean reference. See **[Adding a tracker](../contributing/adding-a-tracker.md)** for the step-by-step.
+Want to add a sixth tracker? The per-tracker pattern is well-trodden; the engineering walkthrough lives in the repo's `dev-notes/contributing/adding-a-tracker.md`.
