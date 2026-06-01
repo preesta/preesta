@@ -15,12 +15,12 @@ Preesta is a small CLI tool that reads rules from a YAML file, queries one or mo
 ## Quickstart (TL;DR)
 
 ```bash
-git clone https://github.com/preesta/preesta.git
-cd preesta
-dotnet build
-# fill Preesta/secrets/appsettings.secrets.yaml with your SMTP + tracker tokens
-# adjust Preesta/rules.yaml
-cd Preesta && dotnet run -- tag
+mkdir preesta && cd preesta
+# put secrets/appsettings.secrets.yaml (SMTP + tracker tokens) and rules.yaml here
+docker run --rm \
+  -v "$(pwd)/secrets:/app/secrets:ro" \
+  -v "$(pwd)/rules.yaml:/app/rules.yaml:ro" \
+  ghcr.io/preesta/preesta:latest preesta
 ```
 
 The full walkthrough — token procurement per tracker, SMTP setup, first rule — is at **[preesta.dev/quickstart/](https://preesta.dev/quickstart/)**.
