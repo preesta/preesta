@@ -11,9 +11,9 @@ namespace Preesta
     {
         public static void Run(IList<string> args)
         {
-            // CLI args are the lefthook-style tag filter. Zero args = run every
+            // CLI args are the positive tag filter. Zero args = run every
             // rule (no filter); one or more = OR-match against each rule's
-            // `tags:`, with untagged rules dropping out per lefthook semantics.
+            // `tags:`, with untagged rules dropping out per the positive-match contract.
             var container = new DependencyContainer((IReadOnlyList<string>)args.ToList());
             container.ValidateRules();
 

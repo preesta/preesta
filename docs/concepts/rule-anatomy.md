@@ -30,7 +30,7 @@ Every rule has four sections. The shape changes a little per tracker, but the fo
 
 `tracker:` picks the source — one of `jira` / `linear` / `github` / `gitlab` / `shortcut`.
 
-`tags:` is **optional** and uses lefthook-style positive selection:
+`tags:` is **optional**. The selector works by positive match:
 
 - A rule with no `tags:` runs whenever you invoke `preesta` **without arguments**.
 - A rule with `tags:` (scalar `tags: morning`, comma-string `tags: "morning, standup"`, or list `tags: [morning, standup]`) runs whenever any of its tags is in the CLI args.

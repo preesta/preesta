@@ -9,7 +9,7 @@ Rules can carry optional `tags:` (string, list, or comma-separated string). The 
 - the CLI has no tag arguments (no filter — everything runs), or
 - any of the CLI's tags appears in the rule's `tags:` (OR-match).
 
-Untagged rules drop out the moment any tag is requested. That's lefthook-style positive selection: tagged rules are explicit opt-ins, untagged rules are the "always-on" default.
+Untagged rules drop out the moment any tag is requested. Positive selection by design: tagged rules are explicit opt-ins for a specific run, untagged rules are the "always-on" default.
 
 This means **the schedule lives in the cron tab, the membership lives in `rules.yaml`**. Add a rule to a schedule by giving it that schedule's tag; move it between schedules by changing the tag. The cron tab itself is small — usually one line per tag.
 

@@ -7,7 +7,7 @@ namespace Preesta.Configuration
     {
         // Each Get*Rules method takes the CLI tag filter. Empty list = no tag
         // filter — every rule of that type is returned (including ones with no
-        // tags). Non-empty list = lefthook-style positive selector: a rule
+        // tags). Non-empty list = positive tag selector: a rule
         // matches if intersect(rule.Tags, tags) is non-empty; untagged rules
         // are skipped.
         JqlRule[] GetJqlRules(IReadOnlyList<string> tags);

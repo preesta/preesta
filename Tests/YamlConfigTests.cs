@@ -132,7 +132,7 @@ mailAliases:
             Assert.AreEqual(0, rules.Length);
         }
 
-        // ----- lefthook-style tag semantics -----
+        // ----- positive tag semantics -----
 
         private const string TagYaml = @"
 rules:

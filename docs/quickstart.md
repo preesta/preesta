@@ -4,9 +4,9 @@ From "nothing installed" to "first digest in my inbox" in about five minutes. We
 
 ## Prerequisites
 
-- **Docker** (the only thing you install — no .NET SDK, no clone, no build).
-- A **Jira API token** from <https://id.atlassian.com/manage-profile/security/api-tokens>. For Atlassian Cloud you authenticate with your email + the API token (used as the password in HTTP Basic).
-- An **SMTP account** you can send from (Gmail with an [app password](https://support.google.com/accounts/answer/185833) is the simplest).
+- **Docker**
+- **Jira API token** — get one at <https://id.atlassian.com/manage-profile/security/api-tokens>
+- **SMTP account** — Gmail with an [app password](https://support.google.com/accounts/answer/185833) is the simplest
 
 ## 1. Set up a config directory
 

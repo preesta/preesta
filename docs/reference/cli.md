@@ -12,7 +12,7 @@ preesta --version | -v        # print version, exit
 preesta --help    | -h        # show usage, exit
 ```
 
-Lefthook-style positive tag selection: an untagged rule (`tags:` omitted) runs **only** when the CLI has no tag args; the moment any tag is requested, only tagged rules with at least one matching tag participate. Multiple CLI tags OR together.
+Positive tag selection: an untagged rule (`tags:` omitted) runs **only** when the CLI has no tag args; the moment any tag is requested, only tagged rules with at least one matching tag participate. Multiple CLI tags OR together.
 
 Examples:
 

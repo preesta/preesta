@@ -44,7 +44,7 @@ namespace Preesta.Configuration
                 if (string.IsNullOrEmpty(rule.Tracker) && string.IsNullOrEmpty(rule.Type))
                     _logger.Warning("Rule is missing 'tracker' field");
                 // `tags:` is optional. A rule without tags runs on every preesta
-                // invocation that does not pass a tag filter, by lefthook-style
+                // invocation that does not pass a tag filter, by positive-match
                 // semantics — that's a feature, not a problem to warn about.
             }
         }
@@ -343,7 +343,7 @@ namespace Preesta.Configuration
         }
 
         /// <summary>
-        /// Lefthook-style positive tag selector. Empty <paramref name="requested"/>
+        /// Positive tag selector. Empty <paramref name="requested"/>
         /// means "no tag filter" — every rule matches, including ones with no
         /// tags. A non-empty filter requires the rule to carry at least one of
         /// the requested tags; untagged rules drop out.
@@ -358,7 +358,7 @@ namespace Preesta.Configuration
 
         /// <summary>
         /// YAML <c>tags:</c> may be a scalar (single tag), a comma-separated
-        /// scalar (lefthook quirk), or a list. Normalise to a string[]; missing
+        /// scalar (legacy comma form), or a list. Normalise to a string[]; missing
         /// or empty input returns an empty array.
         /// </summary>
         internal static string[] NormalizeTags(object? raw) => raw switch

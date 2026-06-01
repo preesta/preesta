@@ -81,7 +81,7 @@ namespace Preesta.Configuration
         private TRule[] GetRules<TRule>(IReadOnlyList<string> tags, IEnumerable<string> rulesTypes, Func<XElement, TRule> converter) where TRule : Rule
         {
             // Legacy XML treats the `group="X"` attribute as a single tag for
-            // lefthook-style matching: empty CLI filter runs everything, a
+            // positive tag matching: empty CLI filter runs everything, a
             // non-empty filter runs rules whose group is in the requested set.
             // Untagged-style XML rules (no `group=`) only run when the filter
             // is empty.
