@@ -1,6 +1,7 @@
 # Preesta
 
-[![CI](https://github.com/preesta/preesta/actions/workflows/ci.yml/badge.svg)](https://github.com/preesta/preesta/actions/workflows/ci.yml)
+[![CI](https://github.com/preesta/preesta/actions/workflows/dotnet.yml/badge.svg)](https://github.com/preesta/preesta/actions/workflows/dotnet.yml)
+[![Docker](https://github.com/preesta/preesta/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/preesta/preesta/pkgs/container/preesta)
 [![Docs](https://github.com/preesta/preesta/actions/workflows/docs.yml/badge.svg)](https://preesta.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/)
