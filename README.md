@@ -49,7 +49,7 @@ Preesta started in 2019 as "Bender". In 2026 it was rebuilt on .NET 8, gained YA
 
 ## Contributing
 
-The architecture is small and the per-tracker pattern is well-trodden — see **[Adding a tracker](https://preesta.dev/contributing/adding-a-tracker/)** before starting. Tests run with `dotnet test` (~200 tests, all in-process).
+Engineering walkthrough lives in [`dev-notes/contributing/adding-a-tracker.md`](dev-notes/contributing/adding-a-tracker.md). Tests run with `dotnet test` (~200 tests, all in-process).
 
 ## License
 
