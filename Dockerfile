@@ -40,7 +40,7 @@ RUN case "${TARGETARCH}" in \
 
 # ---------------------------------
 
-FROM mcr.microsoft.com/dotnet/runtime:8.0 AS final
+FROM mcr.microsoft.com/dotnet/runtime:10.0 AS final
 ARG VERSION
 LABEL org.opencontainers.image.source=https://github.com/preesta/preesta \
       org.opencontainers.image.description="Rule-based digests for your issue trackers" \
