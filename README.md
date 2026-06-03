@@ -8,6 +8,8 @@
 
 > Rule-based digests for your issue trackers.
 
+![A Preesta morning-standup digest combining Jira, Linear, and GitHub sections in a single email](docs/assets/screenshots/email-multi-tracker.png)
+
 Preesta is a small CLI tool that reads rules from a YAML file, queries one or more issue trackers (Jira, Linear, GitHub, GitLab, Shortcut), groups the matched issues by recipient, and ships each recipient a personal digest by email, Telegram, and Slack. It can also run write-side actions (comments, status changes, label flips) against the same matches.
 
 **[Full documentation at preesta.dev →](https://preesta.dev/)**
