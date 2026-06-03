@@ -5,7 +5,7 @@
 
 ARG VERSION=0.0.0-dev
 
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS publish
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS publish
 ARG TARGETARCH
 ARG VERSION
 WORKDIR /src
