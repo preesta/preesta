@@ -1,0 +1,62 @@
+name: Bug report
+description: Something doesn't work as documented or expected
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Preesta version
+      description: Output of `preesta --version`
+      placeholder: "preesta 0.1.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tracker
+    attributes:
+      label: Tracker involved
+      multiple: true
+      options:
+        - Jira
+        - Linear
+        - GitHub
+        - GitLab
+        - Shortcut
+        - Not tracker-specific
+    validations:
+      required: true
+
+  - type: dropdown
+    id: channel
+    attributes:
+      label: Delivery channel involved
+      multiple: true
+      options:
+        - Email (SMTP)
+        - Telegram
+        - Slack
+        - Not channel-specific
+
+  - type: textarea
+    id: rule
+    attributes:
+      label: The rule (redacted)
+      description: Paste the rule from your `rules.yaml`. Remove tokens, emails, internal hostnames.
+      render: yaml
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened
+      description: Include relevant log lines (Preesta logs at Verbose by default — look for Error / Warning lines naming the rule).
+    validations:
+      required: true

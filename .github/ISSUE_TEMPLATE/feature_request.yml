@@ -1,0 +1,23 @@
+name: Feature request
+description: Idea for something Preesta should do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the situation, not the solution — let's first agree there's a problem worth solving.
+    validations:
+      required: true
+
+  - type: textarea
+    id: shape
+    attributes:
+      label: Rough shape of the solution (optional)
+      description: How would it look in `rules.yaml`, or what would the CLI do? Doesn't have to be final.
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Anything that should stay out of scope?
+      description: See "What Preesta is not" on the homepage. If your idea touches that line (incident lifecycle, on-call rotations, SLA timers, anything stateful between cron ticks), say so up front.
